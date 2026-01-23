@@ -1,0 +1,979 @@
+{
+    "data":  {
+                 "mutexes_created":  [
+                                         "Global\\ADAP_WMI_ENTRY"
+                                     ],
+                 "processes_created":  [
+                                           "\"C:\\Users\\\u003cUSER\u003e\\Desktop\\shell.exe\"",
+                                           "\"C:\\Users\\user\\Desktop\\shell.exe\""
+                                       ],
+                 "verdicts":  [
+                                  "MALWARE",
+                                  "TROJAN"
+                              ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "resolve function by parsing PE exports",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "sara-rn"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: movzx",
+                                                                  "loop"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: resolve function by parsing PE exports\n    namespace: load-code/pe\n    authors:\n      - sara-rn\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, offset, mnemonic features\n    examples:\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x406BA1\n  features:\n    - and:\n      - os: windows\n      - or:\n        - characteristic: loop\n        - mnemonic: movzx\n      - and:\n        - offset: 0x3C = IMAGE_DOS_HEADER.PE.e_lfanew\n        - or:\n          - and:\n            - arch: i386\n            - offset: 0x78 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n          - and:\n            - arch: amd64\n            - offset: 0x88 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n        - 3 or more:\n          - offset: 0x14 = IMAGE_EXPORT_DIRECTORY.NumberOfFunctions\n          - offset: 0x24 = IMAGE_EXPORT_DIRECTORY.AddressOfNameOrdinals\n          - offset: 0x20 = IMAGE_EXPORT_DIRECTORY.AddressOfNames\n          - offset: 0x18 = IMAGE_EXPORT_DIRECTORY.NumberOfNames\n          - offset: 0x1C = IMAGE_EXPORT_DIRECTORY.AddressOfFunctions\n      - optional:\n        - or:\n          - api: LoadLibrary\n          - api: strcmp\n"
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "allocate or change RWX memory",
+                                               "description":  "host-interaction/process/inject",
+                                               "authors":  [
+                                                               "@mr-tz",
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "PAGE_EXECUTE_READWRITE",
+                                                                  "change memory protection",
+                                                                  "api: VirtualProtect"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: allocate or change RWX memory\n    namespace: host-interaction/process/inject\n    authors:\n      - \"@mr-tz\"\n      - mehunhoff@google.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - Memory::Allocate Memory [C0007]\n    examples:\n      - Practical Malware Analysis Lab 03-03.exe_:0x4010EA\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x140001ABA\n  features:\n    - or:\n      - basic block:\n        - and:\n          - or:\n            - match: allocate memory\n            - match: change memory protection\n          - or:\n            - number: 0x40 = PAGE_EXECUTE_READWRITE\n            # lea     r9d, [rcx+40h]  ; flProtect\n            # call    cs:VirtualAlloc\n            - instruction:\n              - mnemonic: lea\n              - offset: 0x40 = PAGE_EXECUTE_READWRITE\n      - call:\n        - and:\n          - or:\n            - match: allocate memory\n            - match: change memory protection\n          - number: 0x40 = PAGE_EXECUTE_READWRITE\n"
+                                           },
+                                           {
+                                               "id":  "4",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "execute shellcode via indirect call",
+                                               "description":  "load-code/shellcode",
+                                               "authors":  [
+                                                               "ronnie.salomonsen@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "change memory protection",
+                                                                  "allocate or change RWX memory",
+                                                                  "api: VirtualProtect"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: execute shellcode via indirect call\n    namespace: load-code/shellcode\n    authors:\n      - ronnie.salomonsen@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic features\n    mbc:\n      - Memory::Allocate Memory [C0007]\n  features:\n    - and:\n      - match: allocate or change RWX memory\n      - or:\n        - characteristic: indirect call\n        - characteristic: cross section flow\n"
+                                           },
+                                           {
+                                               "id":  "5",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "access PEB ldr_data",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "PEB access",
+                                                                  "fs access",
+                                                                  "peb access"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: access PEB ldr_data\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    references:\n      - https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm\n      - https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8\n    examples:\n      - 3FDFB2D522E7DEECAAAF2F87420F7E75:0x4117B7\n  features:\n    - or:\n      - and:\n        - arch: i386\n        - description: x32\n\n        - match: PEB access\n\n        # x86 Windows uses fs:0 to access the TIB which contains SEH information at offset 0\n        # checking for fs:0 and a (possibly unrelated) number or offset often results in false positives\n\n        - offset: 0x0C = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x0C = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x14 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x1C = PEB.LDR_DATA.InInitializationOrderModuleList\n\n      - and:\n        - arch: amd64\n        - description: x64\n\n        - match: PEB access\n\n        - offset: 0x18 = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x10 = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x20 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x30 = PEB.LDR_DATA.InInitializationOrderModuleList\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "packer_unknown_pe_section_name",
+                                               "name":  "packer_unknown_pe_section_name",
+                                               "description":  "The binary contains an unknown PE section name indicative of packing",
+                                               "match_data":  [
+                                                                  ".jwtc"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "binary_yara",
+                                               "name":  "binary_yara",
+                                               "description":  "Binary file triggered YARA rule",
+                                               "match_data":  [
+                                                                  "shellcode_peb_parsing"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_MEDIUM"
+                                           },
+                                           {
+                                               "id":  "procmem_yara",
+                                               "name":  "procmem_yara",
+                                               "description":  "Yara detections observed in process dumps, payloads or dropped files",
+                                               "match_data":  [
+                                                                  "Yara rule \u0027shellcode_get_eip\u0027 with data \u0027[\u0027{ E8 00 00 00 00 59 }\u0027, \u0027{ E8 00 00 00 00 58 }\u0027]\u0027",
+                                                                  "Yara rule \u0027shellcode_peb_parsing\u0027 with data \u0027[\u0027{ 31 D2 89 E5 64 8B 52 30 8B 52 0C 8B 52 14 8B 72 28 }\u0027]\u0027",
+                                                                  "Yara rule \u0027Rozena\u0027 with data \u0027[\u0027{ FF D5 6A 0A 68 2D 09 94 16 68 02 00 11 5C 89 E6 50 50 50 50 40 50 40 50 68 EA 0F DF E0 FF D5 }\u0027, \u0027{ 6A 00 6A 04 56 57 68 02 D9 C8 5F FF D5 83 F8 00 7E 36 8B 36 6A 40 68 00 10 00 00 56 6A 00 68 }\u0027]\u0027"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_MEDIUM"
+                                           },
+                                           {
+                                               "id":  "7037",
+                                               "description":  "Malicious sample detected (through community Yara rule)",
+                                               "match_data":  [
+                                                                  "Identifies Metasploit 64 bit reverse tcp shellcode. Author: unknown"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_HIGH"
+                                           },
+                                           {
+                                               "id":  "9028",
+                                               "description":  "Uses 32bit PE files",
+                                               "match_data":  [
+                                                                  "EXECUTABLE_IMAGE, 32BIT_MACHINE"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "7051",
+                                               "description":  "Found malware configuration",
+                                               "match_data":  [
+                                                                  "Metasploit {\"Type\": \"Metasploit Connect\", \"IP\": \"45.9.148.22\", \"Port\": 4444}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_HIGH"
+                                           },
+                                           {
+                                               "id":  "509",
+                                               "description":  "Reads software policies",
+                                               "match_data":  [
+                                                                  "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#registry_keys_opened",
+                                                                "value":  "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "287",
+                                               "description":  "Yara signature match",
+                                               "match_data":  [
+                                                                  "Windows_Trojan_Metasploit_4a1c4da8 reference_sample = 9582d37ed9de522472abe615dedef69282a40cfd58185813c1215249c24bbf22, os = windows, severity  = x86, description = Identifies Metasploit 64 bit revers"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "206",
+                                               "description":  "Performs DNS lookups",
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#dns_lookups",
+                                                                "value":  "DNS query: windows.msn.com"
+                                                            },
+                                                            {
+                                                                "ref":  "#dns_lookups",
+                                                                "value":  "DNS query: dns.google"
+                                                            },
+                                                            {
+                                                                "ref":  "#dns_lookups",
+                                                                "value":  "DNS query: assets.msn.com"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "715",
+                                               "description":  "Classification label",
+                                               "match_data":  [
+                                                                  "mal72.troj.winEXE@1/0@11/1"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "626",
+                                               "description":  "Sample tries to load a library which is not present or installed on the analysis machine, adding the library might reveal more behavior",
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "317",
+                                               "description":  "PE file contains an invalid checksum",
+                                               "match_data":  [
+                                                                  "real checksum: 0x3445 should be: 0x35bd"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "101140",
+                                               "description":  "Yara detected Metasploit Payload",
+                                               "match_data":  [
+                                                                  "shell.exe, type: SAMPLE",
+                                                                  "00000001.00000002.3817368849.0000000000405000.00000080.00000001.01000000.00000003.sdmp, type: MEMORY",
+                                                                  "00000001.00000000.3732598384.0000000000405000.00000080.00000001.01000000.00000003.sdmp, type: MEMORY"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_HIGH"
+                                           },
+                                           {
+                                               "id":  "7021",
+                                               "description":  "Connects to IPs without corresponding DNS lookups",
+                                               "match_data":  [
+                                                                  "45.9.148.22"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "187",
+                                               "description":  "Tries to load missing DLLs",
+                                               "match_data":  [
+                                                                  "apphelp.dll",
+                                                                  "mswsock.dll"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "235624756",
+                                               "description":  "Sigma detected: Potentially Suspicious Malware Callback Communication",
+                                               "match_data":  [
+                                                                  "Data: DestinationHostname: -, DestinationIp: 45.9.148.22, DestinationIsIpv6: false, DestinationPort: 4444, DestinationPortName: -, Image: C:\\Users\\user\\Desktop\\shell.exe, Initiated: true, ProcessGuid:"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "263",
+                                               "description":  "May try to detect the virtual machine to hinder analysis (VM artifact strings found in memory)",
+                                               "match_data":  [
+                                                                  "Hyper-V RAW%SystemRoot%\\system32\\mswsock.dllL"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#memory_dumps",
+                                                                "value":  "shell.exe, 00000001.00000002.3820638867.000000000067F000.00000004.00000020.00020000.00000000.sdmp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "522",
+                                               "description":  "Detected TCP or UDP traffic on non-standard ports",
+                                               "match_data":  [
+                                                                  "192.168.122.103:49759 -\u003e 45.9.148.22:4444"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "205",
+                                               "description":  "Entry point lies outside standard sections",
+                                               "match_data":  [
+                                                                  "section where entry point is pointing to: .jwtc"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "199",
+                                               "description":  "PE file contains sections with non-standard names",
+                                               "match_data":  [
+                                                                  "section name: .jwtc"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "7056",
+                                               "description":  "C2 URLs / IPs found in malware configuration",
+                                               "match_data":  [
+                                                                  "45.9.148.22"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           }
+                                       ],
+                 "memory_dumps":  [
+                                      {
+                                          "file_name":  "5536.dmp",
+                                          "process":  "C:\\Users\\Bruno\\Desktop\\shell.exe",
+                                          "size":  "35721216",
+                                          "base_address":  "65536"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000000.3732554197.0000000000402000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "4096",
+                                          "base_address":  "4202496",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3820576050.000000000061E000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "8192",
+                                          "base_address":  "6414336",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000000.3732420287.0000000000400000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "4096",
+                                          "base_address":  "4194304",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3797821242.0000000000030000.00000004.00000020.00040000.00000004.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "4096",
+                                          "base_address":  "196608",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3801215962.0000000000400000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "4096",
+                                          "base_address":  "4194304",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3820638867.0000000000670000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "8192",
+                                          "base_address":  "6750208",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3819727879.0000000000444000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "24576",
+                                          "base_address":  "4472832",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3817368849.0000000000405000.00000080.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "4096",
+                                          "base_address":  "4214784",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "refs":  [
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "287"
+                                                       },
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "101140"
+                                                       }
+                                                   ],
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3820638867.0000000000674000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "40960",
+                                          "base_address":  "6766592",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3798951362.000000000009D000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "12288",
+                                          "base_address":  "643072",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3799973625.000000000019D000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "12288",
+                                          "base_address":  "1691648",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3820471609.0000000000480000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "4096",
+                                          "base_address":  "4718592",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3805210655.0000000000402000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "4096",
+                                          "base_address":  "4202496",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3819669233.0000000000420000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "4096",
+                                          "base_address":  "4325376",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3820638867.000000000067F000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "49152",
+                                          "base_address":  "6811648",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "refs":  [
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "263"
+                                                       }
+                                                   ],
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3820805704.000000000086F000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "4096",
+                                          "base_address":  "8843264",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000000.3732598384.0000000000405000.00000080.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "4096",
+                                          "base_address":  "4214784",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "refs":  [
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "287"
+                                                       },
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "101140"
+                                                       }
+                                                   ],
+                                          "process_id":  "2932"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3819727879.0000000000440000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\shell.exe",
+                                          "size":  "12288",
+                                          "base_address":  "4456448",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2932"
+                                      }
+                                  ],
+                 "memory_pattern_ips":  [
+                                            "45.9.148.22"
+                                        ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "windows.msn.com-ion.edgesuite.net"
+                                     },
+                                     {
+                                         "hostname":  "a1672.dscr.akamai.net",
+                                         "resolved_ips":  [
+                                                              "23.64.112.187",
+                                                              "23.64.112.135"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "assets.msn.com",
+                                         "resolved_ips":  [
+                                                              "23.64.112.141",
+                                                              "23.64.112.160",
+                                                              "23.64.112.181",
+                                                              "23.64.112.189",
+                                                              "23.64.112.161",
+                                                              "23.64.112.135"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "assets.msn.com-ion.edgesuite.net"
+                                     },
+                                     {
+                                         "hostname":  "a1666.dscr.akamai.net",
+                                         "resolved_ips":  [
+                                                              "23.64.112.189",
+                                                              "23.64.112.161",
+                                                              "23.64.112.135",
+                                                              "23.64.112.160",
+                                                              "23.64.112.141",
+                                                              "23.64.112.181"
+                                                          ]
+                                     }
+                                 ],
+                 "files_opened":  [
+                                      "\\Device\\Afd\\Endpoint",
+                                      "C:\\Users\\user\\Desktop\\shell.exe",
+                                      "C:\\Windows\\AppPatch\\sysmain.sdb",
+                                      "C:\\Windows\\SysWOW64\\KERNEL32.DLL",
+                                      "C:\\Windows\\SysWOW64\\KERNELBASE.dll",
+                                      "C:\\Windows\\SysWOW64\\RPCRT4.dll",
+                                      "C:\\Windows\\SysWOW64\\apphelp.dll",
+                                      "C:\\Windows\\SysWOW64\\mswsock.dll",
+                                      "C:\\Windows\\SysWOW64\\ntdll.dll",
+                                      "C:\\Windows\\SysWOW64\\ws2_32.DLL",
+                                      "C:\\Windows\\apppatch\\MergeSdbFilesSource\\sysMerge.sdb"
+                                  ],
+                 "sigma_analysis_results":  [
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "DestinationIp":  "45.9.148.22",
+                                                                                             "DestinationPort":  "4444",
+                                                                                             "Initiated":  "true"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "high",
+                                                    "rule_id":  "c819b1c2210c6c76f29e7d15825b104bbd98de4d9561a6c86a8b158afd0d2be9",
+                                                    "rule_source":  "Sigma Integrated Rule Set (GitHub)",
+                                                    "rule_title":  "Potentially Suspicious Malware Callback Communication",
+                                                    "rule_description":  "Detects programs that connect to known malware callback ports based on statistical analysis from two different sandbox system databases\n",
+                                                    "rule_author":  "Florian Roth (Nextron Systems)"
+                                                },
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "SourceIsIpv6":  "false",
+                                                                                             "DestinationPort":  "4444",
+                                                                                             "DestinationIp":  "45.9.148.22",
+                                                                                             "Protocol":  "tcp",
+                                                                                             "SourceIp":  "192.168.122.103",
+                                                                                             "DestinationIsIpv6":  "false",
+                                                                                             "EventID":  "3",
+                                                                                             "SourcePort":  "49759",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\shell.exe",
+                                                                                             "Initiated":  "true"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "SourceIsIpv6":  "false",
+                                                                                             "DestinationPort":  "4444",
+                                                                                             "DestinationIp":  "45.9.148.22",
+                                                                                             "Protocol":  "tcp",
+                                                                                             "SourceIp":  "192.168.122.103",
+                                                                                             "DestinationIsIpv6":  "false",
+                                                                                             "EventID":  "3",
+                                                                                             "SourcePort":  "49760",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\shell.exe",
+                                                                                             "Initiated":  "true"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "SourceIsIpv6":  "false",
+                                                                                             "DestinationPort":  "4444",
+                                                                                             "DestinationIp":  "45.9.148.22",
+                                                                                             "Protocol":  "tcp",
+                                                                                             "SourceIp":  "192.168.122.103",
+                                                                                             "DestinationIsIpv6":  "false",
+                                                                                             "EventID":  "3",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\shell.exe",
+                                                                                             "SourcePort":  "49762",
+                                                                                             "Initiated":  "true"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "SourceIsIpv6":  "false",
+                                                                                             "DestinationPort":  "4444",
+                                                                                             "DestinationIp":  "45.9.148.22",
+                                                                                             "Protocol":  "tcp",
+                                                                                             "SourceIp":  "192.168.122.103",
+                                                                                             "DestinationIsIpv6":  "false",
+                                                                                             "EventID":  "3",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\shell.exe",
+                                                                                             "SourcePort":  "49761",
+                                                                                             "Initiated":  "true"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "SourceIsIpv6":  "false",
+                                                                                             "DestinationPort":  "4444",
+                                                                                             "Initiated":  "true",
+                                                                                             "Protocol":  "tcp",
+                                                                                             "SourceIp":  "192.168.122.103",
+                                                                                             "DestinationIsIpv6":  "false",
+                                                                                             "EventID":  "3",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\shell.exe",
+                                                                                             "SourcePort":  "49763",
+                                                                                             "DestinationIp":  "45.9.148.22"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "SourceIsIpv6":  "false",
+                                                                                             "DestinationPort":  "4444",
+                                                                                             "DestinationIp":  "45.9.148.22",
+                                                                                             "Protocol":  "tcp",
+                                                                                             "SourceIp":  "192.168.122.103",
+                                                                                             "DestinationIsIpv6":  "false",
+                                                                                             "EventID":  "3",
+                                                                                             "SourcePort":  "49764",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\shell.exe",
+                                                                                             "Initiated":  "true"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "SourceIsIpv6":  "false",
+                                                                                             "DestinationPort":  "4444",
+                                                                                             "DestinationIp":  "45.9.148.22",
+                                                                                             "Protocol":  "tcp",
+                                                                                             "SourceIp":  "192.168.122.103",
+                                                                                             "DestinationIsIpv6":  "false",
+                                                                                             "EventID":  "3",
+                                                                                             "SourcePort":  "49765",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\shell.exe",
+                                                                                             "Initiated":  "true"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "SourceIsIpv6":  "false",
+                                                                                             "DestinationPort":  "4444",
+                                                                                             "Initiated":  "true",
+                                                                                             "Protocol":  "tcp",
+                                                                                             "SourceIp":  "192.168.122.103",
+                                                                                             "DestinationIsIpv6":  "false",
+                                                                                             "EventID":  "3",
+                                                                                             "SourcePort":  "49766",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\shell.exe",
+                                                                                             "DestinationIp":  "45.9.148.22"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "SourceIsIpv6":  "false",
+                                                                                             "DestinationPort":  "4444",
+                                                                                             "DestinationIp":  "45.9.148.22",
+                                                                                             "Protocol":  "tcp",
+                                                                                             "SourceIp":  "192.168.122.103",
+                                                                                             "DestinationIsIpv6":  "false",
+                                                                                             "EventID":  "3",
+                                                                                             "SourcePort":  "49768",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\shell.exe",
+                                                                                             "Initiated":  "true"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "SourceIsIpv6":  "false",
+                                                                                             "DestinationPort":  "4444",
+                                                                                             "DestinationIp":  "45.9.148.22",
+                                                                                             "Protocol":  "tcp",
+                                                                                             "SourceIp":  "192.168.122.103",
+                                                                                             "DestinationIsIpv6":  "false",
+                                                                                             "EventID":  "3",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\shell.exe",
+                                                                                             "SourcePort":  "49767",
+                                                                                             "Initiated":  "true"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "high",
+                                                    "rule_id":  "c819b1c2210c6c76f29e7d15825b104bbd98de4d9561a6c86a8b158afd0d2be9",
+                                                    "rule_source":  "Sigma Integrated Rule Set (GitHub)",
+                                                    "rule_title":  "Potentially Suspicious Malware Callback Communication",
+                                                    "rule_description":  "Detects programs that connect to known malware callback ports based on statistical analysis from two different sandbox system databases\n",
+                                                    "rule_author":  "Florian Roth (Nextron Systems)"
+                                                }
+                                            ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "45.9.148.22",
+                                        "destination_port":  4444,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "162.159.36.2",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    }
+                                ],
+                 "mbc":  [
+                             {
+                                 "id":  "C0007",
+                                 "objective":  "Memory",
+                                 "behavior":  "Allocate Memory",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "3"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0007",
+                                 "objective":  "Memory",
+                                 "behavior":  "Allocate Memory",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "4"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "OC0006"
+                             },
+                             {
+                                 "id":  "C0002"
+                             },
+                             {
+                                 "id":  "OB0001"
+                             },
+                             {
+                                 "id":  "OB0002"
+                             },
+                             {
+                                 "id":  "OB0006"
+                             },
+                             {
+                                 "id":  "F0001"
+                             }
+                         ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2852",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        },
+                                        {
+                                            "process_id":  "2808",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        },
+                                        {
+                                            "process_id":  "2208",
+                                            "name":  "%windir%\\System32\\svchost.exe -k WerSvcGroup"
+                                        },
+                                        {
+                                            "process_id":  "2572",
+                                            "name":  "%TEMP%\\VB7GMQAGA6H957IF.exe"
+                                        },
+                                        {
+                                            "process_id":  "5536",
+                                            "name":  "\"C:\\Users\\\u003cUSER\u003e\\Desktop\\shell.exe\""
+                                        },
+                                        {
+                                            "process_id":  "2932",
+                                            "name":  "\"C:\\Users\\user\\Desktop\\shell.exe\"",
+                                            "files_opened":  [
+                                                                 "C:\\Users\\user\\Desktop\\shell.exe",
+                                                                 "C:\\Windows\\AppPatch\\sysmain.sdb",
+                                                                 "C:\\Windows\\SysWOW64\\KERNEL32.DLL",
+                                                                 "C:\\Windows\\SysWOW64\\KERNELBASE.dll",
+                                                                 "C:\\Windows\\SysWOW64\\RPCRT4.dll",
+                                                                 "C:\\Windows\\SysWOW64\\apphelp.dll",
+                                                                 "C:\\Windows\\SysWOW64\\mswsock.dll",
+                                                                 "C:\\Windows\\SysWOW64\\ntdll.dll",
+                                                                 "C:\\Windows\\SysWOW64\\ws2_32.DLL",
+                                                                 "C:\\Windows\\apppatch\\MergeSdbFilesSource\\sysMerge.sdb"
+                                                             ]
+                                        }
+                                    ],
+                 "tags":  [
+                              "OBFUSCATED"
+                          ],
+                 "memory_pattern_urls":  [
+                                             "tcp://45.9.148.22:4444"
+                                         ],
+                 "verdict_labels":  [
+                                        "MetasploitShellcode",
+                                        "Rozena",
+                                        "Metasploit"
+                                    ],
+                 "verdict_confidence":  72,
+                 "command_executions":  [
+                                            " ",
+                                            "wmiadap.exe /F /T"
+                                        ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "access PEB ldr_data",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "5"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "Yara detections observed in process dumps, payloads or dropped files",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "procmem_yara"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "Binary file triggered YARA rule",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "binary_yara"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "The binary contains an unknown PE section name indicative of packing",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "packer_unknown_pe_section_name"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027.002",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "The binary contains an unknown PE section name indicative of packing",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "packer_unknown_pe_section_name"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1571",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Detected TCP or UDP traffic on non-standard ports",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "522"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "C2 URLs / IPs found in malware configuration",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "7056"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "registry_keys_opened":  [
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\GRE_Initialize\\DisableMetaFiles",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\GRE_Initialize\\DisableUmpdBufferSizeCheck",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\GRE_Initialize",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Policies\\Microsoft\\MUI\\Settings",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\AppModel\\Lookaside\\machine",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\Winsock\\Parameters",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\AppModel\\Lookaside\\user",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+                                              "HKEY_LOCAL_MACHINE\\OSDATA\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Nls\\CustomLocale",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\Winsock\\Setup Migration\\Providers",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\SdbUpdates",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Services\\Winsock\\Setup Migration\\Providers\\Tcpip",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\MUI\\UILanguages\\en-US",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Segment Heap",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Disable8And16BitMitigation",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\SdbUpdates\\ManifestedMergeStubSdbs",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Wow64\\x86"
+                                          ],
+                 "text_decoded":  [
+                                      "{\"Type\": \"Metasploit Connect\", \"IP\": \"45.9.148.22\", \"Port\": 4444}"
+                                  ],
+                 "processes_terminated":  [
+                                              "C:\\Users\\user\\Desktop\\shell.exe"
+                                          ],
+                 "attack_techniques":  {
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "access PEB ldr_data",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "5"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1071":  [
+                                                         {
+                                                             "severity":  "MEDIUM",
+                                                             "description":  "Yara detections observed in process dumps, payloads or dropped files",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "procmem_yara"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "MEDIUM",
+                                                             "description":  "Binary file triggered YARA rule",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "binary_yara"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "C2 URLs / IPs found in malware configuration",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "7056"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "The binary contains an unknown PE section name indicative of packing",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "packer_unknown_pe_section_name"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027.002":  [
+                                                             {
+                                                                 "severity":  "LOW",
+                                                                 "description":  "The binary contains an unknown PE section name indicative of packing",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "packer_unknown_pe_section_name"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1571":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Detected TCP or UDP traffic on non-standard ports",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "522"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

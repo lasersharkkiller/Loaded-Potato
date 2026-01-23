@@ -1,0 +1,616 @@
+{
+    "data":  {
+                 "signature_matches":  [
+                                           {
+                                               "id":  "0",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get password database entry on Linux",
+                                               "description":  "host-interaction/session",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "jonathanlepore@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: getpwuid"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get password database entry on Linux\n    namespace: host-interaction/session\n    authors:\n      - michael.hunhoff@mandiant.com\n      - jonathanlepore@google.com\n    scopes:\n      static: instruction\n      dynamic: call\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: getpwuid\n        - api: getpwuid_r\n        - api: getpwnam\n        - api: getpwnam_r\n        - api: getpwent\n        - api: fgetpwent\n        - api: getpwent_r\n        - api: fgetpwent_r\n"
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create thread",
+                                               "description":  "host-interaction/thread/create",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "joakim@intezer.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: pthread_create"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create thread\n    namespace: host-interaction/thread/create\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n      - joakim@intezer.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: span of calls\n    mbc:\n      - Process::Create Thread [C0038]\n    examples:\n      - 946A99F36A46D335DEC080D9A4371940:0x10001DA0\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x408020\n  features:\n    - or:\n      - and:\n        - os: windows\n        - or:\n          - api: kernel32.CreateThread\n          - api: _beginthread\n          - api: _beginthreadex\n          - api: PsCreateSystemThread\n          - api: SHCreateThread\n          - api: SHCreateThreadWithHandle\n          - api: kernel32.CreateRemoteThread\n          - api: kernel32.CreateRemoteThreadEx\n          - api: RtlCreateUserThread\n          - api: ntdll.NtCreateThread\n          - api: ntdll.NtCreateThreadEx\n          - api: ntdll.ZwCreateThread\n          - api: ntdll.ZwCreateThreadEx\n      - and:\n        - or:\n          - os: linux\n          - os: android\n        - api: pthread_create\n      - and:\n        - api: System.Threading.Thread::Start\n        - optional:\n          - api: System.Threading.Thread::ctor\n"
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "set thread name on Linux",
+                                               "description":  "host-interaction/thread",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: pthread_setname_np",
+                                                                  "api: prctl",
+                                                                  "PR_SET_NAME"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: set thread name on Linux\n    namespace: host-interaction/thread\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: span of calls\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: pthread_setname_np\n        - and:\n          - api: prctl\n          - number: 0xF = PR_SET_NAME\n"
+                                           },
+                                           {
+                                               "id":  "4",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse credit card information",
+                                               "description":  "collection/credit-card",
+                                               "authors":  [
+                                                               "@_re_fox"
+                                                           ],
+                                               "match_data":  [
+                                                                  "\u0027B\u0027 (Format code)",
+                                                                  "mnemonic: cmp",
+                                                                  "\u0027%\u0027 (Track 1 start sentinel)"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse credit card information\n    namespace: collection/credit-card\n    authors:\n      - \"@_re_fox\"\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    mbc:\n      - Data::Check String [C0019]\n    examples:\n      - 1d8fd13c890060464019c0f07b928b1a:0x402860\n  features:\n    - and:\n      - 3 or more:\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x5E = \u0027^\u0027 (Track 1 separator)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x3D = \u0027=\u0027 (Track 2 separator)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x25 = \u0027%\u0027 (Track 1 start sentinel)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x42 = \u0027B\u0027 (Format code)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x44 = \u0027D\u0027 (Format code)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x3F = \u0027?\u0027 (Track 1 \u0026 2 end sentinel)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x3B = \u0027;\u0027 (Track 2 start sentinel)\n      - not:\n        - description: if a function also compares these non-hex characters it\u0027s most likely NOT parsing CC data\n        - and:\n          - instruction:\n            - mnemonic: cmp\n            - number: 0x6D = \u0027m\u0027\n          - instruction:\n            - mnemonic: cmp\n            - number: 0x6E = \u0027n\u0027\n          - instruction:\n            - mnemonic: cmp\n            - number: 0x6F = \u0027o\u0027\n          - instruction:\n            - mnemonic: cmp\n            - number: 0x70 = \u0027p\u0027\n"
+                                           },
+                                           {
+                                               "id":  "5",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get current user on Linux",
+                                               "description":  "host-interaction/session",
+                                               "authors":  [
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: getpwuid"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get current user on Linux\n    namespace: host-interaction/session\n    authors:\n      - joakim@intezer.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    att\u0026ck:\n      - Discovery::System Owner/User Discovery [T1033]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x405438\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: geteuid\n        - api: getpwuid\n        - api: getlogin\n        - api: getlogin_r\n        - api: cuserid\n"
+                                           },
+                                           {
+                                               "id":  "6",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "execute syscall",
+                                               "description":  "anti-analysis : may be used to evade hooks or hinder analysis",
+                                               "authors":  [
+                                                               "@kulinacs",
+                                                               "@mr-tz",
+                                                               "mehunhoff@google.com",
+                                                               "still@teamt5.org"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: syscall"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: execute syscall\n    namespace: anti-analysis\n    authors:\n      - \"@kulinacs\"\n      - \"@mr-tz\"\n      - mehunhoff@google.com\n      - still@teamt5.org\n    description: may be used to evade hooks or hinder analysis\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires mnemonic features\n    references:\n      - https://github.com/j00ru/windows-syscalls\n      - https://codemachine.com/articles/system_call_instructions.html\n      - https://www.felixcloutier.com/x86/sysenter\n  features:\n    - or:\n      - and:\n        - or:\n          - os: linux\n          - os: android\n        - api: syscall # https://man7.org/linux/man-pages/man2/syscall.2.html\n      - and:\n        - or:\n          - mnemonic: sysenter\n          - mnemonic: syscall\n          - instruction:\n            - mnemonic: int\n            - operand[0].number: 0x2e\n        - or:\n          - mnemonic: ret\n          - mnemonic: retn\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/j00ru/windows-syscalls"
+                                                            },
+                                                            {
+                                                                "ref":  "https://codemachine.com/articles/system_call_instructions.html"
+                                                            },
+                                                            {
+                                                                "ref":  "https://www.felixcloutier.com/x86/sysenter"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "7",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "read file on Linux",
+                                               "description":  "host-interaction/file-system/read",
+                                               "authors":  [
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: open",
+                                                                  "api: fopen",
+                                                                  "api: fgets"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: read file on Linux\n    namespace: host-interaction/file-system/read\n    authors:\n      - joakim@intezer.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - File System::Read File [C0051]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x4059AD\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - optional:\n        - match: create or open file\n      - or:\n        - api: fgetc\n        - api: fgets\n        - api: getc\n        - api: getchar\n        - api: read\n        - api: getline\n        - api: getdelim\n        - api: fgetwc\n        - api: getwc\n        - api: fscanf\n        - api: vfscanf\n        - api: fread\n"
+                                           },
+                                           {
+                                               "id":  "8",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get socket status",
+                                               "description":  "communication/socket",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: select"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get socket status\n    namespace: communication/socket\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::System Network Configuration Discovery [T1016]\n    mbc:\n      - Communication::Socket Communication::Get Socket Status [C0001.012]\n    examples:\n      - 6A352C3E55E8AE5ED39DC1BE7FB964B1:0x1000C1F0\n  features:\n    - or:\n      - api: ws2_32.select\n      - api: ws2_32.#18 = select\n"
+                                           },
+                                           {
+                                               "id":  "11",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "query environment variable",
+                                               "description":  "host-interaction/environment-variable",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "@_re_fox"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: getenv"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: query environment variable\n    namespace: host-interaction/environment-variable\n    authors:\n      - michael.hunhoff@mandiant.com\n      - \"@_re_fox\"\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    mbc:\n      - Discovery::System Information Discovery [E1082]\n    examples:\n      - Practical Malware Analysis Lab 14-02.exe_:0x401880\n      - 0761142efbda6c4b1e801223de723578:0x65483490\n  features:\n    - or:\n      - api: kernel32.GetEnvironmentVariable\n      - api: kernel32.GetEnvironmentStrings\n      - api: kernel32.ExpandEnvironmentStrings\n      - api: msvcr90.getenv\n      - api: msvcrt.getenv\n      - api: System.Environment::GetEnvironmentVariable\n      - api: System.Environment::GetEnvironmentVariables\n      - api: System.Environment::ExpandEnvironmentVariables\n"
+                                           },
+                                           {
+                                               "id":  "12",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "link function at runtime on Linux",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: dlsym"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: link function at runtime on Linux\n    namespace: linking/runtime-linking\n    authors:\n      - joakim@intezer.com\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: dlsym\n        - api: dlvsym\n"
+                                           },
+                                           {
+                                               "id":  "13",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "resolve DNS",
+                                               "description":  "communication/dns",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "johnk3r",
+                                                               "joakim@intezer.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: getaddrinfo",
+                                                                  "api: getnameinfo"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: resolve DNS\n    namespace: communication/dns\n    authors:\n      - william.ballenthin@mandiant.com\n      - johnk3r\n      - joakim@intezer.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - Communication::DNS Communication::Resolve [C0011.001]\n    examples:\n      - 17264e3126a97c319a6a0c61e6da951e:0x5FDC25D0\n  features:\n    - or:\n      - api: gethostbyname\n      - api: ws2_32.gethostbyname\n      - api: ws2_32.#52 = gethostbyname\n      - api: DnsQuery_A\n      - api: DnsQuery_W\n      - api: DnsQuery_UTF8\n      - api: DnsQueryEx\n      - api: GetAddrInfo\n      - api: ws2_32.#24 = GetAddrInfoW\n      - api: GetAddrInfoEx\n      - api: getaddrinfo\n      - api: ws2_32.#98 = getaddrinfo\n      - api: getnameinfo\n      - api: ws2_32.#99 = getnameinfo\n      - api: gethostent\n      - api: System.Net.Dns::GetHostAddresses\n"
+                                           },
+                                           {
+                                               "id":  "14",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "send data on socket",
+                                               "description":  "communication/socket/send",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "joakim@intezer.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: sendto"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: send data on socket\n    namespace: communication/socket/send\n    authors:\n      - moritz.raabe@mandiant.com\n      - joakim@intezer.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - Communication::Socket Communication::Send Data [C0001.007]\n    examples:\n      - Practical Malware Analysis Lab 01-01.dll_:0x10001010\n  features:\n    - or:\n      - api: send\n      - api: ws2_32.send\n      - api: ws2_32.#19 = send\n      - api: ws2_32.sendto\n      - api: ws2_32.#20 = sendto\n      - api: ws2_32.WSASend\n      - api: ws2_32.#76 = WSASend\n      - api: ws2_32.WSASendMsg\n      - api: ws2_32.WSASendTo\n      - api: ws2_32.#78 = WSASendTo\n      - api: System.Net.Sockets.Socket::Send\n      - api: System.Net.Sockets.Socket::SendAsync\n      - api: System.Net.Sockets.Socket::SendTo\n      - api: System.Net.Sockets.Socket::SendToAsync\n      - api: System.Net.Sockets.UdpClient::Send\n"
+                                           },
+                                           {
+                                               "id":  "15",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "set current directory",
+                                               "description":  "host-interaction/file-system",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: chdir"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: set current directory\n    namespace: host-interaction/file-system\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n  features:\n    - or:\n      - api: System.IO.Directory::SetCurrentDirectory\n      - api: kernel32.SetCurrentDirectory\n      - api: chdir\n      - api: fchdir\n"
+                                           },
+                                           {
+                                               "id":  "16",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write and execute a file",
+                                               "description":  "communication/c2/file-transfer",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: write",
+                                                                  "api: fork",
+                                                                  "host-interaction/process/create"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write and execute a file\n    namespace: communication/c2/file-transfer\n    maec/malware-category: launcher\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Execution::Install Additional Program [B0023]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x403A40\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n  features:\n    - and:\n      - match: host-interaction/file-system/write\n      - match: host-interaction/process/create\n"
+                                           },
+                                           {
+                                               "id":  "17",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "delete file on Linux",
+                                               "description":  "host-interaction/file-system/delete",
+                                               "authors":  [
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: unlink"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: delete file on Linux\n    namespace: host-interaction/file-system/delete\n    authors:\n      - mehunhoff@google.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - File System::Delete File [C0047]\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: unlink\n        - api: unlinkat\n"
+                                           },
+                                           {
+                                               "id":  "18",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create process on Linux",
+                                               "description":  "host-interaction/process/create",
+                                               "authors":  [
+                                                               "joakim@intezer.com",
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: execlp",
+                                                                  "api: fork"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create process on Linux\n    namespace: host-interaction/process/create\n    authors:\n      - joakim@intezer.com\n      - mehunhoff@google.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - Process::Create Process [C0017]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x40236D\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: execve\n        - and:\n          - match: execute syscall\n          - arch: aarch64\n          - number: 0xdd = execve\n        - api: execl\n        - api: execlp\n        - api: execle\n        - api: execv\n        - api: execvp\n        - api: execvpe\n        - api: posix_spawn\n        - api: posix_spawnp\n        - api: popen\n        - api: fork\n"
+                                           },
+                                           {
+                                               "id":  "19",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "check file permission on Linux",
+                                               "description":  "host-interaction/file-system",
+                                               "authors":  [
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: access"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: check file permission on Linux\n    namespace: host-interaction/file-system\n    authors:\n      - mehunhoff@google.com\n    scopes:\n      static: function\n      dynamic: call\n  features:\n    - and:\n      - or:\n        - os: android\n        - os: linux\n      - or:\n        - api: access\n        - api: faccessat\n"
+                                           },
+                                           {
+                                               "id":  "20",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "move file",
+                                               "description":  "host-interaction/file-system/move",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: rename"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: move file\n    namespace: host-interaction/file-system/move\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - File System::Move File [C0063]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x401350\n  features:\n    - or:\n      - api: kernel32.MoveFile\n      - api: kernel32.MoveFileEx\n      - api: MoveFileWithProgress\n      - api: MoveFileTransacted\n      - api: rename\n      - api: _wrename\n      - api: System.IO.FileInfo::MoveTo\n      - api: System.IO.File::Move\n      - basic block:\n        - and:\n          - number: 1 = FO_MOVE\n          - or:\n            - api: kernel32.SHFileOperation\n      - call:\n        - and:\n          - number: 1 = FO_MOVE\n          - api: kernel32.SHFileOperation\n"
+                                           },
+                                           {
+                                               "id":  "21",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write file on Linux",
+                                               "description":  "host-interaction/file-system/write",
+                                               "authors":  [
+                                                               "joakim@intezer.com",
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: write",
+                                                                  "api: fputs",
+                                                                  "api: fwrite"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write file on Linux\n    namespace: host-interaction/file-system/write\n    authors:\n      - joakim@intezer.com\n      - mehunhoff@google.com\n    scopes:\n      static: instruction\n      dynamic: call\n    mbc:\n      - File System::Writes File [C0052]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x401E14\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: fputc\n        - api: fputs\n        - api: putc\n        - api: write\n        - api: fputwc\n        - api: putwc\n        - api: fputws\n        - api: fwrite\n        - api: putwchar\n        - api: dprintf\n        - api: vdprintf\n        - api: fprintf\n        - api: vfprintf\n"
+                                           },
+                                           {
+                                               "id":  "23",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get file attributes",
+                                               "description":  "host-interaction/file-system/meta",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: stat",
+                                                                  "api: fstat"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get file attributes\n    namespace: host-interaction/file-system/meta\n    authors:\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - File System::Get File Attributes [C0049]\n    examples:\n      - 03B236B23B1EC37C663527C1F53AF3FE:0x180019824\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x4028B6\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x4029E0\n  features:\n    - or:\n      - api: kernel32.GetFileAttributes\n      - api: ZwQueryDirectoryFile\n      - api: ZwQueryInformationFile\n      - api: NtQueryDirectoryFile\n      - api: NtQueryInformationFile\n      - api: System.IO.File::GetAttributes\n      - api: System.IO.File::GetCreationTime\n      - api: System.IO.File::GetCreationTimeUtc\n      - api: System.IO.File::GetLastAccessTime\n      - api: System.IO.File::GetLastAccessTimeUtc\n      - api: System.IO.File::GetLastWriteTime\n      - api: System.IO.File::GetLastWriteTimeUtc\n      - property/read: System.IO.FileSystemInfo::Attributes\n      - api: stat\n      - api: fstat\n      - api: lstat\n      - api: fstatat\n"
+                                           },
+                                           {
+                                               "id":  "24",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get current PID on Linux",
+                                               "description":  "host-interaction/process",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: getpid",
+                                                                  "api: getppid"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get current PID on Linux\n    namespace: host-interaction/process\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: call\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: getpid\n        - api: getppid\n"
+                                           },
+                                           {
+                                               "id":  "25",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "change file permission on Linux",
+                                               "description":  "host-interaction/file-system",
+                                               "authors":  [
+                                                               "joakim@intezer.com",
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: chown",
+                                                                  "api: fchown"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: change file permission on Linux\n    namespace: host-interaction/file-system\n    authors:\n      - joakim@intezer.com\n      - mehunhoff@google.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - File System::Set File Attributes [C0050]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x407C68\n  features:\n    - and:\n      - or:\n        - os: android\n        - os: linux\n      - or:\n        - api: chown\n        - api: fchown\n        - api: lchown\n        - api: fchownat\n        - api: chmod\n        - api: fchmod\n        - api: fchmodat\n"
+                                           },
+                                           {
+                                               "id":  "26",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create directory",
+                                               "description":  "host-interaction/file-system/create",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: mkdir"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create directory\n    namespace: host-interaction/file-system/create\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - File System::Create Directory [C0046]\n    examples:\n      - Practical Malware Analysis Lab 17-02.dll_:0x10008f62\n      - 692f7fd6d198e804d6af98eb9e390d61:0x6000003\n  features:\n    - or:\n      - api: kernel32.CreateDirectory\n      - api: kernel32.CreateDirectoryEx\n      - api: kernel32.CreateDirectoryTransacted\n      - api: NtCreateDirectoryObject\n      - api: ZwCreateDirectoryObject\n      - api: SHCreateDirectory\n      - api: SHCreateDirectoryEx\n      - api: mkdir\n      - api: _mkdir\n      - api: _wmkdir\n      - api: System.IO.Directory::CreateDirectory\n      - api: System.IO.DirectoryInfo::Create\n      - api: System.IO.DirectoryInfo::CreateSubdirectory\n"
+                                           }
+                                       ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1033",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get current user on Linux",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "5"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1016",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get socket status",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "8"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "query environment variable",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "11"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "link function at runtime on Linux",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "12"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "mbc":  [
+                             {
+                                 "id":  "C0038",
+                                 "objective":  "Process",
+                                 "behavior":  "Create Thread",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "2"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0019",
+                                 "objective":  "Data",
+                                 "behavior":  "Check String",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "4"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0051",
+                                 "objective":  "File System",
+                                 "behavior":  "Read File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "7"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0001.012",
+                                 "objective":  "Communication",
+                                 "behavior":  "Socket Communication",
+                                 "method":  "Get Socket Status",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "8"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1082",
+                                 "objective":  "Discovery",
+                                 "behavior":  "System Information Discovery",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "11"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0011.001",
+                                 "objective":  "Communication",
+                                 "behavior":  "DNS Communication",
+                                 "method":  "Resolve",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "13"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0001.007",
+                                 "objective":  "Communication",
+                                 "behavior":  "Socket Communication",
+                                 "method":  "Send Data",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "14"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0023",
+                                 "objective":  "Execution",
+                                 "behavior":  "Install Additional Program",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "16"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0047",
+                                 "objective":  "File System",
+                                 "behavior":  "Delete File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "17"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0017",
+                                 "objective":  "Process",
+                                 "behavior":  "Create Process",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "18"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0063",
+                                 "objective":  "File System",
+                                 "behavior":  "Move File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "20"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0052",
+                                 "objective":  "File System",
+                                 "behavior":  "Writes File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "21"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0049",
+                                 "objective":  "File System",
+                                 "behavior":  "Get File Attributes",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "23"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0050",
+                                 "objective":  "File System",
+                                 "behavior":  "Set File Attributes",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "25"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0046",
+                                 "objective":  "File System",
+                                 "behavior":  "Create Directory",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "26"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "attack_techniques":  {
+                                           "T1033":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get current user on Linux",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "5"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1016":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get socket status",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "8"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "query environment variable",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "11"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "link function at runtime on Linux",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "12"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

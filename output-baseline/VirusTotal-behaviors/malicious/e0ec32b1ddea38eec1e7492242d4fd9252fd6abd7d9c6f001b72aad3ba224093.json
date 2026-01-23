@@ -1,0 +1,123 @@
+{
+    "data":  {
+                 "signature_matches":  [
+                                           {
+                                               "id":  "1",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "packed with generic packer",
+                                               "description":  "anti-analysis/packer/generic",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: pushad",
+                                                                  "cross section flow",
+                                                                  "mnemonic: popad"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: packed with generic packer\n    namespace: anti-analysis/packer/generic\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information::Software Packing [T1027.002]\n    mbc:\n      - Anti-Static Analysis::Software Packing::Standard Compression [F0001.002]\n    examples:\n      - Practical Malware Analysis Lab 18-01.exe_:0x409dc0\n  features:\n    - and:\n      - or:\n        - mnemonic: pusha\n        - mnemonic: pushad  # vivisect\n      - or:\n        - mnemonic: popa\n        - mnemonic: popad  # vivisect\n      - characteristic: cross section flow\n      - not:\n        - match: contain pusha popa sequence\n"
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "resolve function by parsing PE exports",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "sara-rn"
+                                                           ],
+                                               "match_data":  [
+                                                                  "loop",
+                                                                  "mnemonic: movzx"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: resolve function by parsing PE exports\n    namespace: load-code/pe\n    authors:\n      - sara-rn\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, offset, mnemonic features\n    examples:\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x406BA1\n  features:\n    - and:\n      - os: windows\n      - or:\n        - characteristic: loop\n        - mnemonic: movzx\n      - and:\n        - offset: 0x3C = IMAGE_DOS_HEADER.PE.e_lfanew\n        - or:\n          - and:\n            - arch: i386\n            - offset: 0x78 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n          - and:\n            - arch: amd64\n            - offset: 0x88 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n        - 3 or more:\n          - offset: 0x14 = IMAGE_EXPORT_DIRECTORY.NumberOfFunctions\n          - offset: 0x24 = IMAGE_EXPORT_DIRECTORY.AddressOfNameOrdinals\n          - offset: 0x20 = IMAGE_EXPORT_DIRECTORY.AddressOfNames\n          - offset: 0x18 = IMAGE_EXPORT_DIRECTORY.NumberOfNames\n          - offset: 0x1C = IMAGE_EXPORT_DIRECTORY.AddressOfFunctions\n      - optional:\n        - or:\n          - api: LoadLibrary\n          - api: strcmp\n"
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "packed with UPX",
+                                               "description":  "anti-analysis/packer/upx",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "section: UPX1",
+                                                                  "section: UPX0"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: packed with UPX\n    namespace: anti-analysis/packer/upx\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information::Software Packing [T1027.002]\n    mbc:\n      - Anti-Static Analysis::Software Packing::UPX [F0001.008]\n    examples:\n      - CD2CBA9E6313E8DF2C1273593E649682\n      - Practical Malware Analysis Lab 01-02.exe_:0x0401000\n  features:\n    - or:\n      - and:\n        - format: pe\n        - or:\n          - section: UPX0\n          - section: UPX1\n      - and:\n        - format: elf\n        - or:\n          - string: \"UPX!\"\n"
+                                           }
+                                       ],
+                 "mbc":  [
+                             {
+                                 "id":  "F0001.002",
+                                 "objective":  "Anti-Static Analysis",
+                                 "behavior":  "Software Packing",
+                                 "method":  "Standard Compression",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "1"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "F0001.008",
+                                 "objective":  "Anti-Static Analysis",
+                                 "behavior":  "Software Packing",
+                                 "method":  "UPX",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "3"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1027.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "packed with generic packer",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "1"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "packed with UPX",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "3"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "attack_techniques":  {
+                                           "T1027.002":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "packed with generic packer",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "1"
+                                                                              }
+                                                                          ]
+                                                             },
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "packed with UPX",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "3"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ]
+                                       }
+             }
+}

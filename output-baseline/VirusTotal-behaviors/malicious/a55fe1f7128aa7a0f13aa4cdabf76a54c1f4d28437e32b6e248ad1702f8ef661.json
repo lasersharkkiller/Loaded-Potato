@@ -1,0 +1,189 @@
+{
+    "data":  {
+                 "mbc":  [
+                             {
+                                 "id":  "F0012",
+                                 "objective":  "Persistence",
+                                 "behavior":  "Registry Run Keys / Startup Folder",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "4"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1547.004",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "persist via Winlogon Helper DLL registry key",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "1"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "parse PE header",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "3"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1547.001",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "persist via Run registry key",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "4"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1547.001",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "reference startup folder",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "5"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "0",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "compiled from Visual Basic",
+                                               "description":  "compiler/vb",
+                                               "authors":  [
+                                                               "@williballenthin"
+                                                           ],
+                                               "match_data":  [
+                                                                  "regex: /VB5!.*/"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: compiled from Visual Basic\n    namespace: compiler/vb\n    authors:\n      - \"@williballenthin\"\n    scopes:\n      static: file\n      dynamic: file\n    examples:\n      - 9bca6b99e7981208af4c7925b96fb9cf\n  features:\n    - and:\n      - string: /VB5!.*/\n      - import: msvbvm60.ThunRTMain\n"
+                                           },
+                                           {
+                                               "id":  "1",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "persist via Winlogon Helper DLL registry key",
+                                               "description":  "persistence/registry/winlogon-helper",
+                                               "authors":  [
+                                                               "0x534a@mailbox.org",
+                                                               "j.j.vannielen@utwente.nl"
+                                                           ],
+                                               "match_data":  [
+                                                                  "regex: /Userinit/i",
+                                                                  "regex: /Shell/i",
+                                                                  "regex: /Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Winlogon/i"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: persist via Winlogon Helper DLL registry key\n    namespace: persistence/registry/winlogon-helper\n    authors:\n      - 0x534a@mailbox.org\n      - j.j.vannielen@utwente.nl\n    scopes:\n      static: function\n      dynamic: span of calls\n    att\u0026ck:\n      - Persistence::Boot or Logon Autostart Execution::Winlogon Helper DLL [T1547.004]\n    references:\n      - https://learn.microsoft.com/en-us/previous-versions/windows/desktop/policy/creating-a-policy-callback-function\n    examples:\n      - 9ff8e68343cc29c1036650fc153e69f7:0x47f818\n  features:\n    - and:\n      - or:\n        - match: set registry value\n        - number: 0x80000001 = HKEY_CURRENT_USER\n        - number: 0x80000002 = HKEY_LOCAL_MACHINE\n      - string: /Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Winlogon/i\n      - or:\n        - string: /Notify/i\n        - string: /Userinit/i\n        - string: /Shell/i\n        - string: /mpnotify/i\n        - and:\n          - string: /GPExtensions/i\n          - string: /DllName/i\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://learn.microsoft.com/en-us/previous-versions/windows/desktop/policy/creating-a-policy-callback-function"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse PE header",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: cmp"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse PE header\n    namespace: load-code/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic, operand[1].offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x403DD0\n  features:\n    - and:\n      - os: windows\n      - and:\n        - mnemonic: cmp\n        - or:\n          - number: 0x4550 = IMAGE_NT_SIGNATURE (PE)\n          - and:\n            - number: 0x50\n            - number: 0x45\n        - or:\n          - number: 0x5A4D = IMAGE_DOS_SIGNATURE (MZ)\n          - and:\n            - number: 0x4D\n            - number: 0x5A\n        - optional:\n          - and:\n            - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n            - or:\n              - and:\n                - arch: i386\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n              - and:\n                - arch: amd64\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x30 = IMAGE_NT_HEADERS64.OptionalHeader.ImageBase\n          - basic block:\n            - and:\n              - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n              - 3 or more:\n                - operand[1].offset: 0x4 = IMAGE_NT_HEADERS.FileHeader.Machine\n                - operand[1].offset: 0x6 = IMAGE_NT_HEADERS.FileHeader.NumberOfSections\n                - operand[1].offset: 0x14 = IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader\n                - operand[1].offset: 0x16 = IMAGE_NT_HEADERS.FileHeader.Characteristics\n                - operand[1].offset: 0x28 = IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint  # for 32 and 64 bit\n                - or:\n                  - and:\n                    - arch: i386\n                    - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                  - and:\n                    - arch: amd64\n                    - operand[1].offset: 0x30 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n"
+                                           },
+                                           {
+                                               "id":  "4",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "persist via Run registry key",
+                                               "description":  "persistence/registry/run",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "HKEY_LOCAL_MACHINE",
+                                                                  "HKEY_CURRENT_USER",
+                                                                  "regex: /Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run/i"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: persist via Run registry key\n    namespace: persistence/registry/run\n    authors:\n      - moritz.raabe@mandiant.com\n      - mehunhoff@google.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    att\u0026ck:\n      - Persistence::Boot or Logon Autostart Execution::Registry Run Keys / Startup Folder [T1547.001]\n    mbc:\n      - Persistence::Registry Run Keys / Startup Folder [F0012]\n    examples:\n      - Practical Malware Analysis Lab 06-03.exe_:0x401130\n      - b87e9dd18a5533a09d3e48a7a1efbcf6:0x1400070E0\n      - 9ff8e68343cc29c1036650fc153e69f7:0x470624\n  features:\n    - and:\n      - or:\n        - match: set registry value\n        - number: 0x80000001 = HKEY_CURRENT_USER\n        - number: 0x80000002 = HKEY_LOCAL_MACHINE\n      - or:\n        - string: /Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run/i\n        - string: /Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Explorer\\\\Shell Folders/i\n        - string: /Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\User Shell Folders/i\n        - string: /Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\RunServices/i\n        - string: /Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\Run/i\n        - string: /Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Windows\\\\Load/i\n        - string: /System\\\\(ControlSet\\d{3}|CurrentControlSet)\\\\Control\\\\Session Manager\\\\BootExecute/i\n"
+                                           },
+                                           {
+                                               "id":  "5",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "reference startup folder",
+                                               "description":  "persistence/startup-folder",
+                                               "authors":  [
+                                                               "matthew.williams@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "regex: /Start Menu\\\\Programs\\\\Startup/i"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: reference startup folder\n    namespace: persistence/startup-folder\n    authors:\n      - matthew.williams@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    att\u0026ck:\n      - Persistence::Boot or Logon Autostart Execution::Registry Run Keys / Startup Folder [T1547.001]\n  features:\n    - or:\n      - string: /Start Menu\\\\Programs\\\\Startup/i\n"
+                                           }
+                                       ],
+                 "attack_techniques":  {
+                                           "T1547.004":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "persist via Winlogon Helper DLL registry key",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "1"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "parse PE header",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "3"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1547.001":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "persist via Run registry key",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "4"
+                                                                              }
+                                                                          ]
+                                                             },
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "reference startup folder",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "5"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ]
+                                       }
+             }
+}

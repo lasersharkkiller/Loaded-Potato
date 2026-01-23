@@ -1,0 +1,1005 @@
+{
+    "data":  {
+                 "signature_matches":  [
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "calculate modulo 256 via x86 assembly",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: calculate modulo 256 via x86 assembly\n    authors:\n      - moritz.raabe@mandiant.com\n    lib: true\n    scopes:\n      static: instruction\n      dynamic: unsupported  # requires mnemonic features\n    mbc:\n      - Data::Modulo [C0058]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x4049A9\n  features:\n    #  and ecx, 800000FFh\n    #  and ecx, 0FFh\n    - and:\n      - mnemonic: and\n      - or:\n        - number: 0x800000FF\n        - number: 0xFF\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using XOR",
+                                               "description":  "data-manipulation/encoding/xor",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using XOR\n    namespace: data-manipulation/encoding/xor\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires characteristic, Not features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::XOR [C0026.002]\n    examples:\n      - 2D3EDC218A90F03089CC01715A9F047F:0x403D7E\n  features:\n    - and:\n      - characteristic: tight loop\n      - characteristic: nzxor\n      - not:\n        - description: filter for potential false positives\n        - or:\n          - or:\n            - description: unsigned bitwise negation operation (~i)\n            - number: 0xFFFFFFFF = bitwise negation for unsigned 32 bits\n            - number: 0xFFFFFFFFFFFFFFFF = bitwise negation for unsigned 64 bits\n          - or:\n            - description: signed bitwise negation operation (~i)\n            - number: 0x0FFFFFFF = bitwise negation for signed 32 bits\n            - number: 0x0FFFFFFFFFFFFFFF = bitwise negation for signed 64 bits\n          - or:\n            - description: Magic constants used in the implementation of strings functions.\n            # such as `strlen` and `strcat` in the Windows standard library:\n            # (((i - 0x81010101) ^ ~i) \u0026 0x81010100)\n            ## 32 bits\n            - number: 0x7EFEFEFF = optimized string constant for 32 bits\n            - number: 0x81010101 = -0x81010101 = 0x7EFEFEFF\n            - number: 0x81010100 = 0x81010100 = ~0x7EFEFEFF\n            ## 64 bits\n            - number: 0x7EFEFEFEFEFEFEFF = optimized string constant for 64 bits\n            - number: 0x8101010101010101 = -0x8101010101010101 = 0x7EFEFEFEFEFEFEFF\n            - number: 0x8101010101010100 = 0x8101010101010100 = ~0x7EFEFEFEFEFEFEFF\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain obfuscated stackstrings",
+                                               "description":  "anti-analysis/obfuscation/string/stackstring",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain obfuscated stackstrings\n    namespace: anti-analysis/obfuscation/string/stackstring\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information::Indicator Removal from Tools [T1027.005]\n    mbc:\n      - Anti-Static Analysis::Executable Code Obfuscation::Argument Obfuscation [B0032.020]\n      - Anti-Static Analysis::Executable Code Obfuscation::Stack Strings [B0032.017]\n    examples:\n      - Practical Malware Analysis Lab 16-03.exe_:0x4013D0\n  features:\n    - characteristic: stack string\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain loop",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain loop\n    authors:\n      - moritz.raabe@mandiant.com\n    lib: true\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic features\n    examples:\n      - 08AC667C65D36D6542917655571E61C8:0x406EAA\n  features:\n    - or:\n      - characteristic: loop\n      - characteristic: tight loop\n      - characteristic: recursive call\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using murmur3",
+                                               "description":  "data-manipulation/hashing/murmur",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using murmur3\n    namespace: data-manipulation/hashing/murmur\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic features\n    mbc:\n      - Data::Non-Cryptographic Hash::MurmurHash [C0030.001]\n    references:\n      - https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp\n    examples:\n      - c66172b12971a329f8d5ff01665f204b:0x404A18\n  features:\n    - or:\n      - and:\n        - number: 0x85ebca6b = 32-bit finalization mix constant 1\n        - number: 0xc2b2ae35 = 32-bit finalization mix constant 2\n      - and:\n        - number: 0xff51afd7ed558ccd = 64-bit finalization mix constant 1\n        - number: 0xc4ceb9fe1a85ec53 = 64-bit finalization mix constant 2\n      - and:\n        - number: 0xcc9e2d51 = c1 32-bit hash\n        - number: 0x1b873593 = c2 32-bit hash\n      - and:\n        - number: 0x239b961b = 32-bit c1 for 128-bit hash\n        - number: 0xab0e9789 = 32-bit c2 for 128-bit hash\n        - number: 0x38b34ae5 = 32-bit c3 for 128-bit hash\n        - number: 0xa1e38b93 = 32-bit c4 for 128-bit hash\n      - and:\n        - number: 0x87c37b91114253d5 = 64-bit c1 for 128-bit hash\n        - number: 0x4cf5ad432745937f = 64-bit c2 for 128-bit hash\n      - basic block:\n        - and:\n          - description: \u0027hash \u003e\u003e 16; hash \u003e\u003e 13; hash \u003e\u003e 16\u0027\n          - count(mnemonic(shr)): 3\n          - instruction:\n            - mnemonic: shr\n            - number: 16\n          - instruction:\n            - mnemonic: shr\n            - number: 13\n          - optional:\n            - count(characteristic(nzxor)): 3 or more\n      - and:\n        # Group this two blocks under an `and` as on their own they are not\n        # unique enough and would cause false positives\n        - instruction:\n          - description: k ROL r1\n          - mnemonic: rol\n          - number: 15 = r1\n        - instruction:\n          - description: hash ROL r2\n          - mnemonic: rol\n          - number: 13 = r2\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "decompress data using QuickLZ",
+                                               "description":  "data-manipulation/compression : detects the inner decompression loop from QuickLZ",
+                                               "authors":  [
+                                                               "david@edeca.net"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: decompress data using QuickLZ\n    namespace: data-manipulation/compression\n    authors:\n      - david@edeca.net\n    description: detects the inner decompression loop from QuickLZ\n    scopes:\n      static: function\n      dynamic: unsupported\n    mbc:\n      - Data::Decompress Data::QuickLZ [C0025.001]\n    references:\n      - http://www.quicklz.com/\n    examples:\n      - 64d9f7d96b99467f36e22fada623c3bb:0x10001510\n      - 234c8034e88b2d097d2da51a85253825:0x100015B0\n      - f54a09e966bb929e68f5c01fa3087a3a:0x10001590\n      - d115f4b2ec8579be33fe883219c00ae2:0x1800015E0\n      - 831083e1614090dbb5815dba36faa2f3:0x1800016E0\n      - 7e0b974f004e4e0523fe4d9b9d89e5ad:0x1800016B0\n      - 6a352c3e55e8ae5ed39dc1be7fb964b1:0x10010DE0\n  features:\n    - or:\n      - basic block:\n        - and:\n          - description: Mode 1 decompression\n          - mnemonic: xor\n          - mnemonic: shr\n          - mnemonic: and\n          - number: 0xC\n          - number: 0xFFF\n          - or:\n            - offset: 0x4000\n            - offset: 0x8000\n      - basic block:\n        - and:\n          - description: Mode 2 decompression\n          - mnemonic: shr\n          - mnemonic: and\n          - mnemonic: mov\n          - number: 0x5\n          - number: 0x1\n          - number: 0x7FF\n      - and:\n        - description: Mode 3 decompression\n        - basic block:\n          - and:\n            - mnemonic: shr\n            - mnemonic: and\n            - mnemonic: mov\n            - number: 0x2\n            - number: 0x3\n            - number: 0x3FFF\n        - basic block:\n          - and:\n            - mnemonic: shr\n            - mnemonic: and\n            - number: 0x3FF\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "http://www.quicklz.com/"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "check for software breakpoints",
+                                               "description":  "anti-analysis/anti-debugging/debugger-detection",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: check for software breakpoints\n    namespace: anti-analysis/anti-debugging/debugger-detection\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    mbc:\n      - Anti-Behavioral Analysis::Debugger Detection::Software Breakpoints [B0001.025]\n    references:\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/SoftwareBreakpoints.cpp\n      - https://anti-debug.checkpoint.com/techniques/assembly.html\n    examples:\n      - al-khaser_x86.exe_:0x431020\n  features:\n    - and:\n      - or:\n        - instruction:\n          - mnemonic: cmp\n          - number: 0xCC = INT3\n        - and:\n          - description: INT3 (long form)\n          - instruction:\n            - mnemonic: cmp\n            - number: 0xCD = INT3 (long form byte 1)\n          - instruction:\n            - mnemonic: cmp\n            - number: 0x03 = INT3 (long form byte 2)\n      - match: contain loop\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/SoftwareBreakpoints.cpp"
+                                                            },
+                                                            {
+                                                                "ref":  "https://anti-debug.checkpoint.com/techniques/assembly.html"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using AES via x86 extensions",
+                                               "description":  "data-manipulation/encryption/aes",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using AES via x86 extensions\n    namespace: data-manipulation/encryption/aes\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encryption-Standard Algorithm [E1027.m05]\n      - Cryptography::Encrypt Data::AES [C0027.001]\n  features:\n    - or:\n      - mnemonic: aesenc = Perform One Round of an AES Encryption Flow\n      - mnemonic: vaesenc\n      - mnemonic: aesenclast = Perform Last Round of an AES Encryption Flow\n      - mnemonic: vaesenclast\n      - mnemonic: aesimc = Perform the AES InvMixColumn Transformation\n      - mnemonic: vaesimc\n      - mnemonic: aeskeygenassist = AES Round Key Generation Assist\n      - mnemonic: vaeskeygenassist\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using fnv",
+                                               "description":  "data-manipulation/hashing/fnv : can be any Fowler-Noll-Vo (FNV) hash variant, including FNV-1, FNV-1a, FNV-0",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "@_re_fox",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using fnv\n    namespace: data-manipulation/hashing/fnv\n    authors:\n      - moritz.raabe@mandiant.com\n      - \"@_re_fox\"\n      - michael.hunhoff@mandiant.com\n    description: can be any Fowler-Noll-Vo (FNV) hash variant, including FNV-1, FNV-1a, FNV-0\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic features\n    mbc:\n      - Data::Non-Cryptographic Hash::FNV [C0030.005]\n    references:\n      - https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function\n      - http://isthe.com/chongo/tech/comp/fnv/\n      - https://create.stephan-brumme.com/fnv-hash/\n    examples:\n      - ad4229879180e267f431ac6666b6a0a2:0x14007B4D4\n      - 09BF850BE5DA44A1C3629A1F62813A83:0x10006010\n  features:\n    - and:\n      - optional:\n        - characteristic: loop\n        - number: 0xcbf29ce484222325 = FNV_offset_basis, unused by FNV-0\n        - number: 0x811c9dc5 = FNV_offset_basis, unused by FNV-0\n        - and:\n          - number: 0xcbf29ce4 = FNV_offset_basis 64 bits, 32-bit value\n          - number: 0x84222325 = FNV_offset_basis 64 bits, 32-bit value\n      - or:\n        - number: 0x100000001b3 = FNV prime\n        - number: 0x01000193 = FNV prime\n        - and:\n          - number: 0x100 = FNV prime 64 bits, split in DWORD\n          - number: 0x1b3 = FNV prime 64 bits, split in DWORD\n      - basic block:\n        # FNV-1 hash does multiply then XOR\n        # FNV-1a hash does XOR then multiply\n        - and:\n          - characteristic: nzxor\n          - or:\n            - mnemonic: imul\n            - mnemonic: mul\n            - api: _allmul\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function"
+                                                            },
+                                                            {
+                                                                "ref":  "http://isthe.com/chongo/tech/comp/fnv/"
+                                                            },
+                                                            {
+                                                                "ref":  "https://create.stephan-brumme.com/fnv-hash/"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse credit card information",
+                                               "description":  "collection/credit-card",
+                                               "authors":  [
+                                                               "@_re_fox"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse credit card information\n    namespace: collection/credit-card\n    authors:\n      - \"@_re_fox\"\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    mbc:\n      - Data::Check String [C0019]\n    examples:\n      - 1d8fd13c890060464019c0f07b928b1a:0x402860\n  features:\n    - and:\n      - 3 or more:\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x5E = \u0027^\u0027 (Track 1 separator)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x3D = \u0027=\u0027 (Track 2 separator)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x25 = \u0027%\u0027 (Track 1 start sentinel)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x42 = \u0027B\u0027 (Format code)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x44 = \u0027D\u0027 (Format code)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x3F = \u0027?\u0027 (Track 1 \u0026 2 end sentinel)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x3B = \u0027;\u0027 (Track 2 start sentinel)\n      - not:\n        - description: if a function also compares these non-hex characters it\u0027s most likely NOT parsing CC data\n        - and:\n          - instruction:\n            - mnemonic: cmp\n            - number: 0x6D = \u0027m\u0027\n          - instruction:\n            - mnemonic: cmp\n            - number: 0x6E = \u0027n\u0027\n          - instruction:\n            - mnemonic: cmp\n            - number: 0x6F = \u0027o\u0027\n          - instruction:\n            - mnemonic: cmp\n            - number: 0x70 = \u0027p\u0027\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using AES",
+                                               "description":  "data-manipulation/encryption/aes",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "Ivan Kwiatkowski (@JusticeRage)"
+                                                           ],
+                                               "rule_src":  "# generated using capa explorer for IDA Pro\nrule:\n  meta:\n    name: encrypt data using AES\n    namespace: data-manipulation/encryption/aes\n    authors:\n      - william.ballenthin@mandiant.com\n      - Ivan Kwiatkowski (@JusticeRage)\n    scopes:\n      static: function\n      dynamic: unsupported  # requires bytes features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encryption-Standard Algorithm [E1027.m05]\n      - Cryptography::Encrypt Data::AES [C0027.001]\n    references:\n      - https://github.com/JusticeRage/Manalyze/blob/8e77642c911d5d82b5f43b198667ab8c77a88763/bin/yara_rules/findcrypt.yara#L351\n      - https://github.com/creaktive/tsh/blob/53b822b9a07d8cc65f1f31c915cf834a2944e833/aes.c\n  features:\n    - or:\n      - bytes: 63 7c 77 7b f2 6b 6f c5 30 01 67 2b fe d7 ab 76 = AES_SBOX_ENC\n      - bytes: 63 00 00 00 00 00 00 00 7c 00 00 00 00 00 00 00 77 00 00 00 00 00 00 00 7b 00 00 00 00 00 00 00 f2 00 00 00 00 00 00 00 6b 00 00 00 00 00 00 00 6f 00 00 00 00 00 00 00 c5 00 00 00 00 00 00 00 30 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 67 00 00 00 00 00 00 00 2b 00 00 00 00 00 00 00 fe 00 00 00 00 00 00 00 d7 00 00 00 00 00 00 00 ab 00 00 00 00 00 00 00 76 = AES_SBOX_ENC\n      - bytes: 52 09 6a d5 30 36 a5 38 bf 40 a3 9e 81 f3 d7 fb = AES_SBOX_DEC\n      - bytes: 52 00 00 00 00 00 00 00 09 00 00 00 00 00 00 00 6a 00 00 00 00 00 00 00 d5 00 00 00 00 00 00 00 30 00 00 00 00 00 00 00 36 00 00 00 00 00 00 00 a5 00 00 00 00 00 00 00 38 00 00 00 00 00 00 00 bf 00 00 00 00 00 00 00 40 00 00 00 00 00 00 00 a3 00 00 00 00 00 00 00 9e 00 00 00 00 00 00 00 81 00 00 00 00 00 00 00 f3 00 00 00 00 00 00 00 d7 00 00 00 00 00 00 00 fb = AES_SBOX_DEC\n      - bytes: a5 63 63 c6 84 7c 7c f8 99 77 77 ee 8d 7b 7b f6 = AES_T0_ENC\n      - bytes: a5 63 63 c6 00 00 00 00 84 7c 7c f8 00 00 00 00 99 77 77 ee 00 00 00 00 8d 7b 7b f6 = AES_T0_ENC\n      - bytes: 63 63 c6 a5 7c 7c f8 84 77 77 ee 99 7b 7b f6 8d = AES_T1_ENC\n      - bytes: 63 63 c6 a5 00 00 00 00 7c 7c f8 84 00 00 00 00 77 77 ee 99 00 00 00 00 7b 7b f6 8d = AES_T1_ENC\n      - bytes: 63 c6 a5 63 7c f8 84 7c 77 ee 99 77 7b f6 8d 7b = AES_T2_ENC\n      - bytes: 63 c6 a5 63 00 00 00 00 7c f8 84 7c 00 00 00 00 77 ee 99 77 00 00 00 00 7b f6 8d 7b = AES_T2_ENC\n      - bytes: c6 a5 63 63 f8 84 7c 7c ee 99 77 77 f6 8d 7b 7b = AES_T3_ENC\n      - bytes: c6 a5 63 63 00 00 00 00 f8 84 7c 7c 00 00 00 00 ee 99 77 77 00 00 00 00 f6 8d 7b 7b = AES_T3_ENC\n      - bytes: 63 63 63 63 7c 7c 7c 7c 77 77 77 77 7b 7b 7b 7b = AES_T4_ENC\n      - bytes: 50 a7 f4 51 53 65 41 7e c3 a4 17 1a 96 5e 27 3a = AES_T0_DEC\n      - bytes: 50 a7 f4 51 00 00 00 00 53 65 41 7e 00 00 00 00 c3 a4 17 1a 00 00 00 00 96 5e 27 3a = AES_T0_DEC\n      - bytes: a7 f4 51 50 65 41 7e 53 a4 17 1a c3 5e 27 3a 96 = AES_T1_DEC\n      - bytes: a7 f4 51 50 00 00 00 00 65 41 7e 53 00 00 00 00 a4 17 1a c3 00 00 00 00 5e 27 3a 96 = AES_T1_DEC\n      - bytes: f4 51 50 a7 41 7e 53 65 17 1a c3 a4 27 3a 96 5e = AES_T2_DEC\n      - bytes: f4 51 50 a7 00 00 00 00 41 7e 53 65 00 00 00 00 17 1a c3 a4 00 00 00 00 27 3a 96 5e = AES_T2_DEC\n      - bytes: 51 50 a7 f4 7e 53 65 41 1a c3 a4 17 3a 96 5e 27 = AES_T3_DEC\n      - bytes: 51 50 a7 f4 00 00 00 00 7e 53 65 41 00 00 00 00 1a c3 a4 17 00 00 00 00 3a 96 5e 27 = AES_T3_DEC\n      - bytes: 52 52 52 52 09 09 09 09 6a 6a 6a 6a d5 d5 d5 d5 = AES_T4_DEC\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/JusticeRage/Manalyze/blob/8e77642c911d5d82b5f43b198667ab8c77a88763/bin/yara_rules/findcrypt.yara#L351"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/creaktive/tsh/blob/53b822b9a07d8cc65f1f31c915cf834a2944e833/aes.c"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using SHA256",
+                                               "description":  "data-manipulation/hashing/sha256",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com",
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using SHA256\n    namespace: data-manipulation/hashing/sha256\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: thread\n    mbc:\n      - Cryptography::Cryptographic Hash::SHA256 [C0029.003]\n    references:\n      - https://www.rfc-editor.org/rfc/rfc6234\n    examples:\n      - C0CFFCF211035A839E28D542DE300298:0x180011400\n      - 6CC148363200798A12091B97A17181A1:0x140120240\n      - 44d40faf3f1fe4ed969befab7afcd2f0:0x10033570\n  features:\n    - or:\n      - and:\n        - number: 0x6A09E667 = H(0)0\n        - number: 0xBB67AE85 = H(0)1\n        - number: 0x3C6EF372 = H(0)2\n        - number: 0xA54FF53A = H(0)3\n        - number: 0x510E527F = H(0)4\n        - number: 0x9B05688C = H(0)5\n        - number: 0x1F83D9AB = H(0)6\n        - number: 0x5BE0CD19 = H(0)7\n      - bytes: 67 E6 09 6A 85 AE 67 BB 72 F3 6E 3C 3A F5 4F A5 7F 52 0E 51 8C 68 05 9B AB D9 83 1F 19 CD E0 5B = H(0)\n      - and:\n        # there are 64 constants but we\u0027ll only include 8 here for simplicity\n        - number: 0x428a2f98\n        - number: 0x71374491\n        - number: 0xb5c0fbcf\n        - number: 0xe9b5dba5\n        - number: 0x3956c25b\n        - number: 0x59f111f1\n        - number: 0x923f82a4\n        - number: 0xab1c5ed5\n        - not:\n          - or:\n            - number: 0xd728ae22 = lower half of SHA512 constant, 0x428a2f98d728ae22\n            - number: 0x23ef65cd = lower half of SHA512 constant, 0x7137449123ef65cd\n      - and:\n        - format: dotnet\n        - or:\n          - api: System.Security.Cryptography.SHA256Managed::Initialize\n          - api: System.Security.Cryptography.SHA256CryptoServiceProvider::Initialize\n          - api: System.Security.Cryptography.SHA256::Create\n          - api: System.Security.Cryptography.SHA256Managed::ctor\n        - api: System.Security.Cryptography.HashAlgorithm::ComputeHash\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.rfc-editor.org/rfc/rfc6234"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using SHA224",
+                                               "description":  "data-manipulation/hashing/sha224",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using SHA224\n    namespace: data-manipulation/hashing/sha224\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: thread\n    mbc:\n      - Cryptography::Cryptographic Hash::SHA224 [C0029.004]\n    references:\n      - https://www.rfc-editor.org/rfc/rfc6234\n    examples:\n      - 6CC148363200798A12091B97A17181A1:0x14011FEB0\n  features:\n    - and:\n      - number: 0xc1059ed8 = H(0)0\n      - number: 0x367cd507 = H(0)1\n      - number: 0x3070dd17 = H(0)2\n      - number: 0xf70e5939 = H(0)3\n      - number: 0xffc00b31 = H(0)4\n      - number: 0x68581511 = H(0)5\n      - number: 0x64f98fa7 = H(0)6\n      - number: 0xbefa4fa4 = H(0)7\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.rfc-editor.org/rfc/rfc6234"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using RC4 PRGA",
+                                               "description":  "data-manipulation/encryption/rc4",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using RC4 PRGA\n    namespace: data-manipulation/encryption/rc4\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic, basicblock features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Cryptography::Encrypt Data::RC4 [C0027.009]\n      - Cryptography::Generate Pseudo-random Sequence::RC4 PRGA [C0021.004]\n    examples:\n      - 34404A3FB9804977C6AB86CB991FB130:0x403DB0\n      - 34404A3FB9804977C6AB86CB991FB130:0x403E50\n      - 9324D1A8AE37A36AE560C37448C9705A:0x4049F0\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x4064C6\n  features:\n    - and:\n      # TODO: maybe add characteristic for nzxor reg size\n      - count(characteristic(nzxor)): 1\n      - or:\n        - match: calculate modulo 256 via x86 assembly\n        # compiler may do this via zero-extended mov from 8-bit register\n        - count(mnemonic(movzx)): 4 or more\n      # should not call (many) functions\n      - count(characteristic(calls from)): (0, 4)\n      # should not be too simple or too complex (50 is picked by intuition)\n      - count(basic blocks): (4, 50)\n      - match: contain loop\n      - optional:\n        - or:\n          - number: 0xFF\n          - number: 0x100\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "authenticate HMAC",
+                                               "description":  "data-manipulation/hmac",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: authenticate HMAC\n    namespace: data-manipulation/hmac\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic features\n    mbc:\n      - Cryptography::Hashed Message Authentication Code [C0061]\n    references:\n      - https://tools.ietf.org/html/rfc2104\n      - https://tools.ietf.org/html/rfc4634\n      - https://github.com/ogay/hmac\n    examples:\n      - mimikatz.exe_:0x403408\n  features:\n    - and:\n      # block-sized inner padding, consisting of repeated bytes valued 0x36\n      - number: 0x36 = inner padding byte value\n      # block-sized outer padding, consisting of repeated bytes valued 0x5c\n      - number: 0x5C = outer padding byte value\n      - match: contain loop\n      - count(characteristic(nzxor)): 2 or more\n      - optional:\n        - description: block size\n        - number: 64 = MD5, SHA-1, SHA-224, or SHA-256\n        - number: 128 = SHA-384 or SHA-512\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://tools.ietf.org/html/rfc2104"
+                                                            },
+                                                            {
+                                                                "ref":  "https://tools.ietf.org/html/rfc4634"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/ogay/hmac"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using SHA1",
+                                               "description":  "data-manipulation/hashing/sha1",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using SHA1\n    namespace: data-manipulation/hashing/sha1\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: thread\n    mbc:\n      - Cryptography::Cryptographic Hash::SHA1 [C0029.002]\n    examples:\n      - D063B1804E8D2BB26BD2E097141C1BBC:0x4344D0\n      - 91B08896FBDA9EDB8B6F93A6BC811EC6:0x180004878\n  features:\n    - or:\n      - and:\n        - description: Magic initialization constants used in SHA1\n        - number: 0x67452301 = A, also used in MD5, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0xEFCDAB89 = B, also used in MD5, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0x98BADCFE = C, also used in MD5, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0x10325476 = D, also used in MD5, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0xC3D2E1F0 = likely SHA1 but also used in RIPEMD-160 and RIPEMD-320\n      - and:\n        - number: 0x5A827999 = K(t) (0 \u003c= t \u003c= 19), also used in RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0x6ED9EBA1 = K(t) (20 \u003c= t \u003c= 39), also used in RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0x8F1BBCDC = K(t) (40 \u003c= t \u003c= 59), also used in RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0xCA62C1D6 = K(t) (60 \u003c= t \u003c= 79), also used in RIPEMD-160 and RIPEMD-320\n      - basic block:\n        - and:\n          - number: 0x8004 = CALG_SHA1\n          - api: advapi32.CryptCreateHash\n      - call:\n        - and:\n          - number: 0x8004 = CALG_SHA1\n          - api: advapi32.CryptCreateHash\n      - and:\n        - api: System.Security.Cryptography.SHA1Managed::ctor\n        - optional:\n          - api: System.Security.Cryptography.HashAlgorithm::ComputeHash\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data with MD5",
+                                               "description":  "data-manipulation/hashing/md5",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data with MD5\n    namespace: data-manipulation/hashing/md5\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: thread\n    mbc:\n      - Cryptography::Cryptographic Hash::MD5 [C0029.001]\n    references:\n      - https://github.com/rwfpl/rewolf-x86-virtualizer/blob/master/src/test_app/main.cpp\n    examples:\n      - Practical Malware Analysis Lab 05-01.dll_:0x100108ED\n  features:\n    - or:\n      - and:\n        - description: magic initialization constants from MD4 and MD5\n        - number: 0x67452301 = A, also used in SHA1, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0xefcdab89 = B, also used in SHA1, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0x98badcfe = C, also used in SHA1, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0x10325476 = D, also used in SHA1, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - not:\n          - number: 0xc3d2e1f0 = likely SHA1 but also used in RIPEMD-160 and RIPEMD-320\n        - optional:\n          - description: specific compilation from https://github.com/rwfpl/rewolf-x86-virtualizer/blob/master/src/test_app/main.cpp\n          - and:\n            - offset: -0x28955B88\n            - offset: -0x173848AA\n      - basic block:\n        - and:\n          - number: 0x8003 = CALG_MD5\n          - api: advapi32.CryptCreateHash\n      - call:\n        - and:\n          - number: 0x8003 = CALG_MD5\n          - api: advapi32.CryptCreateHash\n      - and:\n        - format: dotnet\n        - or:\n          - api: System.Security.Cryptography.MD5::Create\n          - api: System.Security.Cryptography.MD5CryptoServiceProvider::ctor\n        - optional:\n          - api: System.Security.Cryptography.HashAlgorithm::ComputeHash\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/rwfpl/rewolf-x86-virtualizer/blob/master/src/test_app/main.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using Salsa20 or ChaCha",
+                                               "description":  "data-manipulation/encryption/salsa20",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using Salsa20 or ChaCha\n    namespace: data-manipulation/encryption/salsa20\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: thread\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    references:\n      - http://cr.yp.to/snuffle/ecrypt.c\n  features:\n    # The constant words spell \"expand 32-byte k\" in ASCII (i.e. the 4 words are \"expa\", \"nd 3\", \"2-by\", and \"te k\")\n    - or:\n      - description: part of key setup\n      - string: \"expand 32-byte k\"\n        description: sigma\n      - string: \"expand 16-byte k\"\n        description: tau\n      # if sigma and tau are in contiguous memory, may result in concatenated string\n      - string: \"expand 32-byte kexpand 16-byte k\"\n      - bytes: 65 78 70 61 6E 64 20 33 32 2D 62 79 74 65 20 6B = \"expand 32-byte k\"\n      - bytes: 65 78 70 61 6E 64 20 31 36 2D 62 79 74 65 20 6B = \"expand 16-byte k\"\n      - and:\n        - string: \"expa\"\n        - string: \"nd 3\"\n        - string: \"2-by\"\n        - string: \"te k\"\n      - and:\n        - number: 0x61707865 = \"apxe\"\n        - number: 0x3320646E = \"3 dn\"\n        - number: 0x79622D32 = \"yb-2\"\n        - number: 0x6B206574 = \"k et\"\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "http://cr.yp.to/snuffle/ecrypt.c"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "compiled with Go",
+                                               "description":  "compiler/go",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: compiled with Go\n    namespace: compiler/go\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    examples:\n      - 49a34cfbeed733c24392c9217ef46bb6\n  features:\n    - or:\n      - string: /^Go build ID:/\n      - substring: \"go.buildid\"\n      - string: /^Go buildinf:/\n      - string: /\\bgo1\\.\\d/\n      - substring: \"runtime.main\"\n      - substring: \"main.main\"\n      - substring: \"runtime.gcWork\"\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "reference Base64 string",
+                                               "description":  "data-manipulation/encoding/base64",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: reference Base64 string\n    namespace: data-manipulation/encoding/base64\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Data::Encode Data::Base64 [C0026.001]\n      - Data::Check String [C0019]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5\n      - 074072B261FC27B65C72671F13510C05\n      - 5DB2D2BE20D59AA0BE6709A6850F1775\n  features:\n    - string: /ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "linked against wolfSSL",
+                                               "description":  "linking/static/wolfssl",
+                                               "authors":  [
+                                                               "jakub.jozwiak@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: linked against wolfSSL\n    namespace: linking/static/wolfssl\n    authors:\n      - jakub.jozwiak@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    mbc:\n      - Cryptography::Crypto Library [C0059]\n    references:\n      - https://www.wolfssl.com/\n      - https://github.com/wolfSSL/wolfssl/blob/2841b5c93b87311dadcf2278151df7453e56db96/wolfssl/internal.h#L4646\n    examples:\n      - 5789181cba467fa940cdce809b88b9bf7e0e9d4e079e32a68d2b911a8cc47da9\n  features:\n    - or:\n      - string: \"SSLeay wolfSSL compatibility\"\n      - string: \"wolfSSL_Init\"\n      - string: \"Please supply a buffer for error string\"\n      - 3 or more:\n        - substring: \"CLNTSRVR\"\n        - substring: \"server finished\"\n        - substring: \"client finished\"\n        - substring: \"DOGNGRD\"\n        - substring: \"DOWNGRD\"\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.wolfssl.com/"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/wolfSSL/wolfssl/blob/2841b5c93b87311dadcf2278151df7453e56db96/wolfssl/internal.h#L4646"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "stealth_network",
+                                               "name":  "stealth_network",
+                                               "description":  "Network activity detected but not expressed in monitor API logs",
+                                               "match_data":  [
+                                                                  "{\"ip\": \"157.7.184.18\"}",
+                                                                  "{\"domain\": \"www.karin-store.com\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "reads_files",
+                                               "name":  "reads_files",
+                                               "description":  "Reads files from disk",
+                                               "match_data":  [
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libc.so.6\"}",
+                                                                  "{\"ReadFile\": \"/sys/kernel/mm/transparent_hugepage/hpage_pmd_size\"}",
+                                                                  "{\"ReadFile\": \"/etc/passwd\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "drops_files",
+                                               "name":  "drops_files",
+                                               "description":  "Drops files onto disk",
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "writes_files",
+                                               "name":  "writes_files",
+                                               "description":  "Writes to files on disk",
+                                               "match_data":  [
+                                                                  "{\"WriteFile\": \"/etc/passwd\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "network_cnc_http",
+                                               "name":  "network_cnc_http",
+                                               "description":  "HTTP traffic contains suspicious features which may be indicative of malware related traffic",
+                                               "match_data":  [
+                                                                  "{\"post_no_referer\": \"HTTP traffic contains a POST request with no referer header\"}",
+                                                                  "{\"suspicious_request\": \"http://www.karin-store.com/recaptcha.php\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "network_http",
+                                               "name":  "network_http",
+                                               "description":  "Performs some HTTP requests",
+                                               "match_data":  [
+                                                                  "{\"url\": \"http://www.karin-store.com/recaptcha.php\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           }
+                                       ],
+                 "mbc":  [
+                             {
+                                 "id":  "C0058",
+                                 "objective":  "Data",
+                                 "behavior":  "Modulo",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "calculate modulo 256 via x86 assembly"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m02",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encoding-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encode data using XOR"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0026.002",
+                                 "objective":  "Data",
+                                 "behavior":  "Encode Data",
+                                 "method":  "XOR",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encode data using XOR"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0032.020",
+                                 "objective":  "Anti-Static Analysis",
+                                 "behavior":  "Executable Code Obfuscation",
+                                 "method":  "Argument Obfuscation",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "contain obfuscated stackstrings"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0032.017",
+                                 "objective":  "Anti-Static Analysis",
+                                 "behavior":  "Executable Code Obfuscation",
+                                 "method":  "Stack Strings",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "contain obfuscated stackstrings"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0030.001",
+                                 "objective":  "Data",
+                                 "behavior":  "Non-Cryptographic Hash",
+                                 "method":  "MurmurHash",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "hash data using murmur3"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0025.001",
+                                 "objective":  "Data",
+                                 "behavior":  "Decompress Data",
+                                 "method":  "QuickLZ",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "decompress data using QuickLZ"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0001.025",
+                                 "objective":  "Anti-Behavioral Analysis",
+                                 "behavior":  "Debugger Detection",
+                                 "method":  "Software Breakpoints",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "check for software breakpoints"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m05",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encryption-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encrypt data using AES via x86 extensions"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0027.001",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encrypt Data",
+                                 "method":  "AES",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encrypt data using AES via x86 extensions"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0030.005",
+                                 "objective":  "Data",
+                                 "behavior":  "Non-Cryptographic Hash",
+                                 "method":  "FNV",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "hash data using fnv"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0019",
+                                 "objective":  "Data",
+                                 "behavior":  "Check String",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "parse credit card information"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m05",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encryption-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encrypt data using AES"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0027.001",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encrypt Data",
+                                 "method":  "AES",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encrypt data using AES"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0029.003",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Cryptographic Hash",
+                                 "method":  "SHA256",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "hash data using SHA256"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0029.004",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Cryptographic Hash",
+                                 "method":  "SHA224",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "hash data using SHA224"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0027.009",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encrypt Data",
+                                 "method":  "RC4",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encrypt data using RC4 PRGA"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0021.004",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Generate Pseudo-random Sequence",
+                                 "method":  "RC4 PRGA",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encrypt data using RC4 PRGA"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0061",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Hashed Message Authentication Code",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "authenticate HMAC"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0029.002",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Cryptographic Hash",
+                                 "method":  "SHA1",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "hash data using SHA1"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0029.001",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Cryptographic Hash",
+                                 "method":  "MD5",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "hash data with MD5"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0026.001",
+                                 "objective":  "Data",
+                                 "behavior":  "Encode Data",
+                                 "method":  "Base64",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "reference Base64 string"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0019",
+                                 "objective":  "Data",
+                                 "behavior":  "Check String",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "reference Base64 string"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0059",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Crypto Library",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "linked against wolfSSL"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "OC0006"
+                             },
+                             {
+                                 "id":  "C0005.001"
+                             },
+                             {
+                                 "id":  "C0002"
+                             },
+                             {
+                                 "id":  "OB0004"
+                             },
+                             {
+                                 "id":  "B0033"
+                             }
+                         ],
+                 "files_opened":  [
+                                      "/etc/passwd",
+                                      "/etc/hosts",
+                                      "/etc/resolv.conf",
+                                      "/run/systemd/resolve/stub-resolv.conf",
+                                      "/sys/kernel/mm/transparent_hugepage/hpage_pmd_size"
+                                  ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "www.karin-store.com",
+                                         "resolved_ips":  [
+                                                              "157.7.184.18"
+                                                          ]
+                                     }
+                                 ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "157.7.184.18",
+                                        "destination_port":  80,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "ids_alerts":  [
+                                    {
+                                        "rule_msg":  "ET MALWARE Golang/Kaos/YamaBot CnC Activity",
+                                        "rule_category":  "Malware Command and Control Activity Detected",
+                                        "rule_id":  "1:2037241",
+                                        "alert_severity":  "high",
+                                        "rule_source":  "Proofpoint Emerging Threats Open",
+                                        "alert_context":  {
+                                                              "dest_ip":  "157.7.184.18",
+                                                              "dest_port":  80,
+                                                              "hostname":  "www.karin-store.com",
+                                                              "url":  "http://www.karin-store.com/recaptcha.php"
+                                                          },
+                                        "rule_url":  "https://rules.emergingthreats.net/",
+                                        "rule_references":  [
+                                                                "https://blogs.jpcert.or.jp/ja/2022/06/yamabot.html",
+                                                                "https://www.virustotal.com/gui/search/612538328e0c4f3e445fb58ef811336a",
+                                                                "https://www.virustotal.com/gui/search/cf1a90e458966bcba8286d46d6ab052c"
+                                                            ],
+                                        "rule_raw":  "alert http $HOME_NET any -\u003e $EXTERNAL_NET any (msg:\"ET MALWARE Golang/Kaos/YamaBot CnC Activity\"; flow:established,to_server; http.user_agent; content:\"TW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzYwLjAuMzExMi4xMTMgU2FmYXJpLzUzNy4zNg==\"; reference:url,blogs.jpcert.or.jp/ja/2022/06/yamabot.html; reference:md5,612538328e0c4f3e445fb58ef811336a; reference:md5,cf1a90e458966bcba8286d46d6ab052c; classtype:command-and-control; sid:2037241; rev:3; metadata:affected_product Windows_XP_Vista_7_8_10_Server_32_64_Bit, attack_target Client_Endpoint, created_at 2021_03_18, deployment Perimeter, malware_family Lazarus, signature_severity Major, updated_at 2022_07_01;)"
+                                    },
+                                    {
+                                        "rule_msg":  "ET MALWARE Golang/Kaos/YamaBot CnC Activity M2 (POST)",
+                                        "rule_category":  "A Network Trojan was detected",
+                                        "rule_id":  "1:2037252",
+                                        "alert_severity":  "high",
+                                        "rule_source":  "Proofpoint Emerging Threats Open",
+                                        "alert_context":  {
+                                                              "dest_ip":  "157.7.184.18",
+                                                              "dest_port":  80,
+                                                              "hostname":  "www.karin-store.com",
+                                                              "url":  "http://www.karin-store.com/recaptcha.php"
+                                                          },
+                                        "rule_url":  "https://rules.emergingthreats.net/",
+                                        "rule_references":  [
+                                                                "https://www.virustotal.com/gui/search/cf1a90e458966bcba8286d46d6ab052c",
+                                                                "https://www.virustotal.com/gui/search/612538328e0c4f3e445fb58ef811336a",
+                                                                "https://www.virustotal.com/gui/search/76125115415a80c4ec4c9b1a440f6054",
+                                                                "https://blogs.jpcert.or.jp/ja/2022/06/yamabot.html"
+                                                            ],
+                                        "rule_raw":  "alert http $HOME_NET any -\u003e $EXTERNAL_NET any (msg:\"ET MALWARE Golang/Kaos/YamaBot CnC Activity M2 (POST)\"; flow:established,to_server; http.method; content:\"POST\"; http.uri; content:\".php\"; endswith; http.user_agent; content:\"TW96\"; startswith; fast_pattern; pcre:\"/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$/\"; http.header_names; content:!\"Referer\"; reference:md5,cf1a90e458966bcba8286d46d6ab052c; reference:md5,612538328e0c4f3e445fb58ef811336a; reference:md5,76125115415a80c4ec4c9b1a440f6054; reference:url,blogs.jpcert.or.jp/ja/2022/06/yamabot.html; classtype:trojan-activity; sid:2037252; rev:1; metadata:attack_target Client_Endpoint, created_at 2022_07_01, deployment Perimeter, malware_family Lazarus, signature_severity Major, updated_at 2022_07_01;)"
+                                    }
+                                ],
+                 "http_conversations":  [
+                                            {
+                                                "url":  "http://www.karin-store.com/recaptcha.php",
+                                                "request_method":  "POST",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "TW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzYwLjAuMzExMi4xMTMgU2FmYXJpLzUzNy4zNg=="
+                                                                    }
+                                            }
+                                        ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using XOR",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encode data using XOR"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027.005",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "contain obfuscated stackstrings",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "contain obfuscated stackstrings"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using AES via x86 extensions",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encrypt data using AES via x86 extensions"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using AES",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encrypt data using AES"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using RC4 PRGA",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encrypt data using RC4 PRGA"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using Salsa20 or ChaCha",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encrypt data using Salsa20 or ChaCha"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "reference Base64 string",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "reference Base64 string"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "signature_description":  "Adversaries may communicate using application layer protocols to avoid detection/network filtering by blending in with existing traffic."
+                                                 },
+                                                 {
+                                                     "id":  "T1518.001",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Uses the \"uname\" system call to query kernel version information (possible evasion)"
+                                                 },
+                                                 {
+                                                     "id":  "T1095",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Tries to download or post to a non-existing http route (HTTP/1.1 404 Not Found / 503 Service Unavailable)"
+                                                 },
+                                                 {
+                                                     "id":  "T1095",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Posts data to webserver"
+                                                 },
+                                                 {
+                                                     "id":  "T1095",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Performs DNS lookups"
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Tries to download or post to a non-existing http route (HTTP/1.1 404 Not Found / 503 Service Unavailable)"
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Posts data to webserver"
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Performs DNS lookups"
+                                                 },
+                                                 {
+                                                     "id":  "T1105",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Tries to download or post to a non-existing http route (HTTP/1.1 404 Not Found / 503 Service Unavailable)"
+                                                 },
+                                                 {
+                                                     "id":  "T1105",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Some HTTP requests failed (404). It is likely the sample will exhibit less behavior"
+                                                 }
+                                             ],
+                 "tags":  [
+                              "DETECT_DEBUG_ENVIRONMENT"
+                          ],
+                 "processes_created":  [
+                                           "sh -c /tmp/base",
+                                           "/tmp/base",
+                                           "(thread)"
+                                       ],
+                 "verdicts":  [
+                                  "CLEAN"
+                              ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "1818",
+                                            "name":  "sh -c /tmp/base",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "1819",
+                                                                 "name":  "/tmp/base",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "1821",
+                                                                                      "name":  "(thread)"
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "1823",
+                                                                                      "name":  "(thread)"
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "1820",
+                                                                                      "name":  "(thread)"
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "1822",
+                                                                                      "name":  "(thread)"
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2900",
+                                            "name":  "/tmp/e79fcbe69b28df4aef062685d1a631892c2354f96d833eae467be.sample"
+                                        }
+                                    ],
+                 "verdict_confidence":  1,
+                 "attack_techniques":  {
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using XOR",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encode data using XOR"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using AES via x86 extensions",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encrypt data using AES via x86 extensions"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using AES",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encrypt data using AES"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using RC4 PRGA",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encrypt data using RC4 PRGA"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using Salsa20 or ChaCha",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encrypt data using Salsa20 or ChaCha"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "reference Base64 string",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "reference Base64 string"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027.005":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "contain obfuscated stackstrings",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "contain obfuscated stackstrings"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1071":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Adversaries may communicate using application layer protocols to avoid detection/network filtering by blending in with existing traffic."
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Tries to download or post to a non-existing http route (HTTP/1.1 404 Not Found / 503 Service Unavailable)"
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Posts data to webserver"
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Performs DNS lookups"
+                                                         }
+                                                     ],
+                                           "T1518.001":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Uses the \"uname\" system call to query kernel version information (possible evasion)"
+                                                             }
+                                                         ],
+                                           "T1095":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Tries to download or post to a non-existing http route (HTTP/1.1 404 Not Found / 503 Service Unavailable)"
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Posts data to webserver"
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Performs DNS lookups"
+                                                         }
+                                                     ],
+                                           "T1105":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Tries to download or post to a non-existing http route (HTTP/1.1 404 Not Found / 503 Service Unavailable)"
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Some HTTP requests failed (404). It is likely the sample will exhibit less behavior"
+                                                         }
+                                                     ]
+                                       }
+             }
+}

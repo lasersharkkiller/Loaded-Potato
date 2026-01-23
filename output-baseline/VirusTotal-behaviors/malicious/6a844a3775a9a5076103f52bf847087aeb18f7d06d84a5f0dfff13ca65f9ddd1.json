@@ -1,0 +1,1349 @@
+{
+    "data":  {
+                 "verdicts":  [
+                                  "MALWARE",
+                                  "RANSOM",
+                                  "EVADER"
+                              ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "bg.microsoft.map.fastly.net",
+                                         "resolved_ips":  [
+                                                              "199.232.210.172",
+                                                              "199.232.214.172"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "nexusrules.officeapps.live.com",
+                                         "resolved_ips":  [
+                                                              "52.111.227.11"
+                                                          ]
+                                     }
+                                 ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "224.0.0.251",
+                                        "destination_port":  5353,
+                                        "transport_layer_protocol":  "UDP"
+                                    }
+                                ],
+                 "tags":  [
+                              "OBFUSCATED",
+                              "DETECT_DEBUG_ENVIRONMENT"
+                          ],
+                 "memory_pattern_domains":  [
+                                                "webpost.dtitsupport247.net",
+                                                "cdn.itsupport247.net",
+                                                "webpost.itsupport247.net",
+                                                "dpmawp.dtitsupport247.net",
+                                                "webpost.qa.itsupport247.net",
+                                                "update.dtitsupport247.net",
+                                                "usea1-areteadvisors.sentinelone.net",
+                                                "bianlianlbc5an4kgnay3opdemgcryg2kpfcbgczopmm3dnbz3uaunad.onion",
+                                                "update.qa.itsupport247.net",
+                                                "qtox.github.io",
+                                                "update.itsupport247.net",
+                                                "dpmawp.itsupport247.net",
+                                                "dpmawp.qa.itsupport247.net"
+                                            ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "1",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain an embedded PE file",
+                                               "description":  "executable/subfile/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain an embedded PE file\n    namespace: executable/subfile/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    mbc:\n      - Execution::Install Additional Program [B0023]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x4060\n  features:\n    - or:\n      - count(characteristic(embedded pe)): 1 or more\n      - count(string(This program cannot be run in DOS mode.)): 2 or more\n"
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "check HTTP status code",
+                                               "description":  "communication/http/client",
+                                               "authors":  [
+                                                               "@mr-tz"
+                                                           ],
+                                               "match_data":  [
+                                                                  "OK",
+                                                                  "HTTP_QUERY_STATUS_CODE",
+                                                                  "mnemonic: cmp"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: check HTTP status code\n    namespace: communication/http/client\n    authors:\n      - \"@mr-tz\"\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    mbc:\n      - Communication::HTTP Communication::Read Header [C0002.014]\n    examples:\n      - 54ac78733552a62d1d05ea4ba3fc604bb49fe000d7fc948da45335b726e64d75:0x10001a20\n      - Practical Malware Analysis Lab 03-02.dll_:0x10004452\n  features:\n    - and:\n      - os: windows\n      - or:\n        - number: 0x20000013 = HTTP_QUERY_FLAG_NUMBER | HTTP_QUERY_STATUS_CODE\n        - number: 0x13 = HTTP_QUERY_STATUS_CODE\n      - optional:\n        - api: atoi\n        - api: wininet.HttpQueryInfo\n      - instruction:\n        - and:\n          - or:\n            - mnemonic: cmp\n            - mnemonic: test\n          - or:\n            - number: 200 = OK\n            - number: 400 = Bad Request\n            - number: 401 = Unauthorized\n            - number: 403 = Forbidden\n            - number: 404 = Not Found\n"
+                                           },
+                                           {
+                                               "id":  "4",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "check for VM using instruction VPCEXT",
+                                               "description":  "anti-analysis/anti-vm/vm-detection : Detects virtualization using VPCEXT (visual property container extender) instruction. Execution of this instruction will cause an illegal instruction exception outside of a virtual environment otherwise return 0",
+                                               "authors":  [
+                                                               "richard.weiss@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: vpcext"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: check for VM using instruction VPCEXT\n    # Please be aware: Vivisect does not support \"VPCEXT\" currently, so this rule works in IDA only.\n    namespace: anti-analysis/anti-vm/vm-detection\n    authors:\n      - richard.weiss@mandiant.com\n    description: Detects virtualization using VPCEXT (visual property container extender) instruction. Execution of this instruction will cause an illegal instruction exception outside of a virtual environment otherwise return 0\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    att\u0026ck:\n      - Defense Evasion::Virtualization/Sandbox Evasion [T1497]\n    mbc:\n      - Anti-Behavioral Analysis::Virtual Machine Detection::Instruction Testing [B0009.029]\n    references:\n      - https://unprotect.it/technique/vpcext/\n      - https://research.nccgroup.com/2017/12/13/hidden-cobra-volgmer-a-technical-analysis/\n      - https://shasaurabh.blogspot.com/2017/07/virtual-machine-detection-techniques.html\n  features:\n    # vpcext imm8 imm8\n    # result in ebx\n    # if ebx == 0: Virtual PC detected, else: illegal instruction exception\n    - mnemonic: vpcext\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://unprotect.it/technique/vpcext/"
+                                                            },
+                                                            {
+                                                                "ref":  "https://research.nccgroup.com/2017/12/13/hidden-cobra-volgmer-a-technical-analysis/"
+                                                            },
+                                                            {
+                                                                "ref":  "https://shasaurabh.blogspot.com/2017/07/virtual-machine-detection-techniques.html"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "5",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "reference analysis tools strings",
+                                               "description":  "anti-analysis",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "regex: /netmon(\\.exe)?/i",
+                                                                  "regex: /procmon(\\.exe)?/i"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: reference analysis tools strings\n    namespace: anti-analysis\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    mbc:\n      - Discovery::Analysis Tool Discovery::Process detection [B0013.001]\n    references:\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiAnalysis/process.cpp\n    examples:\n      - al-khaser_x86.exe_\n  features:\n    - or:\n      - string: /ollydbg(\\.exe)?/i\n      - string: /ProcessHacker(\\.exe)?/i\n      - string: /tcpview(\\.exe)?/i\n      - string: /autoruns(\\.exe)?/i\n      - string: /autorunsc(\\.exe)?/i\n      - string: /filemon(\\.exe)?/i\n      - string: /procmon(\\.exe)?/i\n      - string: /regmon(\\.exe)?/i\n      - string: /procexp(\\.exe)?/i\n      - string: /(?\u003c!\\w)ida[gqtuw]?(\\.exe)?$/i\n      - string: /ida[gqtuw]?64(\\.exe)?$/i\n      - string: /ImmunityDebugger(\\.exe)?/i\n      - string: /Wireshark(\\.exe)?/i\n      - string: /dumpcap(\\.exe)?/i\n      - string: /HookExplorer(\\.exe)?/i\n      - string: /ImportREC(\\.exe)?/i\n      - string: /PETools(\\.exe)?/i\n      - string: /LordPE(\\.exe)?/i\n      - string: /SysInspector(\\.exe)?/i\n      - string: /proc_analyzer(\\.exe)?/i\n      - string: /sysAnalyzer(\\.exe)?/i\n      - string: /sniff_hit(\\.exe)?/i\n      - string: /windbg(\\.exe)?/i\n      - string: /joeboxcontrol(\\.exe)?/i\n      - string: /joeboxserver(\\.exe)?/i\n      - string: /ResourceHacker(\\.exe)?/i\n      - string: /x32dbg(\\.exe)?/i\n      - string: /x64dbg(\\.exe)?/i\n      - string: /Fiddler(\\.exe)?/i\n      - string: /httpdebugger(\\.exe)?/i\n      - string: /fakenet(\\.exe)?/i\n      - string: /netmon(\\.exe)?/i\n      - string: /WPE PRO(\\.exe)?/i\n      - string: /decompile(\\.exe)?/i\n      - string: /scylla/i\n      - string: /megadumper/i\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiAnalysis/process.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "6",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "reference anti-VM strings",
+                                               "description":  "anti-analysis/anti-vm/vm-detection",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "regex: /Hyper-V/i"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: reference anti-VM strings\n    namespace: anti-analysis/anti-vm/vm-detection\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    att\u0026ck:\n      - Defense Evasion::Virtualization/Sandbox Evasion::System Checks [T1497.001]\n    mbc:\n      - Anti-Behavioral Analysis::Virtual Machine Detection [B0009]\n    references:\n      - https://github.com/ctxis/CAPE/blob/master/modules/signatures/antivm_*\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiVM/Generic.cpp\n    examples:\n      - Practical Malware Analysis Lab 17-02.dll_\n  features:\n    - or:\n      - string: /HARDWARE\\\\ACPI\\\\(DSDT|FADT|RSDT)\\\\BOCHS/i\n      - string: /HARDWARE\\\\DESCRIPTION\\\\System\\\\(SystemBiosVersion|VideoBiosVersion)/i\n      - string: /HARDWARE\\\\DESCRIPTION\\\\System\\\\CentralProcessor/i\n      - string: /HARDWARE\\\\DEVICEMAP\\\\Scsi\\\\Scsi Port 0\\\\Scsi Bus 0\\\\Target Id 0\\\\Logical Unit Id 0/i\n      - string: /SYSTEM\\\\(ControlSet\\d{3}|CurrentControlSet)\\\\Enum\\\\IDE/i\n      - string: /SYSTEM\\\\(ControlSet\\d{3}|CurrentControlSet)\\\\Services\\\\Disk\\\\Enum\\\\/i\n      - string: /SYSTEM\\\\(ControlSet\\d{3}|CurrentControlSet)\\\\Control\\\\SystemInformation\\\\SystemManufacturer/i\n      - string: /A M I/i\n      - string: /Hyper-V/i\n      - string: /Kernel-VMDetection-Private/i\n      # https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiVM/Generic.cpp#L699\n      - string: /KVMKVMKVM/i\n        description: KVM\n      - string: /Microsoft Hv/i\n        description: Microsoft Hyper-V or Windows Virtual PC\n      # https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiVM/Generic.cpp#L8\n      - string: /avghookx\\.dll/i\n        description: AVG\n      - string: /avghooka\\.dll/i\n        description: AVG\n      - string: /snxhk\\.dll/i\n        description: Avast\n      - string: /pstorec\\.dll/i\n        description: SunBelt Sandbox\n      - string: /vmcheck\\.dll/i\n        description: Virtual PC\n      - string: /wpespy\\.dll/i\n        description: WPE Pro\n      - string: /cmdvrt64\\.dll/i\n        description: Comodo Container\n      - string: /cmdvrt32\\.dll/i\n        description: Comodo Container\n      # https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiVM/Generic.cpp#L46\n      - string: /sample\\.exe/i\n      - string: /bot\\.exe/i\n      - string: /sandbox\\.exe/i\n      - string: /malware\\.exe/i\n      - string: /test\\.exe/i\n      - string: /klavme\\.exe/i\n      - string: /myapp\\.exe/i\n      - string: /testapp\\.exe/i\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/ctxis/CAPE/blob/master/modules/signatures/antivm_*"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiVM/Generic.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "7",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "compiled with Go",
+                                               "description":  "compiler/go",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "substring: runtime.gcWork",
+                                                                  "substring: main.main"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: compiled with Go\n    namespace: compiler/go\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    examples:\n      - 49a34cfbeed733c24392c9217ef46bb6\n  features:\n    - or:\n      - string: /^Go build ID:/\n      - substring: \"go.buildid\"\n      - string: /^Go buildinf:/\n      - string: /\\bgo1\\.\\d/\n      - substring: \"runtime.main\"\n      - substring: \"main.main\"\n      - substring: \"runtime.gcWork\"\n"
+                                           },
+                                           {
+                                               "id":  "8",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "reference anti-VM strings targeting VirtualBox",
+                                               "description":  "anti-analysis/anti-vm/vm-detection",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "regex: /82801FB/i"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: reference anti-VM strings targeting VirtualBox\n    namespace: anti-analysis/anti-vm/vm-detection\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    att\u0026ck:\n      - Defense Evasion::Virtualization/Sandbox Evasion::System Checks [T1497.001]\n    mbc:\n      - Anti-Behavioral Analysis::Virtual Machine Detection [B0009]\n    references:\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiVM/VirtualBox.cpp\n    examples:\n      - al-khaser_x86.exe_\n  features:\n    - or:\n      - string: /VBOX/i\n      - string: /VEN_VBOX/i\n      - string: /VirtualBox/i\n      - string: /06/23/99/i\n      - string: /HARDWARE\\\\ACPI\\\\DSDT\\\\VBOX__/i\n      - string: /HARDWARE\\\\ACPI\\\\FADT\\\\VBOX__/i\n      - string: /HARDWARE\\\\ACPI\\\\RSDT\\\\VBOX__/i\n      - string: /SOFTWARE\\\\Oracle\\\\VirtualBox Guest Additions/i\n      - string: /SYSTEM\\\\(ControlSet\\d{3}|CurrentControlSet)\\\\Services\\\\VBoxGuest/i\n      - string: /SYSTEM\\\\(ControlSet\\d{3}|CurrentControlSet)\\\\Services\\\\VBoxMouse/i\n      - string: /SYSTEM\\\\(ControlSet\\d{3}|CurrentControlSet)\\\\Services\\\\VBoxService/i\n      - string: /SYSTEM\\\\(ControlSet\\d{3}|CurrentControlSet)\\\\Services\\\\VBoxSF/i\n      - string: /SYSTEM\\\\(ControlSet\\d{3}|CurrentControlSet)\\\\Services\\\\VBoxVideo/i\n      - string: /VBoxMouse\\.sys/i\n      - string: /VBoxGuest\\.sys/i\n      - string: /VBoxSF\\.sys/i\n      - string: /VBoxVideo\\.sys/i\n      - string: /vboxdisp\\.dll/i\n      - string: /vboxhook\\.dll/i\n      - string: /vboxmrxnp\\.dll/i\n      - string: /vboxogl\\.dll/i\n      - string: /vboxoglarrayspu\\.dll/i\n      - string: /vboxoglcrutil\\.dll/i\n      - string: /vboxoglerrorspu\\.dll/i\n      - string: /vboxoglfeedbackspu\\.dll/i\n      - string: /vboxoglpackspu\\.dll/i\n      - string: /vboxoglpassthroughspu\\.dll/i\n      - string: /vboxservice\\.exe/i\n      - string: /vboxtray\\.exe/i\n      - string: /VBoxControl\\.exe/i\n      - string: /oracle\\\\virtualbox guest additions\\\\/i\n      - string: /\\\\\\\\\\.\\\\VBoxMiniRdrDN/i\n      - string: /\\\\\\\\\\.\\\\VBoxGuest/i\n      - string: /\\\\\\\\\\.\\\\pipe\\\\VBoxMiniRdDN/i\n      - string: /\\\\\\\\\\.\\\\VBoxTrayIPC/i\n      - string: /\\\\\\\\\\.\\\\pipe\\\\VBoxTrayIPC/i\n      - string: /VBoxTrayToolWndClass/i\n      - string: /VBoxTrayToolWnd/i\n      - string: /vboxvideo/i\n      - string: /VBoxVideoW8/i\n      - string: /VBoxWddm/i\n      - string: /PCI\\\\VEN_80EE\u0026DEV_CAFE/i\n      - string: /82801FB/i\n      - string: /82441FX/i\n      - string: /82371SB/i\n      - string: /OpenHCD/i\n      - string: /ACPIBus_BUS_0/i\n      - string: /PCI_BUS_0/i\n      - string: /PNP_BUS_0/i\n      - string: /Oracle Corporation/i\n      - string: /VBoxWdd/i\n      - string: /VBoxS/i\n        description: VirtualBox Shared Folders\n      - string: /VBoxMouse/i\n        description: VirtualBox Guest Mouse\n      - string: /VBoxGuest/i\n        description: VirtualBox Guest Driver\n      - string: /VBoxVBoxVBox/i\n      - string: /innotek GmbH/i\n      - string: /drivers\\\\vboxdrv/i\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiVM/VirtualBox.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "10",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using SHA1",
+                                               "description":  "data-manipulation/hashing/sha1",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "likely SHA1 but also used in RIPEMD-160 and RIPEMD-320",
+                                                                  "C, also used in MD5, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320",
+                                                                  "A, also used in MD5, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using SHA1\n    namespace: data-manipulation/hashing/sha1\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Cryptography::Cryptographic Hash::SHA1 [C0029.002]\n    examples:\n      - D063B1804E8D2BB26BD2E097141C1BBC:0x4344D0\n      - 91B08896FBDA9EDB8B6F93A6BC811EC6:0x180004878\n  features:\n    - or:\n      - and:\n        - description: Magic initialization constants used in SHA1\n        - number: 0x67452301 = A, also used in MD5, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0xEFCDAB89 = B, also used in MD5, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0x98BADCFE = C, also used in MD5, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0x10325476 = D, also used in MD5, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0xC3D2E1F0 = likely SHA1 but also used in RIPEMD-160 and RIPEMD-320\n      - and:\n        - number: 0x5A827999 = K(t) (0 \u003c= t \u003c= 19), also used in RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0x6ED9EBA1 = K(t) (20 \u003c= t \u003c= 39), also used in RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0x8F1BBCDC = K(t) (40 \u003c= t \u003c= 59), also used in RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0xCA62C1D6 = K(t) (60 \u003c= t \u003c= 79), also used in RIPEMD-160 and RIPEMD-320\n      - basic block:\n        - and:\n          - number: 0x8004 = CALG_SHA1\n          - api: advapi32.CryptCreateHash\n      - call:\n        - and:\n          - number: 0x8004 = CALG_SHA1\n          - api: advapi32.CryptCreateHash\n      - and:\n        - api: System.Security.Cryptography.SHA1Managed::ctor\n        - optional:\n          - api: System.Security.Cryptography.HashAlgorithm::ComputeHash\n"
+                                           },
+                                           {
+                                               "id":  "11",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using djb2",
+                                               "description":  "data-manipulation/hashing/djb2",
+                                               "authors":  [
+                                                               "awillia2@cisco.com",
+                                                               "still@teamt5.org"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: imul",
+                                                                  "mnemonic: mov"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using djb2\n    namespace: data-manipulation/hashing/djb2\n    authors:\n      - awillia2@cisco.com\n      - still@teamt5.org\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    mbc:\n      - Data::Non-Cryptographic Hash::djb2 [C0030.006]\n    references:\n      - https://twitter.com/r3c0nst/status/1392405576131436546\n      - http://www.cse.yorku.ca/~oz/hash.html\n    examples:\n      - 6be0ae5cb7c3155f70d608fc7670d2d9:0x41DD19\n  features:\n    - and:\n      - instruction:\n        - description: hash = 5381\n        - mnemonic: mov\n        - number: 5381\n      - or:\n        - instruction:\n          - description: hash \u003c\u003c 5\n          - mnemonic: shl\n          - number: 5\n        - instruction:\n          - description: hash * 33\n          - or:\n            - mnemonic: mul\n            - mnemonic: imul\n          - number: 33\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://twitter.com/r3c0nst/status/1392405576131436546"
+                                                            },
+                                                            {
+                                                                "ref":  "http://www.cse.yorku.ca/~oz/hash.html"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "12",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get number of processors",
+                                               "description":  "host-interaction/hardware/cpu",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "PEB access",
+                                                                  "mnemonic: add",
+                                                                  "fs access"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get number of processors\n    namespace: host-interaction/hardware/cpu\n    authors:\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires property features\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    references:\n      - https://github.com/LordNoteworthy/al-khaser/blob/bed03d2f849d9060c68f8d5905bd204d0cb3f593/al-khaser/AntiVM/Generic.cpp#L361\n    examples:\n      - al-khaser_x86.exe_:0x432CB0\n  features:\n    - or:\n      - and:\n        - match: PEB access\n        - or:\n          - and:\n            - arch: i386\n            - number: 0x64 = PEB-\u003eNumberOfProcessors\n          - and:\n            - arch: amd64\n            - number: 0xB8 = PEB-\u003eNumberOfProcessors\n      - property/read: System.Environment::ProcessorCount\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/bed03d2f849d9060c68f8d5905bd204d0cb3f593/al-khaser/AntiVM/Generic.cpp#L361"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "13",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "packed with generic packer",
+                                               "description":  "anti-analysis/packer/generic",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: pushad",
+                                                                  "mnemonic: popad",
+                                                                  "cross section flow"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: packed with generic packer\n    namespace: anti-analysis/packer/generic\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information::Software Packing [T1027.002]\n    mbc:\n      - Anti-Static Analysis::Software Packing::Standard Compression [F0001.002]\n    examples:\n      - Practical Malware Analysis Lab 18-01.exe_:0x409dc0\n  features:\n    - and:\n      - or:\n        - mnemonic: pusha\n        - mnemonic: pushad  # vivisect\n      - or:\n        - mnemonic: popa\n        - mnemonic: popad  # vivisect\n      - characteristic: cross section flow\n      - not:\n        - match: contain pusha popa sequence\n"
+                                           },
+                                           {
+                                               "id":  "14",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using murmur3",
+                                               "description":  "data-manipulation/hashing/murmur",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: shr"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using murmur3\n    namespace: data-manipulation/hashing/murmur\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic features\n    mbc:\n      - Data::Non-Cryptographic Hash::MurmurHash [C0030.001]\n    references:\n      - https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp\n    examples:\n      - c66172b12971a329f8d5ff01665f204b:0x404A18\n  features:\n    - or:\n      - and:\n        - number: 0x85ebca6b = 32-bit finalization mix constant 1\n        - number: 0xc2b2ae35 = 32-bit finalization mix constant 2\n      - and:\n        - number: 0xff51afd7ed558ccd = 64-bit finalization mix constant 1\n        - number: 0xc4ceb9fe1a85ec53 = 64-bit finalization mix constant 2\n      - and:\n        - number: 0xcc9e2d51 = c1 32-bit hash\n        - number: 0x1b873593 = c2 32-bit hash\n      - and:\n        - number: 0x239b961b = 32-bit c1 for 128-bit hash\n        - number: 0xab0e9789 = 32-bit c2 for 128-bit hash\n        - number: 0x38b34ae5 = 32-bit c3 for 128-bit hash\n        - number: 0xa1e38b93 = 32-bit c4 for 128-bit hash\n      - and:\n        - number: 0x87c37b91114253d5 = 64-bit c1 for 128-bit hash\n        - number: 0x4cf5ad432745937f = 64-bit c2 for 128-bit hash\n      - basic block:\n        - and:\n          - description: \u0027hash \u003e\u003e 16; hash \u003e\u003e 13; hash \u003e\u003e 16\u0027\n          - count(mnemonic(shr)): 3\n          - instruction:\n            - mnemonic: shr\n            - number: 16\n          - instruction:\n            - mnemonic: shr\n            - number: 13\n          - optional:\n            - count(characteristic(nzxor)): 3 or more\n      - and:\n        # Group this two blocks under an `and` as on their own they are not\n        # unique enough and would cause false positives\n        - instruction:\n          - description: k ROL r1\n          - mnemonic: rol\n          - number: 15 = r1\n        - instruction:\n          - description: hash ROL r2\n          - mnemonic: rol\n          - number: 13 = r2\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "15",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using XOR",
+                                               "description":  "data-manipulation/encoding/xor",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "tight loop",
+                                                                  "nzxor"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using XOR\n    namespace: data-manipulation/encoding/xor\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires characteristic, Not features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::XOR [C0026.002]\n    examples:\n      - 2D3EDC218A90F03089CC01715A9F047F:0x403D7E\n  features:\n    - and:\n      - characteristic: tight loop\n      - characteristic: nzxor\n      - not:\n        - description: filter for potential false positives\n        - or:\n          - or:\n            - description: unsigned bitwise negation operation (~i)\n            - number: 0xFFFFFFFF = bitwise negation for unsigned 32 bits\n            - number: 0xFFFFFFFFFFFFFFFF = bitwise negation for unsigned 64 bits\n          - or:\n            - description: signed bitwise negation operation (~i)\n            - number: 0x0FFFFFFF = bitwise negation for signed 32 bits\n            - number: 0x0FFFFFFFFFFFFFFF = bitwise negation for signed 64 bits\n          - or:\n            - description: Magic constants used in the implementation of strings functions.\n            # such as `strlen` and `strcat` in the Windows standard library:\n            # (((i - 0x81010101) ^ ~i) \u0026 0x81010100)\n            ## 32 bits\n            - number: 0x7EFEFEFF = optimized string constant for 32 bits\n            - number: 0x81010101 = -0x81010101 = 0x7EFEFEFF\n            - number: 0x81010100 = 0x81010100 = ~0x7EFEFEFF\n            ## 64 bits\n            - number: 0x7EFEFEFEFEFEFEFF = optimized string constant for 64 bits\n            - number: 0x8101010101010101 = -0x8101010101010101 = 0x7EFEFEFEFEFEFEFF\n            - number: 0x8101010101010100 = 0x8101010101010100 = ~0x7EFEFEFEFEFEFEFF\n"
+                                           },
+                                           {
+                                               "id":  "16",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain anti-disasm techniques",
+                                               "description":  "anti-analysis/anti-disasm",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain anti-disasm techniques\n    namespace: anti-analysis/anti-disasm\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    mbc:\n      - Anti-Static Analysis::Disassembler Evasion [B0012]\n    examples:\n      - a5c70086b3bc4fe64f4e7a0aa452e620\n  features:\n    - or:\n      - count(match(contain pusha popa sequence)): 10 or more\n"
+                                           },
+                                           {
+                                               "id":  "17",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "check for software breakpoints",
+                                               "description":  "anti-analysis/anti-debugging/debugger-detection",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "loop",
+                                                                  "contain loop",
+                                                                  "mnemonic: cmp"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: check for software breakpoints\n    namespace: anti-analysis/anti-debugging/debugger-detection\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    mbc:\n      - Anti-Behavioral Analysis::Debugger Detection::Software Breakpoints [B0001.025]\n    references:\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/SoftwareBreakpoints.cpp\n      - https://anti-debug.checkpoint.com/techniques/assembly.html\n    examples:\n      - al-khaser_x86.exe_:0x431020\n  features:\n    - and:\n      - or:\n        - instruction:\n          - mnemonic: cmp\n          - number: 0xCC = INT3\n        - and:\n          - description: INT3 (long form)\n          - instruction:\n            - mnemonic: cmp\n            - number: 0xCD = INT3 (long form byte 1)\n          - instruction:\n            - mnemonic: cmp\n            - number: 0x03 = INT3 (long form byte 2)\n      - match: contain loop\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/SoftwareBreakpoints.cpp"
+                                                            },
+                                                            {
+                                                                "ref":  "https://anti-debug.checkpoint.com/techniques/assembly.html"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "18",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse credit card information",
+                                               "description":  "collection/credit-card",
+                                               "authors":  [
+                                                               "@_re_fox"
+                                                           ],
+                                               "match_data":  [
+                                                                  "\u0027?\u0027 (Track 1 \u0026 2 end sentinel)",
+                                                                  "\u0027D\u0027 (Format code)",
+                                                                  "mnemonic: cmp"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse credit card information\n    namespace: collection/credit-card\n    authors:\n      - \"@_re_fox\"\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    mbc:\n      - Data::Check String [C0019]\n    examples:\n      - 1d8fd13c890060464019c0f07b928b1a:0x402860\n  features:\n    - and:\n      - 3 or more:\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x5E = \u0027^\u0027 (Track 1 separator)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x3D = \u0027=\u0027 (Track 2 separator)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x25 = \u0027%\u0027 (Track 1 start sentinel)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x42 = \u0027B\u0027 (Format code)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x44 = \u0027D\u0027 (Format code)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x3F = \u0027?\u0027 (Track 1 \u0026 2 end sentinel)\n        - instruction:\n          - mnemonic: cmp\n          - number: 0x3B = \u0027;\u0027 (Track 2 start sentinel)\n      - not:\n        - description: if a function also compares these non-hex characters it\u0027s most likely NOT parsing CC data\n        - and:\n          - instruction:\n            - mnemonic: cmp\n            - number: 0x6D = \u0027m\u0027\n          - instruction:\n            - mnemonic: cmp\n            - number: 0x6E = \u0027n\u0027\n          - instruction:\n            - mnemonic: cmp\n            - number: 0x6F = \u0027o\u0027\n          - instruction:\n            - mnemonic: cmp\n            - number: 0x70 = \u0027p\u0027\n"
+                                           },
+                                           {
+                                               "id":  "19",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "linked against wolfSSL",
+                                               "description":  "linking/static/wolfssl",
+                                               "authors":  [
+                                                               "jakub.jozwiak@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "substring: client finished",
+                                                                  "substring: server finished",
+                                                                  "substring: CLNTSRVR"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: linked against wolfSSL\n    namespace: linking/static/wolfssl\n    authors:\n      - jakub.jozwiak@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    mbc:\n      - Cryptography::Crypto Library [C0059]\n    references:\n      - https://www.wolfssl.com/\n      - https://github.com/wolfSSL/wolfssl/blob/2841b5c93b87311dadcf2278151df7453e56db96/wolfssl/internal.h#L4646\n    examples:\n      - 5789181cba467fa940cdce809b88b9bf7e0e9d4e079e32a68d2b911a8cc47da9\n  features:\n    - or:\n      - string: \"SSLeay wolfSSL compatibility\"\n      - string: \"wolfSSL_Init\"\n      - string: \"Please supply a buffer for error string\"\n      - 3 or more:\n        - substring: \"CLNTSRVR\"\n        - substring: \"server finished\"\n        - substring: \"client finished\"\n        - substring: \"DOGNGRD\"\n        - substring: \"DOWNGRD\"\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.wolfssl.com/"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/wolfSSL/wolfssl/blob/2841b5c93b87311dadcf2278151df7453e56db96/wolfssl/internal.h#L4646"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "20",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "authenticate HMAC",
+                                               "description":  "data-manipulation/hmac",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "loop",
+                                                                  "SHA-384 or SHA-512",
+                                                                  "contain loop"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: authenticate HMAC\n    namespace: data-manipulation/hmac\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic features\n    mbc:\n      - Cryptography::Hashed Message Authentication Code [C0061]\n    references:\n      - https://tools.ietf.org/html/rfc2104\n      - https://tools.ietf.org/html/rfc4634\n      - https://github.com/ogay/hmac\n    examples:\n      - mimikatz.exe_:0x403408\n  features:\n    - and:\n      # block-sized inner padding, consisting of repeated bytes valued 0x36\n      - number: 0x36 = inner padding byte value\n      # block-sized outer padding, consisting of repeated bytes valued 0x5c\n      - number: 0x5C = outer padding byte value\n      - match: contain loop\n      - count(characteristic(nzxor)): 2 or more\n      - optional:\n        - description: block size\n        - number: 64 = MD5, SHA-1, SHA-224, or SHA-256\n        - number: 128 = SHA-384 or SHA-512\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://tools.ietf.org/html/rfc2104"
+                                                            },
+                                                            {
+                                                                "ref":  "https://tools.ietf.org/html/rfc4634"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/ogay/hmac"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "21",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "resolve function by parsing PE exports",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "sara-rn"
+                                                           ],
+                                               "match_data":  [
+                                                                  "loop",
+                                                                  "mnemonic: movzx"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: resolve function by parsing PE exports\n    namespace: load-code/pe\n    authors:\n      - sara-rn\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, offset, mnemonic features\n    examples:\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x406BA1\n  features:\n    - and:\n      - os: windows\n      - or:\n        - characteristic: loop\n        - mnemonic: movzx\n      - and:\n        - offset: 0x3C = IMAGE_DOS_HEADER.PE.e_lfanew\n        - or:\n          - and:\n            - arch: i386\n            - offset: 0x78 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n          - and:\n            - arch: amd64\n            - offset: 0x88 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n        - 3 or more:\n          - offset: 0x14 = IMAGE_EXPORT_DIRECTORY.NumberOfFunctions\n          - offset: 0x24 = IMAGE_EXPORT_DIRECTORY.AddressOfNameOrdinals\n          - offset: 0x20 = IMAGE_EXPORT_DIRECTORY.AddressOfNames\n          - offset: 0x18 = IMAGE_EXPORT_DIRECTORY.NumberOfNames\n          - offset: 0x1C = IMAGE_EXPORT_DIRECTORY.AddressOfFunctions\n      - optional:\n        - or:\n          - api: LoadLibrary\n          - api: strcmp\n"
+                                           },
+                                           {
+                                               "id":  "22",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "check for PEB NtGlobalFlag flag",
+                                               "description":  "anti-analysis/anti-debugging/debugger-detection",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "fs access",
+                                                                  "(FLG_HEAP_ENABLE_TAIL_CHECK | FLG_HEAP_ENABLE_FREE_CHECK | FLG_HEAP_VALIDATE_PARAMETERS)",
+                                                                  "PEB access"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: check for PEB NtGlobalFlag flag\n    namespace: anti-analysis/anti-debugging/debugger-detection\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires offset, mnemonic features\n    mbc:\n      - Anti-Behavioral Analysis::Debugger Detection::Process Environment Block NtGlobalFlag [B0001.036]\n    references:\n      - Practical Malware Analysis, Chapter 16, p. 355\n      - https://www.geoffchappell.com/studies/windows/win32/ntdll/structs/peb/index.htm\n    examples:\n      - Practical Malware Analysis Lab 16-01.exe_:0x403530\n  features:\n    - and:\n      - basic block:\n        - and:\n          - match: PEB access\n          - or:\n            - and:\n              - arch: i386\n              - offset: 0x68 = PEB.NtGlobalFlag\n            - and:\n              - arch: amd64\n              - offset: 0xBC = PEB.NtGlobalFlag\n            - instruction:\n              - arch: i386\n              - mnemonic: add\n              - offset: 0x68 = PEB.NtGlobalFlag\n            - instruction:\n              - arch: amd64\n              - mnemonic: add\n              - offset: 0xBC = PEB.NtGlobalFlag\n      - number: 0x70 = (FLG_HEAP_ENABLE_TAIL_CHECK | FLG_HEAP_ENABLE_FREE_CHECK | FLG_HEAP_VALIDATE_PARAMETERS)\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "Practical Malware Analysis, Chapter 16, p. 355"
+                                                            },
+                                                            {
+                                                                "ref":  "https://www.geoffchappell.com/studies/windows/win32/ntdll/structs/peb/index.htm"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "packer_unknown_pe_section_name",
+                                               "name":  "packer_unknown_pe_section_name",
+                                               "description":  "The binary contains an unknown PE section name indicative of packing",
+                                               "match_data":  [
+                                                                  ".symtab"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "contains_pe_overlay",
+                                               "name":  "contains_pe_overlay",
+                                               "description":  "The PE file contains an overlay",
+                                               "match_data":  [
+                                                                  "Contains overlay at offset 0x006a3400 with size: 113664 bytes"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "static_pe_anomaly",
+                                               "name":  "static_pe_anomaly",
+                                               "description":  "Anomalous binary characteristics",
+                                               "match_data":  [
+                                                                  "Entrypoint of binary is located outside of any mapped sections",
+                                                                  "Actual checksum does not match that reported in PE header"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_MEDIUM"
+                                           },
+                                           {
+                                               "id":  "418",
+                                               "description":  "Submission file is bigger than most known malware samples",
+                                               "match_data":  [
+                                                                  "File size 7073792 \u003e 1048576"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "9028",
+                                               "description":  "Uses 32bit PE files",
+                                               "match_data":  [
+                                                                  "RELOCS_STRIPPED, EXECUTABLE_IMAGE, 32BIT_MACHINE, DEBUG_STRIPPED"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "415",
+                                               "description":  "PE file has an executable .text section and no other executable section",
+                                               "match_data":  [
+                                                                  "Section: .text IMAGE_SCN_CNT_CODE, IMAGE_SCN_CNT_INITIALIZED_DATA, IMAGE_SCN_MEM_EXECUTE, IMAGE_SCN_MEM_READ"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "1654",
+                                               "description":  "Sample might require command line arguments",
+                                               "match_data":  [
+                                                                  "         \"path\": \"installationmanager/platform-installation-manager",
+                                                                  "         \"path\": \"installationmanager/platform-installation-manager False, isExecutable = False, isTemporary = False, extensionType = Misc, eventSourceType = Legacy\u003e)",
+                                                                  "\"installITS247\": \"/setuputils/installITS247\",",
+                                                                  "\"installITS247FromSource\": \"/setuputils/installITS247FromSource\",",
+                                                                  "/home/jenkins/workspace/dev_platform-setuputils-plugin/src/gitlab.connectwisedev.com/platform/setuputils-plugin/src/handler/installits247fromsource_handler_windows.go",
+                                                                  "/home/jenkins/workspace/dev_platform-setuputils-plugin/src/gitlab.connectwisedev.com/platform/setuputils-plugin/src/handler/installits247fromsource_handler.go",
+                                                                  "/home/jenkins/workspace/dev_platform-setuputils-plugin/src/gitlab.connectwisedev.com/platform/setuputils-plugin/src/handler/installits247_handler.go",
+                                                                  "/home/jenkins/workspace/dev_platform-setuputils-plugin/src/gitlab.connectwisedev.com/platform/setuputils-plugin/src/its247manager/installits247fromsource_windows.go",
+                                                                  "/home/jenkins/workspace/dev_platform-setuputils-plugin/src/gitlab.connectwisedev.com/platform/setuputils-plugin/src/its247manager/installits247_windows.go",
+                                                                  "\"/home/jenkins/workspace/dev_platform-setuputils-plugin/src/gitlab.connectwisedev.com/platform/setuputils-plugin/src/main.go/home/jenkins/workspace/dev_platform-setuputils-plugin/src/gitlab.connectwis",
+                                                                  "/home/jenkins/workspace/dev_platform-setuputils-plugin/src/gitlab.connectwisedev.com/platform/setuputils-plugin/src/vendor/golang.org/x/sys/windows/svc/eventlog/install.go",
+                                                                  "Transorm-setuputils-plugin/src/gitlab.connectwisedev.com/platform/setuputils-plugin/src/vendor/golang.org/x/sys/windows/svc/eventlog/log.go/home/jenkins/workspace/dev_platform-setuputils-plugin/src/gi"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "171",
+                                               "description":  "Parts of this applications are using the .NET runtime (Probably coded in C#)",
+                                               "match_data":  [
+                                                                  "TRID: Win32 Executable (generic) Net Framework (10011505/4) 49.91%"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "420",
+                                               "description":  "PE file does not import any functions",
+                                               "match_data":  [
+                                                                  "No import functions for PE file found"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "102",
+                                               "description":  "Binary contains device paths (device paths are often used for kernel mode \u003c-\u003e user mode communication)",
+                                               "match_data":  [
+                                                                  "(Source: (Uid: 1758A80D90387E87, Name: ZWbPe.exe, Pid: 13740, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 9356A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZO",
+                                                                  "(Source: (Uid: BD56A80D90387E87, Name: ZWbPe.exe, Pid: 15536, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 3F58A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZO",
+                                                                  "(Source: (Uid: 1758A80D90387E87, Name: ZWbPe.exe, Pid: 13740, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 4358A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZO",
+                                                                  "_pathv7\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20222010223018.zip",
+                                                                  "(Source: (Uid: F596A80D90387E87, Name: platform-version-plugin.exe, Pid: 5880, Session Id: 0, Executable Uid: 13D6A50D90387E87), (Target: (Uid: 13D6A50D90387E87, Path: \\Device\\HarddiskVolume2\\Program ",
+                                                                  "(Source: (Uid: 1758A80D90387E87, Name: ZWbPe.exe, Pid: 13740, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 4458A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZO",
+                                                                  "\\Device\\HarddiPe.exe, Pid: 15536, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 3F58A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\Web",
+                                                                  "\\Device\\HarddiskVolume2\\s-Security-Auditing%",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\version\\platform-version-plugin.exePAAC21332E927F9296173200F106D126B675A08AB",
+                                                                  "(Source: (Uid: ED95A80D90387E87, Name: ZWbPe.exe, Pid: 3800, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: EC96A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD",
+                                                                  "(Target: (Uid: 3533A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\zRealTime\\ApplicationLog\\SAAZappr.log), Event: \u003cfile_write, processToFileRelation = Owner, isSystem = False, i",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files",
+                                                                  "w, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 4358A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20222610005436.zip), Event: \u003cresearch_data",
+                                                                  "(Source: (Uid: BD56A80D90387E87, Name: ZWbPe.exe, Pid: 15536, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 3F58A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (xRCRD(",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (",
+                                                                  "\\Device\\HarddiskVolume2\\Windows\\servicing\\Packages\\Package_5_for_KB3160352~31bf3856ad364e35~amd64~~6.1.1.0.mum",
+                                                                  "(Source: (Uid: E695A80D90387E87, Name: ZWbPe.exe, Pid: 3548, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: CB96A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20222410223029.zip CONNECTWISE, LLC CONNECTWISE, LLC",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20220808223041.zip",
+                                                                  "(Source: (Uid: BD56A80D90387E87, Name: ZWbPe.exe, Pid: 15536, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 3F58A80D90387E87, Path: \\Device\\HarddiskVoluRCRD(",
+                                                                  "(Source: (Uid: ED95A80D90387E87, Name: ZWbPe.exe, Pid: 3800, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: EF96A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD",
+                                                                  "(Uid: 52C1A40D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\zCMon\\ZConEvtAnalysisX64Bit.exe)",
+                                                                  "(Source: (Uid: ED95A80D90387E87, Name: ZWbPe.exe, Pid: 3800, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: F796A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD",
+                                                                  "CertificateVerifier verifying certificate completed for \u0027\\\\?\\GLOBALROOT\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\eventlog\\platform-eventlog-plugin.exe\u0027, SHA1: \u0027c7da0d4b1e864b50bc4",
+                                                                  "4Microsoft-Windows-Security-A48, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: CB96A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebP",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20220711002607.zip",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\Applicatiorary = False, extensionType = Misc, eventSourceType = Legacy\u003e)",
+                                                                  "(Source: (Uid: F359A80D90387E87, Name: zWbPeATPostLogs.exe, Pid: 5688, Session Id: 0, Executable Uid: 73C2A40D90387E87), (Target: (Uid: 2A50A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x",
+                                                                  "(Source: (Uid: ED95A80D90387E87, Name: ZWbPe.exe, Pid: 3800, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 4290A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\zRealTime\\ApplicationLog\\SAAZappr.log",
+                                                                  "(Source: (Uid: 1758A80D90387E87, Name: ZWbPe.exe, Pid: 13740, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 4258A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZO",
+                                                                  "(Source: (Uid: ED95A80D90387E87, Name: ZWbPe.exe, Pid: 3800, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 0297A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD",
+                                                                  "4Microsoft-Windows-Security-A: 9356A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.log), Event: \u003cfile_write, processToFileRe",
+                                                                  "d\\Device\\HarddiskVolume2\\Windows\\System32\\csrss.exe",
+                                                                  "NtFfndar\\Device\\HarddiskVolume3",
+                                                                  "c\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20220808223041.zip",
+                                                                  "(Uid: 12D28F0D90387E87, Root: (Uid: 11D28F0D90387E87, ND95A80D90387E87, Name: ZWbPe.exe, Pid: 3800, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 4290A80D90387E87, Path: \\Device\\Har",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpappmondata.log@",
+                                                                  "O87), (Target: (Uid: 9356A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.log), Event: \u003cfile_write, processToFileRelation = O",
+                                                                  "(Uid: 4FC2A40D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\systemstate\\platform-systemstate-plugin.exe)",
+                                                                  "(Source: (Uid: ED95A80D90387E87, Name: ZWbPe.exe, Pid: 3800, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: F096A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD",
+                                                                  "(Source: (Uid: ED95A80D90387E87, Name: ZWbPe.exe, Pid: 3800, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 0597A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD",
+                                                                  "(Source: (Uid: BD56A80D90387E87, Name: ZWbPe.exe, Pid: 15536, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 3F58A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files ersion=\"6.1",
+                                                                  "rce: (Uid: 1758A80D90387E87, Name: ZWbPe.exe, Pid: 13740, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 9356A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\Ap",
+                                                                  "CertificateVerifier verifying certificate completed for \u0027\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\sysevents\\platform-sysevents-plugin.exe\u0027, SHA1: \u0027fc058234bc318b9237cb17ffc85e3e1",
+                                                                  "(Source: (Uid: B896A80D90387E87, Name: zWinPrf.exe, Pid: 6440, Session Id: 0, Executable Uid: 15C1A40D90387E87), (Target: (Uid: E395A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZ",
+                                                                  "(Source: (Uid: 8F96A80D90387E87, Name: dxdiag.exe, Pid: 2872, Session Id: 0, Executable Uid: A1E3A50D90387E87), (Target: (Uid: A8E3A50D90387E87, Path: \\Device\\HarddiskVolume2\\Windows\\inf\\setupapi.app.",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\systemstate\\platform-systemstate-plugin.exeP94B7F84E5301F7191EF0AFAB2DB4590A1F40434F",
+                                                                  "^+\\Device\\HarddiskVolume2\\Program Files (x86)",
+                                                                  "l2\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD@\u0026",
+                                                                  "SymtCHIN\\Device\\Ide\\IdeDeviceP3T0L0-3s\\",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20222410223029.zip",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLPostExe\\tfr_wpdevicestatus.log), Event: \u003cfile_write, processToFileRelation = Owner, isSystem = False, isExecutable = False, isTemporary =",
+                                                                  "(Source: (Uid: ED95A80D90387E87, Name: ZWbPe.exe, Pid: 3800, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: EE96A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD",
+                                                                  "utable Uid: 7AA48F0D90387E87), (Target: (Uid: 4290A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.log), Event: \u003cfile_write, ",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\*",
+                                                                  "me: ZWbPe.exe, Pid: 13740, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 4358A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_202",
+                                                                  "h\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\setuputils\\platform-setuputils-plugin.exe",
+                                                                  "f\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\sysevents\\platform-sysevents-plugin.exe",
+                                                                  "4Microsoft-Windows-Se(Uid: BD56A80D90387E87, Name: ZWbPe.exe, Pid: 15536, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 3F58A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files",
+                                                                  "c\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20220711223032.zip",
+                                                                  "Executable Uid: 7AA48F0D90387E87), (Target: (Uid: CB96A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpappmondata.log), Event: \u003cfile_write",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.log ~",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\agentcore\\communicatorMq.json CONNECTWISE, LLC CONNECTWISE, LLC",
+                                                                  "Name: ZWbPe.exe, Pid: 3800, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 4290A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostEx",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\agentcore\\communicatorMq.json",
+                                                                  "\\Device\\CdRom0_",
+                                                                  "\\Device\\HarddiskVolume2(%",
+                                                                  "CertificateVerifier verifying certificate completed for \u0027\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\systemstate\\platform-systemstate-plugin.exe\u0027, SHA1: \u002794b7f84e5301f7191ef0afab2db",
+                                                                  "CertificateVerifier verifying certificate completed for \u0027\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\setuputils\\platform-setuputils-plugin.exe\u0027, SHA1: \u0027e4421df52daf203a712ab25914b25",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20220611223032.zip",
+                                                                  "(Source: (Uid: 8F96A80D90387E87, Name: dxdiag.exe, Pid: 2872, Session Id: 0, Executable Uid: A1E3A50D90387E87), (Target: (Uid: A8E3A50D90387E87, Path: \\Device\\HarddiskVolume2\\WindowsINDX(",
+                                                                  "(Source: (Uid: B896A80D90387E87, Name: zWinPrf.exe, Pid: 6440, Session Id: 0, Executable Uid: 15C1A40D90387E87), (Target: (Uid: 9DC1A40D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZ",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86",
+                                                                  "CN=NTDS Settings,CN=GLT-MGMT01,CN=Servers,CN=Gillette,CN=Sites,CN=Configuration,DC=ANABOLIC,n Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 4290A80D90387E87, Path: \\Device\\HarddiskVolume2\\P",
+                                                                  "(Source: (Uid: 1D59A80D90387E87, Name: ZWbPe.exe, Pid: 6872, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 9356A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\",
+                                                                  "(Source: (Uid: 1758A80D90387E87, Name: ZWbPe.exe, Pid: 13740, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 4058A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZO",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\Applicad0-afd3-00c04fd930c9}%{5938f1ef-67c9-41bb-9ecf-7b1e9bf1bdbf}Object Access%%7688",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20220811004125.zip",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.log ",
+                                                                  "(Source: (Uid: ED95A80D90387E87, Name: ZWbPe.exe, Pid: 3800, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 4290A80D90387E87, Path: \\Device\\HarddiskVoINDX(jll\u0026",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x8/%",
+                                                                  "_path^+\\Device\\HarddiskVolume2\\Program Files (x86)",
+                                                                  "(Target: (Uid: 52C1A40D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\zCMon\\ZConEvtAnalysisX64Bit.exe), Event: \u003cresearch_userExecution, eventSourceType = Legacy\u003e)",
+                                                                  "\\Device\\HarddiskVolume2P;",
+                                                                  "(Source: (Uid: BD56A80D90387E87, Name: ZWbPe.exe, Pid: 15536, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 1559A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZO",
+                                                                  "4Microsoft-Windows-SecuriBD56A80D90387E87, Name: ZWbPe.exe, Pid: 15536, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 3F58A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (",
+                                                                  "S-1-5id: 7AA48F0D90387E87), (Target: (Uid: 9356A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.log), Event: \u003cfile_write, pro",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpappmondata.log",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPo",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebElfChnk",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\We",
+                                                                  "(Source: (Uid: E695A80D90387E87, Name: ZWbPe.exe, Pid: 3548, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: CB96A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20222610005436.zip",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpappmondata.logS",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\GPM\\GPM20221115.log",
+                                                                  "^+\\Device\\HarddiskVolume2\\Program Files (x86)p}",
+                                                                  "\\Device\\HarddiskVolume2\\",
+                                                                  "(Source: (Uid: E695A80D90387E87, Name: ZWbPe.exe, Pid: 3548, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: CB96A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files ",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.log(",
+                                                                  "(Uid: D4C2A40D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\virtualization\\platform-virtualization-plugin.exe)",
+                                                                  "wE87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.log), Event: \u003cfile_write, processToFileRelation = Owner, isSystem = False, isExecuta",
+                                                                  "\u003e\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.log`",
+                                                                  "v7\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatformh",
+                                                                  "\\Device\\HarddiskVolume2\\Windows\\System32\\winevt\\Logs\\Microsoft-Windows-Known Folders API Service.evtx ED96A80D90387E87",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20220711002607.zip CONNECTWISE, LLC CONNECTWISE, LLC",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.logxg",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20222610223028.zip",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpappmondata.logX",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\W, Session Id: 0, Executable Uid: B8A28F0D90387E87))",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\DataDirectory\\GLT-MGMT01\\202211\\GPM\\GPM20221115.log",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.logx^",
+                                                                  "\\Device\\HarddiskVolu",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpappmondata.logp",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.logP",
+                                                                  "MICROSOFT_AUTHENTICATION_PACKAGE_V1_0administrat9356A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.log), Event: \u003cfile_write",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.logxU",
+                                                                  "87E87), (Target: (Uid: CB96A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpappmondata.log), Event: \u003cfile_write, processToFileRelation = O",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20222610223028.zip CONNECTWISE, LLC CONNECTWISE, LLC",
+                                                                  ", Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 3F58A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpappmondata.log), E",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.logx",
+                                                                  "H\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\sysevents",
+                                                                  "CertificateVerifier verifying certificate completed for \u0027\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\versi",
+                                                                  "_pathl2\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SBOLIC_HQQ^C",
+                                                                  "Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 3F58A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpappmondata.log), Eve",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.logh",
+                                                                  "80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20222410223029.zip), Event: \u003cfile_create, isSystem = False, isTemporary = False, extensionType = Arc",
+                                                                  "(Source: (Uid: 2C96A80D90387E87, Name: platform-communicator-plugin.exe, Pid: 5204, Session Id: 0, Executable Uid: 37A48F0D90387E87), (Target: (Uid: 3296A80D90387E87, Path: \\Device\\HarddiskVolume2\\Pro",
+                                                                  "_pathz9\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20220708223040.zip CONNECTWISE, LLC CONNECTWISE, LLC",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\Configuration\\GPM\\WinPrfCycleCount.ini",
+                                                                  "\u003e\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\pluginX",
+                                                                  "I\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\setuputils",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20220611223032.zip CONNECTWISE, LLC CONNECTWISE, LLC",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20222210003848.zip",
+                                                                  "\\Device\\Harddisk",
+                                                                  "(Source: (Uid: F396A80D90387E87, Name: platform-systemstate-plugin.exe, Pid: 5988, Session Id: 0, Executable Uid: 4FC2A40D90387E87), (Target: (Uid: 4FC2A40D90387E87, Path: \\Device\\HarddiskVolume2\\Prog",
+                                                                  "7AA48F0D90387E87), (Target: (Uid: 3F58A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpappmondata.log), Event: \u003cfile_write, processToFileR",
+                                                                  "\\Device\\HarddiskVolume2",
+                                                                  "56A80D90387E87, Name: ZWbPe.exe, Pid: 15536, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: 3F58A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\",
+                                                                  "h\\Device\\HarddiskVolume2\\Windows\\inf\\setupapi.app.log",
+                                                                  "8, Session Id: 0, Executable Uid: 7AA48F0D90387E87), (Target: (Uid: CB96A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpappmondata.log), ",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20222510003920.zip",
+                                                                  "I\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\setuputils]",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\wpWbpost_7733807_AtPostLogs.txt",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20222610005436.zip CONNECTWISE, LLC CONNECTWISE, LLC",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpdevicestatus.log",
+                                                                  "z9\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS",
+                                                                  "(Source: (Uid: F696A80D90387E87, Name: platform-virtualization-plugin.exe, Pid: 4508, Session Id: 0, Executable Uid: D4C2A40D90387E87), (Target: (Uid: D4C2A40D90387E87, Path: \\Device\\HarddiskVolume2\\P",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpappmondata.logxE",
+                                                                  "(Source: (Uid: B896A80D90387E87, Name: zWinPrf.exe, Pid: 6440, Session Id: 0, Executable Uid: 15C1A40D90387E87), (Target: (Uid: 3C96A80D90387E87, Path: \\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZ",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\STATUS\\wpdevicestatus_7733807_20220711223032.zip",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\SAAZOD\\ApplicationLog\\WebPost\\WebPostExe\\tfr_wpappmondata.logxW",
+                                                                  "\\Device\\HarddiskVolume2\\Program Files (x86)\\ITSPlatform\\plugin\\sysevents\\platform-sysevents-plugin.exePFC058234BC318B9237CB17FFC85E3E13ACB9963F"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "408",
+                                               "description":  "PE file has a big code size",
+                                               "match_data":  [
+                                                                  "Virtual size of .text is bigger than: 0x100000"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "653",
+                                               "description":  "Sample file is different than original file name gathered from version info",
+                                               "match_data":  [
+                                                                  "_originalFilename2 vs software.exe",
+                                                                  "B_originalFilename2 vs software.exe",
+                                                                  "_originalFilename2g vs software.exe",
+                                                                  "_originalFilename2w vs software.exe",
+                                                                  "B_originalFilename2S vs software.exe",
+                                                                  "B_originalFilename2c vs software.exe",
+                                                                  "B_originalFilename2s vs software.exe",
+                                                                  "_originalFilename2( vs software.exe",
+                                                                  "_originalFilename28 vs software.exe",
+                                                                  "_originalFilename2H vs software.exe",
+                                                                  "_originalFilename2X vs software.exe",
+                                                                  "_originalFilename2h vs software.exe",
+                                                                  "_originalFilename2\" vs software.exe",
+                                                                  "_originalFilename21 vs software.exe",
+                                                                  "_originalFilename2@ vs software.exe",
+                                                                  "_originalFilename2O vs software.exe",
+                                                                  "B_originalFilename2^ vs software.exe",
+                                                                  "B_originalFilename2t vs software.exe",
+                                                                  "B_originalFilename2# vs software.exe",
+                                                                  "B_originalFilename23 vs software.exe",
+                                                                  "B_originalFilename2C vs software.exe",
+                                                                  "_originalFilename2\u0027 vs software.exe",
+                                                                  "_originalFilename27 vs software.exe",
+                                                                  "_originalFilename2G vs software.exe",
+                                                                  "_originalFilename2W vs software.exe",
+                                                                  "_originalFilename2x vs software.exe",
+                                                                  "2_originalFilename2 vs software.exe",
+                                                                  "B_originalFilename2j vs software.exe",
+                                                                  "B_originalFilename2z vs software.exe",
+                                                                  "OriginalFilenameplatform-setuputils-plugin.exe8 vs software.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "101943",
+                                               "description":  "Yara detected BianLian Ransomware",
+                                               "match_data":  [
+                                                                  "software.exe, type: SAMPLE"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_HIGH"
+                                           },
+                                           {
+                                               "id":  "715",
+                                               "description":  "Classification label",
+                                               "match_data":  [
+                                                                  "mal52.rans.evad.winEXE@0/0@0/0"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "1511",
+                                               "description":  "Sample is corrupt or needs to be run on a newer Windows version",
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "317",
+                                               "description":  "PE file contains an invalid checksum",
+                                               "match_data":  [
+                                                                  "real checksum: 0x6af220 should be: 0x6c7ed9"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "908",
+                                               "description":  "Sample may offer command line options, please run it with the \u0027Execute binary with arguments\u0027 cookbook (it\u0027s possible that the command line switches require additional characters like: \"-\", \"/\", \"--\")",
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "263",
+                                               "description":  "May try to detect the virtual machine to hinder analysis (VM artifact strings found in memory)",
+                                               "match_data":  [
+                                                                  "Microsoft-Hyper-V-Management-Clients-Package~31bf3856ad364e35~amd64~en-US~6.1.7601.17514.mum",
+                                                                  "Microsoft-Hyper-V-Management-Clients-Package~31bf3856ad364e35~amd64~zh-HK~6.1.7601.17514.mum",
+                                                                  "Microsoft-Hyper-V-Package~31bf3856ad364e35~amd64~zh-HK~6.1.7601.17514.mum",
+                                                                  "Microsoft-Hyper-V-Server-Drivers-Package~31bf3856ad364e35~amd64~zh-HK~6.1.7601.17514.mum",
+                                                                  "Microsoft-Hyper-V-Server-Drivers-Package~31bf3856ad364e35~amd64~en-US~6.1.7601.17514.mum",
+                                                                  "Microsoft-Hyper-V-Common-Drivers-Package~31bf3856ad364e35~amd64~~6.1.7601.17514.mum",
+                                                                  "Microsoft-Hyper-V-Package~31bf3856ad364e35~amd64~fr-FR~6.1.7601.17514.cat!"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "7005",
+                                               "description":  "Found Tor onion address",
+                                               "match_data":  [
+                                                                  "In 10 days - it will be posted at our site http://bianlianlbc5an4kgnay3opdemgcryg2kpfcbgczopmm3dnbz3uaunad.onion with links send to your clients, partners, competitors and news agencies, that will lea"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "203",
+                                               "description":  "Binary contains paths to debug symbols",
+                                               "match_data":  [
+                                                                  "mscorwks.pdb source: software.exe",
+                                                                  "mscorwks.pdbFILE0 source: software.exe",
+                                                                  "mscorwks.pdbU source: software.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "199",
+                                               "description":  "PE file contains sections with non-standard names",
+                                               "match_data":  [
+                                                                  "section name: .symtab"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "238",
+                                               "description":  "URLs found in memory or binary data",
+                                               "match_data":  [
+                                                                  "http://bianlianlbc5an4kgnay3opdemgcryg2kpfcbgczopmm3dnbz3uaunad.onion",
+                                                                  "http://cacerts.digicert.com/DigiCertAssuredIDRootCA.crt0",
+                                                                  "http://cacerts.digicert.com/DigiCertSHA2AssuredIDCodeSigningCA.crt0",
+                                                                  "http://cdn.itsupport247.net/setup/linux/32/ITS247AgentSetup32.bz2.run",
+                                                                  "http://cdn.itsupport247.net/setup/linux/64/ITS247AgentSetup64.bz2.run",
+                                                                  "http://cdn.itsupport247.net/setup/windows/32/DPMASetup.exe",
+                                                                  "http://cdn.itsupport247.net/setup/windows/32/MSMASetup.exe",
+                                                                  "http://crl3.digicert.com/DigiCertAssuredIDRootCA.crl0O",
+                                                                  "http://crl3.digicert.com/sha2-assured-cs-g1.crl05",
+                                                                  "http://crl4.digicert.com/DigiCertAssuredIDRootCA.crl0:",
+                                                                  "http://crl4.digicert.com/sha2-assured-cs-g1.crl0L",
+                                                                  "http://ocsp.digicert.com0C",
+                                                                  "http://ocsp.digicert.com0N",
+                                                                  "http://s.symcb.com/universal-root.crl0",
+                                                                  "http://s.symcd.com06",
+                                                                  "http://ts-aia.ws.symantec.com/sha256-tss-ca.cer0(",
+                                                                  "http://ts-crl.ws.symantec.com/sha256-tss-ca.crl0",
+                                                                  "http://ts-ocsp.ws.symantec.com0;",
+                                                                  "http://update.dtitsupport247.net",
+                                                                  "http://update.itsupport247.net",
+                                                                  "http://update.qa.itsupport247.net",
+                                                                  "https://cdn.itsupport247.net/setup/darwin/64/LegacyAgent.pkg",
+                                                                  "https://d.symcb.com/cps0%",
+                                                                  "https://d.symcb.com/rpa0",
+                                                                  "https://d.symcb.com/rpa0.",
+                                                                  "https://dpmawp.dtitsupport247.net",
+                                                                  "https://dpmawp.itsupport247.net",
+                                                                  "https://dpmawp.qa.itsupport247.net",
+                                                                  "https://qtox.github.io/",
+                                                                  "https://usea1-areteadvisors.sentinelone.net",
+                                                                  "https://webpost.dtitsupport247.net",
+                                                                  "https://webpost.itsupport247.net",
+                                                                  "https://webpost.itsupport247.net/tfr_wpdevicestatus.asp",
+                                                                  "https://webpost.qa.itsupport247.net",
+                                                                  "https://www.digicert.com/CPS0"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "410",
+                                               "description":  "PE file has a big raw section",
+                                               "match_data":  [
+                                                                  "Raw size of .text is bigger than: 0x100000 \u003c 0x2fe800",
+                                                                  "Raw size of .rdata is bigger than: 0x100000 \u003c 0x366200"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           }
+                                       ],
+                 "verdict_labels":  [
+                                        "BianLian"
+                                    ],
+                 "memory_pattern_urls":  [
+                                             "https://webpost.dtitsupport247.net",
+                                             "http://cdn.itsupport247.net/setup/windows/32/MSMASetup.exe",
+                                             "https://webpost.itsupport247.net/tfr_wpdevicestatus.asp",
+                                             "https://dpmawp.dtitsupport247.net",
+                                             "https://webpost.qa.itsupport247.net",
+                                             "http://cdn.itsupport247.net/setup/linux/64/ITS247AgentSetup64.bz2.run",
+                                             "http://update.dtitsupport247.net",
+                                             "https://usea1-areteadvisors.sentinelone.net",
+                                             "https://webpost.itsupport247.net",
+                                             "http://bianlianlbc5an4kgnay3opdemgcryg2kpfcbgczopmm3dnbz3uaunad.onion",
+                                             "http://update.qa.itsupport247.net",
+                                             "http://cdn.itsupport247.net/setup/linux/32/ITS247AgentSetup32.bz2.run",
+                                             "https://qtox.github.io/",
+                                             "http://cdn.itsupport247.net/setup/windows/32/DPMASetup.exe",
+                                             "http://update.itsupport247.net",
+                                             "https://dpmawp.itsupport247.net",
+                                             "https://cdn.itsupport247.net/setup/darwin/64/LegacyAgent.pkg",
+                                             "https://dpmawp.qa.itsupport247.net"
+                                         ],
+                 "mbc":  [
+                             {
+                                 "id":  "B0023",
+                                 "objective":  "Execution",
+                                 "behavior":  "Install Additional Program",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "1"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0002.014",
+                                 "objective":  "Communication",
+                                 "behavior":  "HTTP Communication",
+                                 "method":  "Read Header",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "3"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0009.029",
+                                 "objective":  "Anti-Behavioral Analysis",
+                                 "behavior":  "Virtual Machine Detection",
+                                 "method":  "Instruction Testing",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "4"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0013.001",
+                                 "objective":  "Discovery",
+                                 "behavior":  "Analysis Tool Discovery",
+                                 "method":  "Process detection",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "5"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0009",
+                                 "objective":  "Anti-Behavioral Analysis",
+                                 "behavior":  "Virtual Machine Detection",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "6"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0009",
+                                 "objective":  "Anti-Behavioral Analysis",
+                                 "behavior":  "Virtual Machine Detection",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "8"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0029.002",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Cryptographic Hash",
+                                 "method":  "SHA1",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "10"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0030.006",
+                                 "objective":  "Data",
+                                 "behavior":  "Non-Cryptographic Hash",
+                                 "method":  "djb2",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "11"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "F0001.002",
+                                 "objective":  "Anti-Static Analysis",
+                                 "behavior":  "Software Packing",
+                                 "method":  "Standard Compression",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "13"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0030.001",
+                                 "objective":  "Data",
+                                 "behavior":  "Non-Cryptographic Hash",
+                                 "method":  "MurmurHash",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "14"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m02",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encoding-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "15"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0026.002",
+                                 "objective":  "Data",
+                                 "behavior":  "Encode Data",
+                                 "method":  "XOR",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "15"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0012",
+                                 "objective":  "Anti-Static Analysis",
+                                 "behavior":  "Disassembler Evasion",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "16"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0001.025",
+                                 "objective":  "Anti-Behavioral Analysis",
+                                 "behavior":  "Debugger Detection",
+                                 "method":  "Software Breakpoints",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "17"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0019",
+                                 "objective":  "Data",
+                                 "behavior":  "Check String",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "18"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0059",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Crypto Library",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "19"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0061",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Hashed Message Authentication Code",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "20"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0001.036",
+                                 "objective":  "Anti-Behavioral Analysis",
+                                 "behavior":  "Debugger Detection",
+                                 "method":  "Process Environment Block NtGlobalFlag",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "22"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "OC0006"
+                             },
+                             {
+                                 "id":  "C0002"
+                             },
+                             {
+                                 "id":  "OB0001"
+                             },
+                             {
+                                 "id":  "OB0002"
+                             },
+                             {
+                                 "id":  "OB0006"
+                             },
+                             {
+                                 "id":  "F0001"
+                             }
+                         ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1497",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "check for VM using instruction VPCEXT",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "4"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1497.001",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "reference anti-VM strings",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "6"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1497.001",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "reference anti-VM strings targeting VirtualBox",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "8"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get number of processors",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "12"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "packed with generic packer",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "13"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using XOR",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "15"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "The PE file contains an overlay",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "contains_pe_overlay"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "Anomalous binary characteristics",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "static_pe_anomaly"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "The binary contains an unknown PE section name indicative of packing",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "packer_unknown_pe_section_name"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027.002",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "The binary contains an unknown PE section name indicative of packing",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "packer_unknown_pe_section_name"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1045",
+                                                     "signature_description":  "Manalize Local SandBox Packer Harvesting"
+                                                 },
+                                                 {
+                                                     "id":  "T1090",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Found Tor onion address",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "7005"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "verdict_confidence":  52,
+                 "attack_techniques":  {
+                                           "T1497":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "check for VM using instruction VPCEXT",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "4"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1497.001":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "reference anti-VM strings",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "6"
+                                                                              }
+                                                                          ]
+                                                             },
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "reference anti-VM strings targeting VirtualBox",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "8"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get number of processors",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "12"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027.002":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "packed with generic packer",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "13"
+                                                                              }
+                                                                          ]
+                                                             },
+                                                             {
+                                                                 "severity":  "LOW",
+                                                                 "description":  "The binary contains an unknown PE section name indicative of packing",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "packer_unknown_pe_section_name"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using XOR",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "15"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "The binary contains an unknown PE section name indicative of packing",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "packer_unknown_pe_section_name"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1071":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "The PE file contains an overlay",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "contains_pe_overlay"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "MEDIUM",
+                                                             "description":  "Anomalous binary characteristics",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "static_pe_anomaly"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1045":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Packer Harvesting"
+                                                         }
+                                                     ],
+                                           "T1090":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "Found Tor onion address",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "7005"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

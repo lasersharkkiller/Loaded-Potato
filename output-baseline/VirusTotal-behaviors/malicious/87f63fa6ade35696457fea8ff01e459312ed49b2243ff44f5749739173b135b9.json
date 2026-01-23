@@ -1,0 +1,238 @@
+{
+    "data":  {
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "access PEB ldr_data",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "2"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "C2 URLs / IPs found in malware configuration",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "7056"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "calls_highlighted":  [
+                                           "GetTickCount"
+                                       ],
+                 "text_decoded":  [
+                                      "{\"Type\": \"Metasploit Connect\", \"IP\": \"77.105.161.30\", \"Port\": 8868}"
+                                  ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "77.105.161.30",
+                                        "destination_port":  8868,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "77.105.161.30"
+                                    }
+                                ],
+                 "verdict_labels":  [
+                                        "MetasploitShellcode",
+                                        "Metasploit"
+                                    ],
+                 "memory_pattern_ips":  [
+                                            "77.105.161.30"
+                                        ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "1",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "resolve function by parsing PE exports",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "sara-rn"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: movzx",
+                                                                  "loop"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: resolve function by parsing PE exports\n    namespace: load-code/pe\n    authors:\n      - sara-rn\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, offset, mnemonic features\n    examples:\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x406BA1\n  features:\n    - and:\n      - os: windows\n      - or:\n        - characteristic: loop\n        - mnemonic: movzx\n      - and:\n        - offset: 0x3C = IMAGE_DOS_HEADER.PE.e_lfanew\n        - or:\n          - and:\n            - arch: i386\n            - offset: 0x78 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n          - and:\n            - arch: amd64\n            - offset: 0x88 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n        - 3 or more:\n          - offset: 0x14 = IMAGE_EXPORT_DIRECTORY.NumberOfFunctions\n          - offset: 0x24 = IMAGE_EXPORT_DIRECTORY.AddressOfNameOrdinals\n          - offset: 0x20 = IMAGE_EXPORT_DIRECTORY.AddressOfNames\n          - offset: 0x18 = IMAGE_EXPORT_DIRECTORY.NumberOfNames\n          - offset: 0x1C = IMAGE_EXPORT_DIRECTORY.AddressOfFunctions\n      - optional:\n        - or:\n          - api: LoadLibrary\n          - api: strcmp\n"
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "access PEB ldr_data",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "gs access",
+                                                                  "peb access",
+                                                                  "PEB access"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: access PEB ldr_data\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    references:\n      - https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm\n      - https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8\n    examples:\n      - 3FDFB2D522E7DEECAAAF2F87420F7E75:0x4117B7\n  features:\n    - or:\n      - and:\n        - arch: i386\n        - description: x32\n\n        - match: PEB access\n\n        # x86 Windows uses fs:0 to access the TIB which contains SEH information at offset 0\n        # checking for fs:0 and a (possibly unrelated) number or offset often results in false positives\n\n        - offset: 0x0C = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x0C = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x14 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x1C = PEB.LDR_DATA.InInitializationOrderModuleList\n\n      - and:\n        - arch: amd64\n        - description: x64\n\n        - match: PEB access\n\n        - offset: 0x18 = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x10 = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x20 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x30 = PEB.LDR_DATA.InInitializationOrderModuleList\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "7037",
+                                               "description":  "Malicious sample detected (through community Yara rule)",
+                                               "match_data":  [
+                                                                  "Detects Meterpreter stager payload Author: ditekSHen",
+                                                                  "Windows_Trojan_Metasploit_91bc5d7d Author: unknown"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_HIGH"
+                                           },
+                                           {
+                                               "id":  "7051",
+                                               "description":  "Found malware configuration",
+                                               "match_data":  [
+                                                                  "Metasploit {\"Type\": \"Metasploit Connect\", \"IP\": \"77.105.161.30\", \"Port\": 8868}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_HIGH"
+                                           },
+                                           {
+                                               "id":  "287",
+                                               "description":  "Yara signature match",
+                                               "match_data":  [
+                                                                  "MALWARE_Win_MeterpreterStager author = ditekSHen, description = Detects Meterpreter stager payload",
+                                                                  "Windows_Trojan_Metasploit_91bc5d7d reference_sample = 0dd993ff3917dc56ef02324375165f0d66506c5a9b9548eda57c58e041030987, os = windows, severity  = x86, creation_date = 2021-08-02, scan_context = file, "
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "205",
+                                               "description":  "Entry point lies outside standard sections",
+                                               "match_data":  [
+                                                                  "section where entry point is pointing to: .skmh"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "715",
+                                               "description":  "Classification label",
+                                               "match_data":  [
+                                                                  "mal76.troj.winEXE@0/0@0/1"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "199",
+                                               "description":  "PE file contains sections with non-standard names",
+                                               "match_data":  [
+                                                                  "section name: .skmh"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "317",
+                                               "description":  "PE file contains an invalid checksum",
+                                               "match_data":  [
+                                                                  "real checksum: 0x2b64 should be: 0x2d1c"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "419",
+                                               "description":  "PE file has a high image base, often used for DLLs",
+                                               "match_data":  [
+                                                                  "Image base 0x140000000 \u003e 0x60000000"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "101140",
+                                               "description":  "Yara detected Metasploit Payload",
+                                               "match_data":  [
+                                                                  "update.exe, type: SAMPLE"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_HIGH"
+                                           },
+                                           {
+                                               "id":  "7056",
+                                               "description":  "C2 URLs / IPs found in malware configuration",
+                                               "match_data":  [
+                                                                  "77.105.161.30"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           }
+                                       ],
+                 "text_highlighted":  [
+                                          "Optional update delivery is not working",
+                                          "update.exe",
+                                          "Check online for a solution and close the program"
+                                      ],
+                 "files_opened":  [
+                                      "C:\\Windows\\system32\\mswsock.dll",
+                                      "C:\\Windows\\System32\\wshtcpip.dll"
+                                  ],
+                 "verdict_confidence":  76,
+                 "memory_pattern_urls":  [
+                                             "tcp://77.105.161.30:8868"
+                                         ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2808",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        },
+                                        {
+                                            "process_id":  "2572",
+                                            "name":  "%TEMP%\\EY30ALEXOFFCQB4E.exe"
+                                        },
+                                        {
+                                            "process_id":  "2196",
+                                            "name":  "%windir%\\System32\\svchost.exe -k WerSvcGroup"
+                                        },
+                                        {
+                                            "process_id":  "2768",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        }
+                                    ],
+                 "modules_loaded":  [
+                                        "ws2_32",
+                                        "C:\\Windows\\system32\\mswsock.dll",
+                                        "C:\\Windows\\System32\\wshtcpip.dll"
+                                    ],
+                 "verdicts":  [
+                                  "MALWARE",
+                                  "TROJAN"
+                              ],
+                 "attack_techniques":  {
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "access PEB ldr_data",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "2"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1071":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "C2 URLs / IPs found in malware configuration",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "7056"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

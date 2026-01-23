@@ -1,0 +1,145 @@
+{
+    "data":  {
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encode data using XOR"
+                                                                  }
+                                                              ],
+                                                     "signature_description":  "encode data using XOR",
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO"
+                                                 },
+                                                 {
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "get kernel version"
+                                                                  }
+                                                              ],
+                                                     "signature_description":  "get kernel version",
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO"
+                                                 }
+                                             ],
+                 "signature_matches":  [
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "rule_src":  "rule:\n  meta:\n    name: create or open file\n    authors:\n      - michael.hunhoff@mandiant.com\n      - joakim@intezer.com\n    lib: true\n    scope: basic block\n    mbc:\n      - File System::Create File [C0016]\n    examples:\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x401D7E\n  features:\n    - or:\n      - api: CreateFile\n      - api: CreateFileEx\n      - api: IoCreateFile\n      - api: IoCreateFileEx\n      - api: ZwOpenFile\n      - api: ZwCreateFile\n      - api: NtOpenFile\n      - api: NtCreateFile\n      - api: fopen\n      - api: fopen64\n      - api: fdopen\n      - api: freopen\n      - api: open\n      - api: openat\n",
+                                               "name":  "create or open file",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "joakim@intezer.com"
+                                                           ]
+                                           },
+                                           {
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using XOR\n    namespace: data-manipulation/encoding/xor\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: basic block\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::XOR [C0026.002]\n    examples:\n      - 2D3EDC218A90F03089CC01715A9F047F:0x403D7E\n  features:\n    - and:\n      - characteristic: tight loop\n      - characteristic: nzxor\n      - not:\n        - description: filter for potential false positives\n        - or:\n          - or:\n            - description: unsigned bitwise negation operation (~i)\n            - number: 0xFFFFFFFF = bitwise negation for unsigned 32 bits\n            - number: 0xFFFFFFFFFFFFFFFF = bitwise negation for unsigned 64 bits\n          - or:\n            - description: signed bitwise negation operation (~i)\n            - number: 0x0FFFFFFF = bitwise negation for signed 32 bits\n            - number: 0x0FFFFFFFFFFFFFFF = bitwise negation for signed 64 bits\n          - or:\n            - description: Magic constants used in the implementation of strings functions.\n            # such as `strlen` and `strcat` in the Windows standard library:\n            # (((i - 0x81010101) ^ ~i) \u0026 0x81010100)\n            ## 32 bits\n            - number: 0x7EFEFEFF = optimized string constant for 32 bits\n            - number: 0x81010101 = -0x81010101 = 0x7EFEFEFF\n            - number: 0x81010100 = 0x81010100 = ~0x7EFEFEFF\n            ## 64 bits\n            - number: 0x7EFEFEFEFEFEFEFF = optimized string constant for 64 bits\n            - number: 0x8101010101010101 = -0x8101010101010101 = 0x7EFEFEFEFEFEFEFF\n            - number: 0x8101010101010100 = 0x8101010101010100 = ~0x7EFEFEFEFEFEFEFF\n",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "description":  "data-manipulation/encoding/xor",
+                                               "name":  "encode data using XOR",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "rule_src":  "rule:\n  meta:\n    name: contain loop\n    authors:\n      - moritz.raabe@mandiant.com\n    lib: true\n    scope: function\n    examples:\n      - 08AC667C65D36D6542917655571E61C8:0x406EAA\n  features:\n    - or:\n      - characteristic: loop\n      - characteristic: tight loop\n      - characteristic: recursive call\n",
+                                               "name":  "contain loop",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ]
+                                           },
+                                           {
+                                               "rule_src":  "rule:\n  meta:\n    name: read file on Linux\n    namespace: host-interaction/file-system/read\n    authors:\n      - joakim@intezer.com\n    scope: function\n    mbc:\n      - File System::Read File [C0051]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x4059AD\n  features:\n    - and:\n      - os: linux\n      - optional:\n        - match: create or open file\n      - or:\n        - api: fgetc\n        - api: fgets\n        - api: getc\n        - api: getchar\n        - api: read\n        - api: getline\n        - api: getdelim\n        - api: fgetwc\n        - api: getwc\n        - api: fscanf\n        - api: vfscanf\n        - api: fread\n",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "description":  "host-interaction/file-system/read",
+                                               "name":  "read file on Linux",
+                                               "authors":  [
+                                                               "joakim@intezer.com"
+                                                           ]
+                                           },
+                                           {
+                                               "rule_src":  "rule:\n  meta:\n    name: write file on Linux\n    namespace: host-interaction/file-system/write\n    authors:\n      - joakim@intezer.com\n    scope: function\n    mbc:\n      - File System::Writes File [C0052]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x401E14\n  features:\n    - and:\n      - os: linux\n      - or:\n        - api: fputc\n        - api: fputs\n        - api: putc\n        - api: write\n        - api: fputwc\n        - api: putwc\n        - api: fputws\n        - api: write\n        - api: fwrite\n        - api: putwchar\n      - optional:\n        - match: create or open file\n",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "description":  "host-interaction/file-system/write",
+                                               "name":  "write file on Linux",
+                                               "authors":  [
+                                                               "joakim@intezer.com"
+                                                           ]
+                                           },
+                                           {
+                                               "rule_src":  "rule:\n  meta:\n    name: move file\n    namespace: host-interaction/file-system/move\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scope: function\n    mbc:\n      - File System::Move File [C0063]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x401350\n  features:\n    - or:\n      - api: kernel32.MoveFile\n      - api: kernel32.MoveFileEx\n      - api: MoveFileWithProgress\n      - api: MoveFileTransacted\n      - api: rename\n      - api: _wrename\n      - api: System.IO.FileInfo::MoveTo\n      - api: System.IO.File::Move\n      - basic block:\n        - and:\n          - number: 1 = FO_MOVE\n          - or:\n            - api: kernel32.SHFileOperation\n",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "description":  "host-interaction/file-system/move",
+                                               "name":  "move file",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ]
+                                           },
+                                           {
+                                               "rule_src":  "rule:\n  meta:\n    name: get kernel version\n    namespace: host-interaction/os/version\n    authors:\n      - joakim@intezer.com\n    scope: function\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x405438\n  features:\n    - and:\n      - os: linux\n      - or:\n        - api: uname\n        - and:\n          - api: system\n          - string: \"uname\"\n",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "description":  "host-interaction/os/version",
+                                               "name":  "get kernel version",
+                                               "authors":  [
+                                                               "joakim@intezer.com"
+                                                           ]
+                                           },
+                                           {
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create or open file\n    authors:\n      - michael.hunhoff@mandiant.com\n      - joakim@intezer.com\n    lib: true\n    scope: basic block\n    mbc:\n      - File System::Create File [C0016]\n    examples:\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x401D7E\n  features:\n    - or:\n      - api: CreateFile\n      - api: CreateFileEx\n      - api: IoCreateFile\n      - api: IoCreateFileEx\n      - api: ZwOpenFile\n      - api: ZwCreateFile\n      - api: NtOpenFile\n      - api: NtCreateFile\n      - api: LZCreateFile\n      - api: LZOpenFile\n      - api: fopen\n      - api: fopen64\n      - api: fdopen\n      - api: freopen\n      - api: open\n      - api: openat\n",
+                                               "name":  "create or open file",
+                                               "format":  "SIG_FORMAT_CAPA"
+                                           },
+                                           {
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://docs.microsoft.com/en-us/windows/win32/sync/wait-functions"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/TimingAttacks/timing.cpp"
+                                                            }
+                                                        ],
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "@ramen0x3f"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: delay execution\n    authors:\n      - michael.hunhoff@mandiant.com\n      - \"@ramen0x3f\"\n    lib: true\n    scope: basic block\n    mbc:\n      - Anti-Behavioral Analysis::Dynamic Analysis Evasion::Delayed Execution [B0003.003]\n    references:\n      - https://docs.microsoft.com/en-us/windows/win32/sync/wait-functions\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/TimingAttacks/timing.cpp\n    examples:\n      - al-khaser_x86.exe_:0x449770\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x402FA6\n  features:\n    - or:\n      - and:\n        - os: windows\n        - or:\n          - api: kernel32.Sleep\n          - api: kernel32.SleepEx\n          - api: kernel32.WaitForSingleObject\n          - api: kernel32.SignalObjectAndWait\n          - api: kernel32.WaitForSingleObjectEx\n          - api: kernel32.WaitForMultipleObjects\n          - api: kernel32.WaitForMultipleObjectsEx\n          - api: kernel32.RegisterWaitForSingleObject\n          - api: WaitOnAddress\n          - api: user32.MsgWaitForMultipleObjects\n          - api: user32.MsgWaitForMultipleObjectsEx\n          - api: NtDelayExecution\n          - api: KeWaitForSingleObject\n          - api: KeDelayExecutionThread\n      - and:\n        - os: linux\n        - or:\n          - api: sleep\n          - api: usleep\n",
+                                               "name":  "delay execution",
+                                               "format":  "SIG_FORMAT_CAPA"
+                                           }
+                                       ],
+                 "attack_techniques":  {
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using XOR",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encode data using XOR"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get kernel version",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "get kernel version"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

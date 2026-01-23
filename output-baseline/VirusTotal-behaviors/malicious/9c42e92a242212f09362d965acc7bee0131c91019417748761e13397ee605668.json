@@ -1,0 +1,933 @@
+{
+    "data":  {
+                 "ja3_digests":  [
+                                     "473cd7cb9faa642487833865d516e578"
+                                 ],
+                 "processes_terminated":  [
+                                              "/tmp/EB93A6/996E.elf"
+                                          ],
+                 "files_written":  [
+                                       "/dev/tty",
+                                       "/dev/ptmx",
+                                       "/dev/pts/0",
+                                       "/var/log/auth.log.1.gz",
+                                       "/var/log/kern.log.1.gz",
+                                       "/var/log/syslog.1.gz"
+                                   ],
+                 "command_executions":  [
+                                            "/bin/gzip",
+                                            "sh -c \"\\n\\t\\tinvoke-rc.d --quiet cups restart \u003e /dev/null\\n\" logrotate_script \"/var/log/cups/*log \"",
+                                            "invoke-rc.d --quiet cups restart",
+                                            "/sbin/runlevel",
+                                            "systemctl --quiet is-enabled cups.service",
+                                            "ls /etc/rc[S2345].d/S[0-9][0-9]cups",
+                                            "systemctl --quiet is-active cups.service",
+                                            "sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/syslog",
+                                            "/usr/lib/rsyslog/rsyslog-rotate",
+                                            "systemctl kill -s HUP rsyslog.service",
+                                            "sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/mail.info/var/log/mail.warn/var/log/mail.err/var/log/mail.log/var/log/daemon.log/var/log/kern.log/var/log/auth.log/var/log/user.log/var/log/lpr.log/var/log/cron.log/var/log/debug/var/log/messages"
+                                        ],
+                 "signature_matches":  [
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain obfuscated stackstrings",
+                                               "description":  "anti-analysis/obfuscation/string/stackstring",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain obfuscated stackstrings\n    namespace: anti-analysis/obfuscation/string/stackstring\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information::Indicator Removal from Tools [T1027.005]\n    mbc:\n      - Anti-Static Analysis::Executable Code Obfuscation::Argument Obfuscation [B0032.020]\n      - Anti-Static Analysis::Executable Code Obfuscation::Stack Strings [B0032.017]\n    examples:\n      - Practical Malware Analysis Lab 16-03.exe_:0x4013D0\n  features:\n    - characteristic: stack string\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using XOR",
+                                               "description":  "data-manipulation/encoding/xor",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using XOR\n    namespace: data-manipulation/encoding/xor\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires characteristic, Not features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::XOR [C0026.002]\n    examples:\n      - 2D3EDC218A90F03089CC01715A9F047F:0x403D7E\n  features:\n    - and:\n      - characteristic: tight loop\n      - characteristic: nzxor\n      - not:\n        - description: filter for potential false positives\n        - or:\n          - or:\n            - description: unsigned bitwise negation operation (~i)\n            - number: 0xFFFFFFFF = bitwise negation for unsigned 32 bits\n            - number: 0xFFFFFFFFFFFFFFFF = bitwise negation for unsigned 64 bits\n          - or:\n            - description: signed bitwise negation operation (~i)\n            - number: 0x0FFFFFFF = bitwise negation for signed 32 bits\n            - number: 0x0FFFFFFFFFFFFFFF = bitwise negation for signed 64 bits\n          - or:\n            - description: Magic constants used in the implementation of strings functions.\n            # such as `strlen` and `strcat` in the Windows standard library:\n            # (((i - 0x81010101) ^ ~i) \u0026 0x81010100)\n            ## 32 bits\n            - number: 0x7EFEFEFF = optimized string constant for 32 bits\n            - number: 0x81010101 = -0x81010101 = 0x7EFEFEFF\n            - number: 0x81010100 = 0x81010100 = ~0x7EFEFEFF\n            ## 64 bits\n            - number: 0x7EFEFEFEFEFEFEFF = optimized string constant for 64 bits\n            - number: 0x8101010101010101 = -0x8101010101010101 = 0x7EFEFEFEFEFEFEFF\n            - number: 0x8101010101010100 = 0x8101010101010100 = ~0x7EFEFEFEFEFEFEFF\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using djb2",
+                                               "description":  "data-manipulation/hashing/djb2",
+                                               "authors":  [
+                                                               "awillia2@cisco.com",
+                                                               "still@teamt5.org"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using djb2\n    namespace: data-manipulation/hashing/djb2\n    authors:\n      - awillia2@cisco.com\n      - still@teamt5.org\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    mbc:\n      - Data::Non-Cryptographic Hash::djb2 [C0030.006]\n    references:\n      - https://twitter.com/r3c0nst/status/1392405576131436546\n      - http://www.cse.yorku.ca/~oz/hash.html\n    examples:\n      - 6be0ae5cb7c3155f70d608fc7670d2d9:0x41DD19\n  features:\n    - and:\n      - instruction:\n        - description: hash = 5381\n        - mnemonic: mov\n        - number: 5381\n      - or:\n        - instruction:\n          - description: hash \u003c\u003c 5\n          - mnemonic: shl\n          - number: 5\n        - instruction:\n          - description: hash * 33\n          - or:\n            - mnemonic: mul\n            - mnemonic: imul\n          - number: 33\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://twitter.com/r3c0nst/status/1392405576131436546"
+                                                            },
+                                                            {
+                                                                "ref":  "http://www.cse.yorku.ca/~oz/hash.html"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data with CRC32",
+                                               "description":  "data-manipulation/checksum/crc32",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data with CRC32\n    namespace: data-manipulation/checksum/crc32\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires operand[1].number, characteristic, bytes, mnemonic features\n    mbc:\n      - Data::Checksum::CRC32 [C0032.001]\n    examples:\n      - 2D3EDC218A90F03089CC01715A9F047F:0x403CBD\n      - 7D28CB106CB54876B2A5C111724A07CD:0x402350  # RtlComputeCrc32\n      - 7EFF498DE13CC734262F87E6B3EF38AB:0x100084A6\n  features:\n    - or:\n      - and:\n        - number: 1 = bits in a byte\n        - instruction:\n          - description: is bit set?\n          - or:\n            - mnemonic: and\n            - mnemonic: test\n          - operand[1].number: 1\n        - instruction:\n          - mnemonic: shr\n          - number: 1\n        - characteristic: nzxor\n        - operand[1].number: 0xEDB88320\n      - and:\n        - number: 0x8320\n        - number: 0xEDB8\n        - characteristic: nzxor\n      - api: RtlComputeCrc32\n      - bytes: 00 00 00 00 96 30 07 77 2C 61 0E EE BA 51 09 99 19 C4 6D 07 8F F4 6A 70 35 A5 63 E9 A3 95 64 9E = crc32_tab\n"
+                                           },
+                                           {
+                                               "id":  "stealth_network",
+                                               "name":  "stealth_network",
+                                               "description":  "Network activity detected but not expressed in monitor API logs",
+                                               "match_data":  [
+                                                                  "{\"ip\": \"185.125.188.54\"}",
+                                                                  "{\"ip\": \"185.125.188.58\"}",
+                                                                  "{\"ip\": \"8.8.8.8\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "drops_files",
+                                               "name":  "drops_files",
+                                               "description":  "Drops files onto disk",
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "binary_yara",
+                                               "name":  "binary_yara",
+                                               "description":  "Binary file triggered YARA rule",
+                                               "match_data":  [
+                                                                  "{\"Binary triggered YARA rule\": \"shellcode_stack_strings\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_MEDIUM"
+                                           },
+                                           {
+                                               "id":  "7037",
+                                               "description":  "Malicious sample detected (through community Yara rule)",
+                                               "match_data":  [
+                                                                  "Detect the Bifrost backdor based on strings Author: Sekoia.io"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_HIGH"
+                                           },
+                                           {
+                                               "id":  "4049",
+                                               "description":  "Uses the \"uname\" system call to query kernel version information (possible evasion)",
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "2075",
+                                               "description":  "Executes commands using a shell command-line interpreter",
+                                               "match_data":  [
+                                                                  "sh -c \"\\n\\t\\tinvoke-rc.d --quiet cups restart \u003e /dev/null\\n\" logrotate_script \"/var/log/cups/*log \"",
+                                                                  "sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/syslog",
+                                                                  "sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/mail.info/var/log/mail.warn/var/log/mail.err/var/log/mail.log/var/log/daemon.log/var/log/kern.log/var/log/auth.log/var/log/user.log/var/"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "4032",
+                                               "description":  "Executes the \"systemctl\" command used for controlling the systemd system and service manager",
+                                               "match_data":  [
+                                                                  "/usr/bin/systemctl -\u003e systemctl --quiet is-enabled cups.service",
+                                                                  "/usr/bin/systemctl -\u003e systemctl --quiet is-active cups.service",
+                                                                  "/usr/bin/systemctl -\u003e systemctl kill -s HUP rsyslog.service"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "287",
+                                               "description":  "Yara signature match",
+                                               "match_data":  [
+                                                                  "backdoor_lin_bifrost hash3 = f2bef6bed27f4b527118dd62b4035003c14afaffa72729c8117f213623f644ec, hash2 = 2aeb70f72e87a1957e3bc478e1982fe608429cad4580737abe58f6d78a626c05, hash1 = 8e85cb6f2215999dc6823ea"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "715",
+                                               "description":  "Classification label",
+                                               "match_data":  [
+                                                                  "mal48.lin@0/3@0/0"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "4013",
+                                               "description":  "Sample has stripped symbol table",
+                                               "match_data":  [
+                                                                  "no"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "238",
+                                               "description":  "URLs found in memory or binary data",
+                                               "match_data":  [
+                                                                  "http://www.debian.org/Bugs/"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           }
+                                       ],
+                 "tags":  [
+                              "DETECT_DEBUG_ENVIRONMENT"
+                          ],
+                 "ids_alerts":  [
+                                    {
+                                        "rule_msg":  "(tcp) experimental TCP options found",
+                                        "rule_category":  "protocol-command-decode",
+                                        "rule_id":  "116:58",
+                                        "alert_severity":  "low",
+                                        "rule_source":  "Snort registered user ruleset",
+                                        "alert_context":  {
+                                                              "src_ip":  "8.8.8.8",
+                                                              "src_port":  53
+                                                          },
+                                        "rule_url":  "https://www.snort.org/downloads/#rule-downloads",
+                                        "rule_raw":  "alert ( gid:116; sid:58; rev:2; msg:\"(tcp) experimental TCP options found\"; metadata: policy max-detect-ips drop, rule-type decode; classtype:protocol-command-decode;)"
+                                    }
+                                ],
+                 "mbc":  [
+                             {
+                                 "id":  "B0032.020",
+                                 "objective":  "Anti-Static Analysis",
+                                 "behavior":  "Executable Code Obfuscation",
+                                 "method":  "Argument Obfuscation",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "contain obfuscated stackstrings"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0032.017",
+                                 "objective":  "Anti-Static Analysis",
+                                 "behavior":  "Executable Code Obfuscation",
+                                 "method":  "Stack Strings",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "contain obfuscated stackstrings"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m02",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encoding-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encode data using XOR"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0026.002",
+                                 "objective":  "Data",
+                                 "behavior":  "Encode Data",
+                                 "method":  "XOR",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encode data using XOR"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0030.006",
+                                 "objective":  "Data",
+                                 "behavior":  "Non-Cryptographic Hash",
+                                 "method":  "djb2",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "hash data using djb2"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0032.001",
+                                 "objective":  "Data",
+                                 "behavior":  "Checksum",
+                                 "method":  "CRC32",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "hash data with CRC32"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "OC0006"
+                             },
+                             {
+                                 "id":  "C0002"
+                             }
+                         ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1027.005",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "contain obfuscated stackstrings",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "contain obfuscated stackstrings"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using XOR",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encode data using XOR"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "signature_description":  "Adversaries may communicate using application layer protocols to avoid detection/network filtering by blending in with existing traffic."
+                                                 },
+                                                 {
+                                                     "id":  "T1064",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Executes commands using a shell command-line interpreter",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "2075"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1543.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Executes the \"systemctl\" command used for controlling the systemd system and service manager",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "4032"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1518.001",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Uses the \"uname\" system call to query kernel version information (possible evasion)",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "4049"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "memory_pattern_urls":  [
+                                             "http://www.debian.org/Bugs/"
+                                         ],
+                 "memory_dumps":  [
+                                      {
+                                          "file_name":  "3069.1.00000000080dc000.00000000080de000.rw-.sdmp",
+                                          "process":  "/tmp/base",
+                                          "size":  "8192",
+                                          "base_address":  "135127040",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "3069"
+                                      },
+                                      {
+                                          "file_name":  "3069.1.00000000088a7000.00000000088c9000.rw-.sdmp",
+                                          "process":  "/tmp/base",
+                                          "size":  "139264",
+                                          "base_address":  "143429632",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "3069"
+                                      },
+                                      {
+                                          "file_name":  "3070.1.00000000080dc000.00000000080de000.rw-.sdmp",
+                                          "process":  "/tmp/base",
+                                          "size":  "8192",
+                                          "base_address":  "135127040",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "3070"
+                                      },
+                                      {
+                                          "file_name":  "3069.1.0000000008048000.00000000080dc000.r-x.sdmp",
+                                          "process":  "/tmp/base",
+                                          "size":  "606208",
+                                          "base_address":  "135118848",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "refs":  [
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "287"
+                                                       },
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "7037"
+                                                       }
+                                                   ],
+                                          "process_id":  "3069"
+                                      },
+                                      {
+                                          "file_name":  "3070.1.00000000ff9d6000.00000000ff9f7000.rw-.sdmp",
+                                          "process":  "/tmp/base",
+                                          "size":  "135168",
+                                          "base_address":  "4288638976",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "3070"
+                                      },
+                                      {
+                                          "file_name":  "3069.1.00000000f7f08000.00000000f7f09000.r-x.sdmp",
+                                          "process":  "/tmp/base",
+                                          "size":  "4096",
+                                          "base_address":  "4159737856",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "3069"
+                                      },
+                                      {
+                                          "file_name":  "3070.1.00000000088a7000.00000000088c9000.rw-.sdmp",
+                                          "process":  "/tmp/base",
+                                          "size":  "139264",
+                                          "base_address":  "143429632",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "3070"
+                                      },
+                                      {
+                                          "file_name":  "3070.1.0000000008048000.00000000080dc000.r-x.sdmp",
+                                          "process":  "/tmp/base",
+                                          "size":  "606208",
+                                          "base_address":  "135118848",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "refs":  [
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "287"
+                                                       },
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "7037"
+                                                       }
+                                                   ],
+                                          "process_id":  "3070"
+                                      },
+                                      {
+                                          "file_name":  "3070.1.00000000f7f08000.00000000f7f09000.r-x.sdmp",
+                                          "process":  "/tmp/base",
+                                          "size":  "4096",
+                                          "base_address":  "4159737856",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "3070"
+                                      },
+                                      {
+                                          "file_name":  "3069.1.00000000ff9d6000.00000000ff9f7000.rw-.sdmp",
+                                          "process":  "/tmp/base",
+                                          "size":  "135168",
+                                          "base_address":  "4288638976",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "3069"
+                                      },
+                                      {
+                                          "file_name":  "3070.1.00000000080de000.00000000080e3000.rw-.sdmp",
+                                          "process":  "/tmp/base",
+                                          "size":  "20480",
+                                          "base_address":  "135147520",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "3070"
+                                      },
+                                      {
+                                          "file_name":  "3069.1.00000000080de000.00000000080e3000.rw-.sdmp",
+                                          "process":  "/tmp/base",
+                                          "size":  "20480",
+                                          "base_address":  "135147520",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "3069"
+                                      }
+                                  ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "api.snapcraft.io",
+                                         "resolved_ips":  [
+                                                              "185.125.188.54",
+                                                              "185.125.188.55",
+                                                              "185.125.188.58",
+                                                              "185.125.188.59"
+                                                          ]
+                                     }
+                                 ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "185.125.188.58",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "185.125.188.54",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "58.64.185.12",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "files_dropped":  [
+                                       {
+                                           "path":  "/var/log/auth.log.1.gz",
+                                           "sha256":  "3011c3dfaa01e8ebaec0466158e482b4b583da30296b36fd73d4c6e933f9fb34",
+                                           "type":  "GZIP",
+                                           "process_name":  "/bin/gzip",
+                                           "process_id":  "3038"
+                                       },
+                                       {
+                                           "path":  "/var/log/kern.log.1.gz",
+                                           "sha256":  "c43122dba100ffd3b4dfdce1f7a353abcfdd364ef2257d6395a2b0bf666e9f7d",
+                                           "type":  "GZIP",
+                                           "process_name":  "/bin/gzip",
+                                           "process_id":  "3037"
+                                       },
+                                       {
+                                           "path":  "/var/log/syslog.1.gz",
+                                           "sha256":  "8e4d92facda0eb1114fb7b55512cf388fb729be7b506e8677a50f540037cccd1",
+                                           "type":  "GZIP",
+                                           "process_name":  "/bin/gzip",
+                                           "process_id":  "3033"
+                                       }
+                                   ],
+                 "processes_created":  [
+                                           "xterm -hold -e sh -c /tmp/sample",
+                                           "sh -c /tmp/sample",
+                                           "/tmp/sample",
+                                           "/tmp/EB93A6/996E.elf",
+                                           "/bin/gzip",
+                                           "/bin/sh sh -c \"\\n\\t\\tinvoke-rc.d --quiet cups restart \u003e /dev/null\\n\" logrotate_script \"/var/log/cups/*log \"",
+                                           "/usr/sbin/invoke-rc.d invoke-rc.d --quiet cups restart",
+                                           "/sbin/runlevel",
+                                           "/usr/bin/systemctl systemctl --quiet is-enabled cups.service",
+                                           "/usr/bin/ls ls /etc/rc[S2345].d/S[0-9][0-9]cups",
+                                           "/usr/bin/systemctl systemctl --quiet is-active cups.service",
+                                           "/bin/sh sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/syslog",
+                                           "/usr/lib/rsyslog/rsyslog-rotate",
+                                           "/usr/bin/systemctl systemctl kill -s HUP rsyslog.service",
+                                           "/bin/sh sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/mail.info/var/log/mail.warn/var/log/mail.err/var/log/mail.log/var/log/daemon.log/var/log/kern.log/var/log/auth.log/var/log/user.log/var/log/lpr.log/var/log/cron.log/var/log/debug/var/log/messages",
+                                           "/tmp/base",
+                                           "/tmp/base -"
+                                       ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "1875",
+                                            "name":  "xterm -hold -e sh -c /tmp/sample",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "1877",
+                                                                 "name":  "sh -c /tmp/sample",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "1878",
+                                                                                      "name":  "/tmp/sample"
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "3024",
+                                            "name":  "/bin/gzip"
+                                        },
+                                        {
+                                            "process_id":  "3025",
+                                            "name":  "/bin/gzip"
+                                        },
+                                        {
+                                            "process_id":  "3026",
+                                            "name":  "/bin/gzip"
+                                        },
+                                        {
+                                            "process_id":  "3027",
+                                            "name":  "/bin/sh sh -c \"\\n\\t\\tinvoke-rc.d --quiet cups restart \u003e /dev/null\\n\" logrotate_script \"/var/log/cups/*log \"",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "3028",
+                                                                 "name":  "/usr/sbin/invoke-rc.d invoke-rc.d --quiet cups restart",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "3029",
+                                                                                      "name":  "/sbin/runlevel",
+                                                                                      "files_opened":  [
+                                                                                                           "/lib/systemd/tls/avx512_1/libc.so.6",
+                                                                                                           "/lib/systemd/tls/avx512_1/x86_64/libc.so.6",
+                                                                                                           "/lib/systemd/tls/haswell/avx512_1/libc.so.6",
+                                                                                                           "/lib/systemd/tls/haswell/avx512_1/x86_64/libc.so.6",
+                                                                                                           "/lib/systemd/tls/haswell/libc.so.6",
+                                                                                                           "/lib/systemd/tls/haswell/x86_64/libc.so.6",
+                                                                                                           "/proc/1/environ",
+                                                                                                           "/proc/1/sched",
+                                                                                                           "/proc/cmdline",
+                                                                                                           "/proc/filesystems",
+                                                                                                           "/proc/self/stat",
+                                                                                                           "/proc/sys/kernel/osrelease",
+                                                                                                           "/run/systemd/container",
+                                                                                                           "/sys/firmware/efi/efivars/SystemdOptions-8cf2644b-4b0b-428f-9387-6d876050dc67",
+                                                                                                           "/var/run/utmp"
+                                                                                                       ]
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "3030",
+                                                                                      "name":  "/usr/bin/systemctl systemctl --quiet is-enabled cups.service",
+                                                                                      "files_opened":  [
+                                                                                                           "/etc/systemd/system.attached/cups.service.d",
+                                                                                                           "/etc/systemd/system.control/cups.service.d",
+                                                                                                           "/etc/systemd/system/cups.service.d",
+                                                                                                           "/proc/1/environ",
+                                                                                                           "/proc/1/sched",
+                                                                                                           "/proc/3030/stat",
+                                                                                                           "/proc/cmdline",
+                                                                                                           "/proc/filesystems",
+                                                                                                           "/proc/self/stat",
+                                                                                                           "/proc/sys/kernel/osrelease",
+                                                                                                           "/run/systemd/container",
+                                                                                                           "/run/systemd/system.attached/cups.service.d",
+                                                                                                           "/run/systemd/system.control/cups.service.d",
+                                                                                                           "/run/systemd/system/cups.service.d",
+                                                                                                           "/run/systemd/transient/cups.service.d",
+                                                                                                           "/sys/firmware/efi/efivars/SystemdOptions-8cf2644b-4b0b-428f-9387-6d876050dc67",
+                                                                                                           "/usr/lib/systemd/system/cups.service.d",
+                                                                                                           "/usr/local/lib/systemd/system/cups.service.d",
+                                                                                                           "\u003cinvalid fd (3)\u003e/cups.service.d",
+                                                                                                           "\u003cinvalid fd (3)\u003e/etc",
+                                                                                                           "\u003cinvalid fd (3)\u003e/lib",
+                                                                                                           "\u003cinvalid fd (3)\u003e/run",
+                                                                                                           "\u003cinvalid fd (3)\u003e/system",
+                                                                                                           "\u003cinvalid fd (3)\u003e/system.attached",
+                                                                                                           "\u003cinvalid fd (3)\u003e/system.control",
+                                                                                                           "\u003cinvalid fd (3)\u003e/systemd",
+                                                                                                           "\u003cinvalid fd (3)\u003e/transient",
+                                                                                                           "\u003cinvalid fd (3)\u003e/usr",
+                                                                                                           "\u003cinvalid fd (4)\u003e/cups.service.d",
+                                                                                                           "\u003cinvalid fd (4)\u003e/lib",
+                                                                                                           "\u003cinvalid fd (4)\u003e/local",
+                                                                                                           "\u003cinvalid fd (4)\u003e/system",
+                                                                                                           "\u003cinvalid fd (4)\u003e/systemd"
+                                                                                                       ]
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "3031",
+                                                                                      "name":  "/usr/bin/ls ls /etc/rc[S2345].d/S[0-9][0-9]cups",
+                                                                                      "files_opened":  [
+                                                                                                           "/etc/locale.alias",
+                                                                                                           "/proc/filesystems",
+                                                                                                           "/usr/share/locale/en.UTF-8/LC_MESSAGES/coreutils.mo",
+                                                                                                           "/usr/share/locale/en.utf8/LC_MESSAGES/coreutils.mo",
+                                                                                                           "/usr/share/locale/en_US.UTF-8/LC_MESSAGES/coreutils.mo",
+                                                                                                           "/usr/share/locale/en_US.utf8/LC_MESSAGES/coreutils.mo",
+                                                                                                           "/usr/share/locale/en_US/LC_MESSAGES/coreutils.mo",
+                                                                                                           "/usr/share/locale/locale.alias"
+                                                                                                       ]
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "3032",
+                                                                                      "name":  "/usr/bin/systemctl systemctl --quiet is-active cups.service",
+                                                                                      "files_opened":  [
+                                                                                                           "/proc/1/environ",
+                                                                                                           "/proc/1/sched",
+                                                                                                           "/proc/3032/stat",
+                                                                                                           "/proc/cmdline",
+                                                                                                           "/proc/filesystems",
+                                                                                                           "/proc/self/stat",
+                                                                                                           "/proc/sys/kernel/osrelease",
+                                                                                                           "/run/systemd/container",
+                                                                                                           "/sys/firmware/efi/efivars/SystemdOptions-8cf2644b-4b0b-428f-9387-6d876050dc67"
+                                                                                                       ]
+                                                                                  }
+                                                                              ],
+                                                                 "files_opened":  [
+                                                                                      "/etc/",
+                                                                                      "/etc/rc2.d/",
+                                                                                      "/etc/rc3.d/",
+                                                                                      "/etc/rc4.d/",
+                                                                                      "/etc/rc5.d/",
+                                                                                      "/etc/rcS.d/",
+                                                                                      "/usr/sbin/invoke-rc.d"
+                                                                                  ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "3033",
+                                            "name":  "/bin/gzip",
+                                            "files_opened":  [
+                                                                 "/var/log/syslog.1"
+                                                             ],
+                                            "files_written":  [
+                                                                  "/var/log/syslog.1.gz"
+                                                              ]
+                                        },
+                                        {
+                                            "process_id":  "3034",
+                                            "name":  "/bin/sh sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/syslog",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "3035",
+                                                                 "name":  "/usr/lib/rsyslog/rsyslog-rotate",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "3036",
+                                                                                      "name":  "/usr/bin/systemctl systemctl kill -s HUP rsyslog.service",
+                                                                                      "files_opened":  [
+                                                                                                           "/proc/1/environ",
+                                                                                                           "/proc/1/sched",
+                                                                                                           "/proc/3036/stat",
+                                                                                                           "/proc/cmdline",
+                                                                                                           "/proc/filesystems",
+                                                                                                           "/proc/self/stat",
+                                                                                                           "/proc/sys/kernel/osrelease",
+                                                                                                           "/run/systemd/container",
+                                                                                                           "/sys/firmware/efi/efivars/SystemdOptions-8cf2644b-4b0b-428f-9387-6d876050dc67"
+                                                                                                       ]
+                                                                                  }
+                                                                              ],
+                                                                 "files_opened":  [
+                                                                                      "/usr/lib/rsyslog/rsyslog-rotate"
+                                                                                  ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "3037",
+                                            "name":  "/bin/gzip",
+                                            "files_opened":  [
+                                                                 "/var/log/kern.log.1"
+                                                             ],
+                                            "files_written":  [
+                                                                  "/var/log/kern.log.1.gz"
+                                                              ]
+                                        },
+                                        {
+                                            "process_id":  "3038",
+                                            "name":  "/bin/gzip",
+                                            "files_opened":  [
+                                                                 "/var/log/auth.log.1"
+                                                             ],
+                                            "files_written":  [
+                                                                  "/var/log/auth.log.1.gz"
+                                                              ]
+                                        },
+                                        {
+                                            "process_id":  "3039",
+                                            "name":  "/bin/sh sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/mail.info/var/log/mail.warn/var/log/mail.err/var/log/mail.log/var/log/daemon.log/var/log/kern.log/var/log/auth.log/var/log/user.log/var/log/lpr.log/var/log/cron.log/var/log/debug/var/log/messages",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "3040",
+                                                                 "name":  "/usr/lib/rsyslog/rsyslog-rotate",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "3041",
+                                                                                      "name":  "/usr/bin/systemctl systemctl kill -s HUP rsyslog.service",
+                                                                                      "files_opened":  [
+                                                                                                           "/proc/1/environ",
+                                                                                                           "/proc/1/sched",
+                                                                                                           "/proc/3041/stat",
+                                                                                                           "/proc/cmdline",
+                                                                                                           "/proc/filesystems",
+                                                                                                           "/proc/self/stat",
+                                                                                                           "/proc/sys/kernel/osrelease",
+                                                                                                           "/run/systemd/container",
+                                                                                                           "/sys/firmware/efi/efivars/SystemdOptions-8cf2644b-4b0b-428f-9387-6d876050dc67"
+                                                                                                       ]
+                                                                                  }
+                                                                              ],
+                                                                 "files_opened":  [
+                                                                                      "/usr/lib/rsyslog/rsyslog-rotate"
+                                                                                  ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "3069",
+                                            "name":  "/tmp/base",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "3070",
+                                                                 "name":  "/tmp/base -",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "3071",
+                                                                                      "name":  "/tmp/base -",
+                                                                                      "files_opened":  [
+                                                                                                           "/usr/share/zoneinfo/Etc/UTC"
+                                                                                                       ]
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        }
+                                    ],
+                 "memory_pattern_domains":  [
+                                                "www.debian.org"
+                                            ],
+                 "files_opened":  [
+                                      "/root/.Xdefaults-laptop",
+                                      "/etc/X11/app-defaults/XTerm",
+                                      "/dev/tty",
+                                      "/dev/ptmx",
+                                      "/usr/share/fonts",
+                                      "/usr/local/share/fonts/.uuid",
+                                      "/usr/local/share/fonts",
+                                      "/root/.local/share/fonts/.uuid",
+                                      "/root/.fonts/.uuid",
+                                      "/root/.XCompose",
+                                      "/lib/terminfo/x/xterm",
+                                      "/dev/pts/0",
+                                      "/etc/group",
+                                      "/etc/passwd",
+                                      "/proc/sys/kernel/ngroups_max",
+                                      "/etc/shells",
+                                      "/dev/null",
+                                      "/etc/localtime",
+                                      "/etc/resolv.conf",
+                                      "/etc/nsswitch.conf",
+                                      "/etc/ld.so.cache",
+                                      "/lib/i386-linux-gnu/libnss_compat.so.2",
+                                      "/lib/i386-linux-gnu/libnsl.so.1",
+                                      "/lib/i386-linux-gnu/libc.so.6",
+                                      "/lib/i386-linux-gnu/ld-linux.so.2",
+                                      "/lib/i386-linux-gnu/libnss_nis.so.2",
+                                      "/lib/i386-linux-gnu/libnss_files.so.2",
+                                      "/etc/",
+                                      "/etc/locale.alias",
+                                      "/etc/rc2.d/",
+                                      "/etc/rc3.d/",
+                                      "/etc/rc4.d/",
+                                      "/etc/rc5.d/",
+                                      "/etc/rcS.d/",
+                                      "/etc/systemd/system.attached/cups.service.d",
+                                      "/etc/systemd/system.control/cups.service.d",
+                                      "/etc/systemd/system/cups.service.d",
+                                      "/lib/systemd/tls/avx512_1/libc.so.6",
+                                      "/lib/systemd/tls/avx512_1/x86_64/libc.so.6",
+                                      "/lib/systemd/tls/haswell/avx512_1/libc.so.6",
+                                      "/lib/systemd/tls/haswell/avx512_1/x86_64/libc.so.6",
+                                      "/lib/systemd/tls/haswell/libc.so.6",
+                                      "/lib/systemd/tls/haswell/x86_64/libc.so.6",
+                                      "/proc/1/environ",
+                                      "/proc/1/sched",
+                                      "/proc/3030/stat",
+                                      "/proc/3032/stat",
+                                      "/proc/3036/stat",
+                                      "/proc/3041/stat",
+                                      "/proc/cmdline",
+                                      "/proc/filesystems",
+                                      "/proc/self/stat",
+                                      "/proc/sys/kernel/osrelease",
+                                      "/run/systemd/container",
+                                      "/run/systemd/system.attached/cups.service.d",
+                                      "/run/systemd/system.control/cups.service.d",
+                                      "/run/systemd/system/cups.service.d",
+                                      "/run/systemd/transient/cups.service.d",
+                                      "/sys/firmware/efi/efivars/SystemdOptions-8cf2644b-4b0b-428f-9387-6d876050dc67",
+                                      "/usr/lib/rsyslog/rsyslog-rotate",
+                                      "/usr/lib/systemd/system/cups.service.d",
+                                      "/usr/local/lib/systemd/system/cups.service.d",
+                                      "/usr/sbin/invoke-rc.d",
+                                      "/usr/share/locale/en.UTF-8/LC_MESSAGES/coreutils.mo",
+                                      "/usr/share/locale/en.utf8/LC_MESSAGES/coreutils.mo",
+                                      "/usr/share/locale/en_US.UTF-8/LC_MESSAGES/coreutils.mo",
+                                      "/usr/share/locale/en_US.utf8/LC_MESSAGES/coreutils.mo",
+                                      "/usr/share/locale/en_US/LC_MESSAGES/coreutils.mo",
+                                      "/usr/share/locale/locale.alias",
+                                      "/usr/share/zoneinfo/Etc/UTC",
+                                      "/var/log/auth.log.1",
+                                      "/var/log/kern.log.1",
+                                      "/var/log/syslog.1",
+                                      "/var/run/utmp",
+                                      "\u003cinvalid fd (3)\u003e/cups.service.d",
+                                      "\u003cinvalid fd (3)\u003e/etc",
+                                      "\u003cinvalid fd (3)\u003e/lib",
+                                      "\u003cinvalid fd (3)\u003e/run",
+                                      "\u003cinvalid fd (3)\u003e/system",
+                                      "\u003cinvalid fd (3)\u003e/system.attached",
+                                      "\u003cinvalid fd (3)\u003e/system.control",
+                                      "\u003cinvalid fd (3)\u003e/systemd",
+                                      "\u003cinvalid fd (3)\u003e/transient",
+                                      "\u003cinvalid fd (3)\u003e/usr",
+                                      "\u003cinvalid fd (4)\u003e/cups.service.d",
+                                      "\u003cinvalid fd (4)\u003e/lib",
+                                      "\u003cinvalid fd (4)\u003e/local",
+                                      "\u003cinvalid fd (4)\u003e/system",
+                                      "\u003cinvalid fd (4)\u003e/systemd"
+                                  ],
+                 "text_highlighted":  [
+                                          ""
+                                      ],
+                 "attack_techniques":  {
+                                           "T1027.005":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "contain obfuscated stackstrings",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "contain obfuscated stackstrings"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using XOR",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encode data using XOR"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1071":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Adversaries may communicate using application layer protocols to avoid detection/network filtering by blending in with existing traffic."
+                                                         }
+                                                     ],
+                                           "T1064":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Executes commands using a shell command-line interpreter",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "2075"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1543.002":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Executes the \"systemctl\" command used for controlling the systemd system and service manager",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "4032"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1518.001":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Uses the \"uname\" system call to query kernel version information (possible evasion)",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "4049"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ]
+                                       }
+             }
+}

@@ -1,0 +1,489 @@
+{
+    "data":  {
+                 "tags":  [
+                              "SUSPICIOUS_DNS"
+                          ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "access PEB ldr_data",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "access PEB ldr_data"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "parse PE header",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "parse PE header"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "link function at runtime on Windows",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "link function at runtime on Windows"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "files_deleted":  [
+                                       "%SAMPLEPATH%\\Clock.EXE",
+                                       "C:\\8a568d203f3d1ad096bdb5db8dc48a799883db0fc88de49dbe9fac99fe797122"
+                                   ],
+                 "verdicts":  [
+                                  "UNKNOWN_VERDICT"
+                              ],
+                 "signature_matches":  [
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "PEB access",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: PEB access\n    authors:\n      - michael.hunhoff@mandiant.com\n    lib: true\n    scope: basic block\n    mbc:\n      - Anti-Behavioral Analysis::Debugger Detection::Process Environment Block [B0001.019]\n    references:\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/NtGlobalFlag.cpp\n    examples:\n      - al-khaser_x86.exe_:0x420D20\n  features:\n    - or:\n      - characteristic: peb access\n      - and:\n        # https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/NtGlobalFlag.cpp#L41\n        - arch: i386\n        - characteristic: fs access\n        - or:\n          # in 0f5d5d07c6533bc6d991836ce79daaa1\n          # then we have:\n          #\n          #     xor edx, edx\n          #     mov edx, fs:[edx+30h]\n          - offset: 0x30\n          - instruction:\n            # in the case of CallObfuscator, gs:[rax]\n            - mnemonic: add\n            - number: 0x30\n      - and:\n        - arch: amd64\n        - characteristic: gs access\n        - or:\n          - offset: 0x60\n          - instruction:\n            - mnemonic: add\n            - number: 0x60\n      - and:\n        # WoW64 PEB address is fetched via the WoW64 Thread Environment Block (TEB) at FS:[0x18]-0x2000\n        # https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/NtGlobalFlag.cpp#L45\n        - characteristic: fs access\n        - instruction:\n          - mnemonic: sub\n          - number: 0x2000\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/NtGlobalFlag.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "delay execution",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: delay execution\n    authors:\n      - michael.hunhoff@mandiant.com\n    lib: true\n    scope: basic block\n    mbc:\n      - Anti-Behavioral Analysis::Dynamic Analysis Evasion::Delayed Execution [B0003.003]\n    references:\n      - https://docs.microsoft.com/en-us/windows/win32/sync/wait-functions\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/TimingAttacks/timing.cpp\n    examples:\n      - al-khaser_x86.exe_:0x449770\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x402FA6\n  features:\n    - or:\n      - api: kernel32.Sleep\n      - api: kernel32.SleepEx\n      - api: kernel32.WaitForSingleObject\n      - api: kernel32.SignalObjectAndWait\n      - api: kernel32.WaitForSingleObjectEx\n      - api: kernel32.WaitForMultipleObjects\n      - api: kernel32.WaitForMultipleObjectsEx\n      - api: kernel32.RegisterWaitForSingleObject\n      - api: WaitOnAddress\n      - api: user32.MsgWaitForMultipleObjects\n      - api: user32.MsgWaitForMultipleObjectsEx\n      - api: NtDelayExecution\n      - api: KeWaitForSingleObject\n      - api: KeDelayExecutionThread\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://docs.microsoft.com/en-us/windows/win32/sync/wait-functions"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/TimingAttacks/timing.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "allocate memory",
+                                               "authors":  [
+                                                               "0x534a@mailbox.org"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: allocate memory\n    authors:\n      - 0x534a@mailbox.org\n    lib: true\n    scope: basic block\n    mbc:\n      - Memory::Allocate Memory [C0007]\n    examples:\n      - Practical Malware Analysis Lab 03-03.exe_:0x4010EA\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x140001ABA\n  features:\n    - or:\n      - api: kernel32.VirtualAlloc\n      - api: kernel32.VirtualAllocEx\n      - api: kernel32.VirtualAllocExNuma\n      - api: kernel32.VirtualProtect\n      - api: kernel32.VirtualProtectEx\n      - api: NtAllocateVirtualMemory\n      - api: ZwAllocateVirtualMemory\n      - api: NtMapViewOfSection\n      - api: ZwMapViewOfSection\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "allocate RW memory",
+                                               "authors":  [
+                                                               "0x534a@mailbox.org"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: allocate RW memory\n    authors:\n      - 0x534a@mailbox.org\n    lib: true\n    scope: basic block\n    mbc:\n      - Memory::Allocate Memory [C0007]\n    examples:\n      - Practical Malware Analysis Lab 17-02.dll_:0x1000D10D\n  features:\n    - and:\n      - match: allocate memory\n      - number: 0x4 = PAGE_READWRITE\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "access PEB ldr_data",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: access PEB ldr_data\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: basic block\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    references:\n      - https://www.geoffchappell.com/studies/windows/win32/ntdll/structs/peb_ldr_data.htm\n      - https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8\n    examples:\n      - 3FDFB2D522E7DEECAAAF2F87420F7E75:0x4117B7\n  features:\n    - or:\n      - and:\n        - arch: i386\n        - description: x32\n\n        - match: PEB access\n\n        # x86 Windows uses fs:0 to access the TIB which contains SEH information at offset 0\n        # checking for fs:0 and a (possibly unrelated) number or offset often results in false positives\n\n        - offset: 0x0C = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x0C = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x14 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x1C = PEB.LDR_DATA.InInitializationOrderModuleList\n\n      - and:\n        - arch: amd64\n        - description: x64\n\n        - match: PEB access\n\n        - offset: 0x18 = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x10 = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x20 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x30 = PEB.LDR_DATA.InInitializationOrderModuleList\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.geoffchappell.com/studies/windows/win32/ntdll/structs/peb_ldr_data.htm"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain loop",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain loop\n    authors:\n      - moritz.raabe@mandiant.com\n    lib: true\n    scope: function\n    examples:\n      - 08AC667C65D36D6542917655571E61C8:0x406EAA\n  features:\n    - or:\n      - characteristic: loop\n      - characteristic: tight loop\n      - characteristic: recursive call\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse PE header",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse PE header\n    namespace: load-code/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x403DD0\n  features:\n    # TODO filter out false positives\n    - and:\n      - os: windows\n      - and:\n        - mnemonic: cmp\n        - or:\n          - number: 0x4550 = IMAGE_NT_SIGNATURE (PE)\n          - and:\n            - number: 0x50\n            - number: 0x45\n        - or:\n          - number: 0x5A4D = IMAGE_DOS_SIGNATURE (MZ)\n          - and:\n            - number: 0x4D\n            - number: 0x5A\n        - optional:\n          - and:\n            - offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n            - or:\n              - and:\n                - arch: i386\n                - offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                - offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n              - and:\n                - arch: amd64\n                - offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n                - offset: 0x30 = IMAGE_NT_HEADERS64.OptionalHeader.ImageBase\n          - basic block:\n            - and:\n              - offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n              - 3 or more:\n                - offset: 0x4 = IMAGE_NT_HEADERS.FileHeader.Machine\n                - offset: 0x6 = IMAGE_NT_HEADERS.FileHeader.NumberOfSections\n                - offset: 0x14 = IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader\n                - offset: 0x16 = IMAGE_NT_HEADERS.FileHeader.Characteristics\n                - offset: 0x28 = IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint  # for 32 and 64 bit\n                - or:\n                  - and:\n                    - arch: i386\n                    - offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                  - and:\n                    - arch: amd64\n                    - offset: 0x30 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "link function at runtime on Windows",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: link function at runtime on Windows\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x404130\n      - Practical Malware Analysis Lab 01-04.exe_:0x401350\n  features:\n    - and:\n      - os: windows\n      - or:\n        - api: kernel32.LoadLibrary\n        - api: kernel32.GetModuleHandle\n        - api: kernel32.GetModuleHandleEx\n        - api: ntdll.LdrLoadDll\n      - or:\n        - api: kernel32.GetProcAddress\n        - api: ntdll.LdrGetProcedureAddress\n      - optional:\n        - characteristic: indirect call\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain a resource (.rsrc) section",
+                                               "description":  "executable/pe/section/rsrc",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain a resource (.rsrc) section\n    namespace: executable/pe/section/rsrc\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: file\n    examples:\n      - A933A1A402775CFA94B6BEE0963F4B46:0x41fd25\n  features:\n    - section: .rsrc\n"
+                                           }
+                                       ],
+                 "files_copied":  [
+                                      {
+                                          "source":  "C:\\8a568d203f3d1ad096bdb5db8dc48a799883db0fc88de49dbe9fac99fe797122",
+                                          "destination":  "C:\\WINDOWS\\Debug\\mdlhost.exe"
+                                      }
+                                  ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2264",
+                                            "name":  "%windir%\\System32\\svchost.exe -k WerSvcGroup"
+                                        },
+                                        {
+                                            "process_id":  "2760",
+                                            "name":  "%CONHOST% \"5351298761693102614-2496338212698459081986427493-7916688618894451201179506673"
+                                        },
+                                        {
+                                            "process_id":  "2992",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        },
+                                        {
+                                            "process_id":  "3036",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        },
+                                        {
+                                            "process_id":  "2716",
+                                            "name":  "%windir%\\Debug\\wnvhost.exe"
+                                        },
+                                        {
+                                            "process_id":  "2636",
+                                            "name":  "%SAMPLEPATH%",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2748",
+                                                                 "name":  "\"%ComSpec%\" /c del %TEMP%\\T5YUTS~1.EXE \u003e nul",
+                                                                 "time_offset":  2
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2468",
+                                            "name":  "%WINDIR%\\explorer.exe",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2752",
+                                                                 "name":  "%SAMPLEPATH%\\Clock.EXE",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "3860",
+                                                                                      "name":  "C:\\Windows\\SysWOW64\\cmd.exe"
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "540",
+                                            "name":  "-",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "3960",
+                                                                 "name":  "C:\\Windows\\debug\\izhhost.exe"
+                                                             }
+                                                         ]
+                                        }
+                                    ],
+                 "ids_alerts":  [
+                                    {
+                                        "rule_msg":  "(eth) truncated ethernet header",
+                                        "rule_category":  "misc-activity",
+                                        "rule_id":  "116:424",
+                                        "alert_severity":  "low",
+                                        "rule_source":  "Snort registered user ruleset",
+                                        "rule_url":  "https://www.snort.org/downloads/#rule-downloads",
+                                        "rule_raw":  "alert ( gid:116; sid:424; rev:2; msg:\"(eth) truncated ethernet header\"; metadata: policy max-detect-ips drop, rule-type decode; classtype:misc-activity;)"
+                                    },
+                                    {
+                                        "rule_msg":  "PROTOCOL-ICMP Destination Unreachable Network Unreachable",
+                                        "rule_category":  "misc-activity",
+                                        "rule_id":  "1:401",
+                                        "alert_severity":  "low",
+                                        "rule_source":  "Snort registered user ruleset",
+                                        "rule_url":  "https://www.snort.org/downloads/#rule-downloads",
+                                        "rule_raw":  "alert icmp $EXTERNAL_NET any -\u003e $HOME_NET any ( msg:\"PROTOCOL-ICMP Destination Unreachable Network Unreachable\"; icode:0; itype:3; metadata:ruleset community; classtype:misc-activity; sid:401; rev:9; )"
+                                    },
+                                    {
+                                        "rule_msg":  "ET INFO DNS Query for Suspicious .ga Domain",
+                                        "rule_category":  "Misc activity",
+                                        "rule_id":  "1:2025105",
+                                        "alert_severity":  "low",
+                                        "rule_source":  "Proofpoint Emerging Threats Open",
+                                        "rule_url":  "https://rules.emergingthreats.net/",
+                                        "rule_raw":  "alert dns $HOME_NET any -\u003e any any (msg:\"ET INFO DNS Query for Suspicious .ga Domain\"; threshold: type limit, count 1, track by_src, seconds 120; dns.query; content:\".ga\"; nocase; endswith; classtype:misc-activity; sid:2025105; rev:6; metadata:created_at 2017_12_03, former_category INFO, signature_severity Informational, updated_at 2020_09_16;)"
+                                    }
+                                ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "23.40.197.184",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "192.229.211.108",
+                                        "destination_port":  80,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "services_opened":  [
+                                         "Serfier"
+                                     ],
+                 "registry_keys_set":  [
+                                           {
+                                               "key":  "HKLM\\SYSTEM\\ControlSet001\\Services\\Serfier\\Description",
+                                               "value":  "Microsoft .NET COM+ Integration with SOAP"
+                                           },
+                                           {
+                                               "key":  "HKLM\\System\\CurrentControlSet\\Services\\Serfier\\Start",
+                                               "value":  "DWORD (0x00000002)"
+                                           },
+                                           {
+                                               "key":  "HKLM\\System\\CurrentControlSet\\Services\\Serfier\\ImagePath",
+                                               "value":  "C:\\Windows\\Debug\\izhhost.exe"
+                                           }
+                                       ],
+                 "mutexes_created":  [
+                                         "Serfier",
+                                         "ShimCacheMutex"
+                                     ],
+                 "processes_terminated":  [
+                                              "%windir%\\System32\\svchost.exe -k WerSvcGroup",
+                                              "%CONHOST% \"5351298761693102614-2496338212698459081986427493-7916688618894451201179506673",
+                                              "wmiadap.exe /F /T /R",
+                                              "%SAMPLEPATH%",
+                                              "\"%ComSpec%\" /c del %TEMP%\\T5YUTS~1.EXE \u003e nul",
+                                              "%SAMPLEPATH%\\Clock.EXE",
+                                              "C:\\Windows\\SysWOW64\\cmd.exe",
+                                              "C:\\Windows\\System32\\conhost.exe"
+                                          ],
+                 "modules_loaded":  [
+                                        "C:\\Windows\\debug\\izhhost.exe",
+                                        "kernel32.dll",
+                                        "advapi32.dll",
+                                        "iphlpapi.dll",
+                                        "mfc42.dll",
+                                        "msvcrt.dll",
+                                        "shell32.dll",
+                                        "shlwapi.dll",
+                                        "user32.dll",
+                                        "ws2_32.dll",
+                                        "rpcrt4.dll",
+                                        "ole32.dll",
+                                        "netapi32",
+                                        "setupapi.dll",
+                                        "clbcatq.dll",
+                                        "secur32.dll",
+                                        "version.dll"
+                                    ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "oat0ulrfbj.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "gsbrcd0xtb.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "tfyezqwkgo.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "amfvg8d2n6.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "jveufgcawe.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "am6l7x4rnv.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "fraqbc9wsa.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "wi2h3tznjr.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "zbukvwsqcu.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "htm3nek9uc.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "p2kalmig3k.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "dp9o0a7uqy.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "o1jzklhf2j.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "myr8sjpdzh.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "5gzpa2xvhz.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "r4mcnoki5m.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "3exnyzvtfx.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "0leuf7c1m5.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "bngwh9e3o7.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "www.facebook.com",
+                                         "resolved_ips":  [
+                                                              "2a03:2880:f10d:183:face:b00c:0:25de",
+                                                              "157.240.11.35",
+                                                              "157.240.3.35",
+                                                              "157.240.253.35"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "www.twitter.com",
+                                         "resolved_ips":  [
+                                                              "104.244.42.1",
+                                                              "104.244.42.193",
+                                                              "104.244.42.129"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "lxq7riocyg.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "co8n9z6tpx.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "q3lbmnjh4l.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "x0situqoas.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "www.google.com",
+                                         "resolved_ips":  [
+                                                              "142.251.211.228",
+                                                              "216.58.214.164"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "htCSDeAYuc.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "gsBRCd0Xtb.ping2.aspx.ga"
+                                     },
+                                     {
+                                         "hostname":  "time.windows.com",
+                                         "resolved_ips":  [
+                                                              "51.145.123.29"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "gsbrcd0xtb.ping2.aspx.ga.ovh.net"
+                                     }
+                                 ],
+                 "files_opened":  [
+                                      "C:\\WINDOWS\\Registration\\R000000000007.clb",
+                                      "C:\\WINDOWS\\system32\\cmd.exe",
+                                      "C:\\8a568d203f3d1ad096bdb5db8dc48a799883db0fc88de49dbe9fac99fe797122",
+                                      "\\\\.\\Ip",
+                                      "C:\\WINDOWS\\Debug\\mdlhost.exe",
+                                      "\\\\.\\PIPE\\wkssvc",
+                                      "\\\\.\\PIPE\\lsarpc",
+                                      "\\\\.\\MountPointManager",
+                                      "nul"
+                                  ],
+                 "processes_created":  [
+                                           "%SAMPLEPATH%\\Clock.EXE",
+                                           "C:\\Windows\\debug\\izhhost.exe",
+                                           "C:\\Windows\\SysWOW64\\cmd.exe",
+                                           "C:\\WINDOWS\\system32\\cmd.exe C:\\WINDOWS\\system32\\cmd.exe\" /c del C:\\8A568D~1 \u003e nul\""
+                                       ],
+                 "command_executions":  [
+                                            "%SAMPLEPATH%",
+                                            "\"%ComSpec%\" /c del %TEMP%\\T5YUTS~1.EXE \u003e nul",
+                                            "\"%SAMPLEPATH%\\Clock.EXE\" ",
+                                            "C:\\Windows\\Debug\\izhhost.exe",
+                                            "\"C:\\Windows\\system32\\cmd.exe\" /c del %SAMPLEPATH%\\Clock.EXE \u003e nul",
+                                            "(Open) C:\\WINDOWS\\system32\\cmd.exe/c del C:\\8A568D~1 \u003e nul [(null)]"
+                                        ],
+                 "files_written":  [
+                                       "C:\\WINDOWS\\Debug\\mdlhost.exe"
+                                   ],
+                 "files_dropped":  [
+                                       {
+                                           "path":  "%windir%\\Debug\\wnvhost.exe",
+                                           "sha256":  "037a4b6bdf203d239d3bcf8a2de0cc81fcd6e4ab0bde044b435fd22fd402233b"
+                                       },
+                                       {
+                                           "path":  "C:\\Windows\\debug\\izhhost.exe"
+                                       },
+                                       {
+                                           "path":  "mdlhost.exe",
+                                           "sha256":  "be997668fa76bf1659a4fc9dc4d246f7570bacc7f5da36df675e165251ccc5d7"
+                                       }
+                                   ],
+                 "attack_techniques":  {
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "access PEB ldr_data",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "access PEB ldr_data"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "parse PE header",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "parse PE header"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "link function at runtime on Windows",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "link function at runtime on Windows"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

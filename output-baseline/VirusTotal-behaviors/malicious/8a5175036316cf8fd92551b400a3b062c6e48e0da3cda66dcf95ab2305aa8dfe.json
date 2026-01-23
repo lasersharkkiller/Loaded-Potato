@@ -1,0 +1,712 @@
+{
+    "data":  {
+                 "verdict_labels":  [
+                                        "Metasploit",
+                                        "Rozena"
+                                    ],
+                 "processes_created":  [
+                                           "C:\\Windows\\system32\\WerFault.exe -u -p 1832 -s 292"
+                                       ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "8.149.128.10",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2896",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        },
+                                        {
+                                            "process_id":  "2852",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        },
+                                        {
+                                            "process_id":  "2620",
+                                            "name":  "%TEMP%\\KNUDTBZ0JZY957T0.exe"
+                                        },
+                                        {
+                                            "process_id":  "2260",
+                                            "name":  "%windir%\\System32\\svchost.exe -k WerSvcGroup"
+                                        },
+                                        {
+                                            "process_id":  "1832",
+                                            "name":  "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\loader_go_upx.exe\" ",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "1280",
+                                                                 "name":  "C:\\Windows\\system32\\WerFault.exe -u -p 1832 -s 292"
+                                                             }
+                                                         ]
+                                        }
+                                    ],
+                 "mbc":  [
+                             {
+                                 "id":  "C0030.001",
+                                 "objective":  "Data",
+                                 "behavior":  "Non-Cryptographic Hash",
+                                 "method":  "MurmurHash",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "1"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1082",
+                                 "objective":  "Discovery",
+                                 "behavior":  "System Information Discovery",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "2"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0027.009",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encrypt Data",
+                                 "method":  "RC4",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "6"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0021.004",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Generate Pseudo-random Sequence",
+                                 "method":  "RC4 PRGA",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "6"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m05",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encryption-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "9"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0027.001",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encrypt Data",
+                                 "method":  "AES",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "9"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0052",
+                                 "objective":  "File System",
+                                 "behavior":  "Writes File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "11"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "verdicts":  [
+                                  "UNKNOWN_VERDICT",
+                                  "MALWARE"
+                              ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "0",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get kernel32 base address",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "gs access",
+                                                                  "PEB access",
+                                                                  "access PEB ldr_data"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get kernel32 base address\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    references:\n      - https://idafchev.github.io/exploit/2017/09/26/writing_windows_shellcode.html\n      - https://www.geoffchappell.com/studies/windows/win32/ntdll/structs/ldr_data_table_entry.htm\n    examples:\n      - 67f8302a2fd28d15f62d6d20d748bfe350334e5353cbdef112bd1f8231b5599d:0x406936\n  features:\n    - and:\n      # PEB -\u003e PEB.Ldr -\u003e PEB_LDR_DATA.InLoadOrderModuleList.Flink\n      - match: access PEB ldr_data\n      # -\u003e current module -\u003e ntdll\n      - count(offset(0)): 2\n      # -\u003e kernel32 -\u003e LDR_DATA_TABLE_ENTRY.DllBase\n      - or:\n        - and:\n          - arch: i386\n          - offset: 0x18 = LDR_DATA_TABLE_ENTRY.DllBase\n        - and:\n          - arch: amd64\n          - offset: 0x30 = LDR_DATA_TABLE_ENTRY.DllBase\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://idafchev.github.io/exploit/2017/09/26/writing_windows_shellcode.html"
+                                                            },
+                                                            {
+                                                                "ref":  "https://www.geoffchappell.com/studies/windows/win32/ntdll/structs/ldr_data_table_entry.htm"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "1",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using murmur3",
+                                               "description":  "data-manipulation/hashing/murmur",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: shr"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using murmur3\n    namespace: data-manipulation/hashing/murmur\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic features\n    mbc:\n      - Data::Non-Cryptographic Hash::MurmurHash [C0030.001]\n    references:\n      - https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp\n    examples:\n      - c66172b12971a329f8d5ff01665f204b:0x404A18\n  features:\n    - or:\n      - and:\n        - number: 0x85ebca6b = 32-bit finalization mix constant 1\n        - number: 0xc2b2ae35 = 32-bit finalization mix constant 2\n      - and:\n        - number: 0xff51afd7ed558ccd = 64-bit finalization mix constant 1\n        - number: 0xc4ceb9fe1a85ec53 = 64-bit finalization mix constant 2\n      - and:\n        - number: 0xcc9e2d51 = c1 32-bit hash\n        - number: 0x1b873593 = c2 32-bit hash\n      - and:\n        - number: 0x239b961b = 32-bit c1 for 128-bit hash\n        - number: 0xab0e9789 = 32-bit c2 for 128-bit hash\n        - number: 0x38b34ae5 = 32-bit c3 for 128-bit hash\n        - number: 0xa1e38b93 = 32-bit c4 for 128-bit hash\n      - and:\n        - number: 0x87c37b91114253d5 = 64-bit c1 for 128-bit hash\n        - number: 0x4cf5ad432745937f = 64-bit c2 for 128-bit hash\n      - basic block:\n        - and:\n          - description: \u0027hash \u003e\u003e 16; hash \u003e\u003e 13; hash \u003e\u003e 16\u0027\n          - count(mnemonic(shr)): 3\n          - instruction:\n            - mnemonic: shr\n            - number: 16\n          - instruction:\n            - mnemonic: shr\n            - number: 13\n          - optional:\n            - count(characteristic(nzxor)): 3 or more\n      - and:\n        # Group this two blocks under an `and` as on their own they are not\n        # unique enough and would cause false positives\n        - instruction:\n          - description: k ROL r1\n          - mnemonic: rol\n          - number: 15 = r1\n        - instruction:\n          - description: hash ROL r2\n          - mnemonic: rol\n          - number: 13 = r2\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "check OS version",
+                                               "description":  "host-interaction/os/version",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "johnk3r"
+                                                           ],
+                                               "match_data":  [
+                                                                  "PEB access",
+                                                                  "Windows Server 2016 / Windows Server 2019 / Windows 10",
+                                                                  "get OS version"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: check OS version\n    namespace: host-interaction/os/version\n    authors:\n      - michael.hunhoff@mandiant.com\n      - johnk3r\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    mbc:\n      - Discovery::System Information Discovery [E1082]\n    examples:\n      - 493167E85E45363D09495D0841C30648:0x401000\n  features:\n    - and:\n      - match: get OS version\n      - or:\n        - and:\n          - instruction:\n            - mnemonic: cmp\n            - number: 5 = Windows 2000\n          - optional:\n            - instruction:\n              - mnemonic: cmp\n              - or:\n                - number: 0\n                - number: 1 = Windows XP\n                - number: 2 = Windows XP 64-bit / Windows Server 2003 / Windows Server 2003 R2\n        - and:\n          - instruction:\n            - mnemonic: cmp\n            - number: 6 = Windows Vista / Windows Server 2008\n          - optional:\n            - instruction:\n              - mnemonic: cmp\n              - or:\n                - number: 0\n                - number: 1 = Windows Server 2008 R2 / Windows 7\n                - number: 2 = Windows Server 2012 / Windows 8\n                - number: 3 = Windows Server 2012 R2 / Windows 8.1\n        - and:\n          - instruction:\n            - mnemonic: cmp\n            - number: 10 = Windows Server 2016 / Windows Server 2019 / Windows 10\n          - optional:\n            - instruction:\n              - mnemonic: cmp\n              - number: 0\n"
+                                           },
+                                           {
+                                               "id":  "4",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "resolve function by parsing PE exports",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "sara-rn"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: movzx",
+                                                                  "loop"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: resolve function by parsing PE exports\n    namespace: load-code/pe\n    authors:\n      - sara-rn\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, offset, mnemonic features\n    examples:\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x406BA1\n  features:\n    - and:\n      - os: windows\n      - or:\n        - characteristic: loop\n        - mnemonic: movzx\n      - and:\n        - offset: 0x3C = IMAGE_DOS_HEADER.PE.e_lfanew\n        - or:\n          - and:\n            - arch: i386\n            - offset: 0x78 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n          - and:\n            - arch: amd64\n            - offset: 0x88 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n        - 3 or more:\n          - offset: 0x14 = IMAGE_EXPORT_DIRECTORY.NumberOfFunctions\n          - offset: 0x24 = IMAGE_EXPORT_DIRECTORY.AddressOfNameOrdinals\n          - offset: 0x20 = IMAGE_EXPORT_DIRECTORY.AddressOfNames\n          - offset: 0x18 = IMAGE_EXPORT_DIRECTORY.NumberOfNames\n          - offset: 0x1C = IMAGE_EXPORT_DIRECTORY.AddressOfFunctions\n      - optional:\n        - or:\n          - api: LoadLibrary\n          - api: strcmp\n"
+                                           },
+                                           {
+                                               "id":  "5",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "compiled with Go",
+                                               "description":  "compiler/go",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "substring: main.main",
+                                                                  "substring: runtime.gcWork",
+                                                                  "substring: runtime.main"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: compiled with Go\n    namespace: compiler/go\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    examples:\n      - 49a34cfbeed733c24392c9217ef46bb6\n  features:\n    - or:\n      - string: /^Go build ID:/\n      - substring: \"go.buildid\"\n      - string: /^Go buildinf:/\n      - string: /\\bgo1\\.\\d/\n      - substring: \"runtime.main\"\n      - substring: \"main.main\"\n      - substring: \"runtime.gcWork\"\n"
+                                           },
+                                           {
+                                               "id":  "6",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using RC4 PRGA",
+                                               "description":  "data-manipulation/encryption/rc4",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "contain loop",
+                                                                  "loop"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using RC4 PRGA\n    namespace: data-manipulation/encryption/rc4\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic, basicblock features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Cryptography::Encrypt Data::RC4 [C0027.009]\n      - Cryptography::Generate Pseudo-random Sequence::RC4 PRGA [C0021.004]\n    examples:\n      - 34404A3FB9804977C6AB86CB991FB130:0x403DB0\n      - 34404A3FB9804977C6AB86CB991FB130:0x403E50\n      - 9324D1A8AE37A36AE560C37448C9705A:0x4049F0\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x4064C6\n  features:\n    - and:\n      # TODO: maybe add characteristic for nzxor reg size\n      - count(characteristic(nzxor)): 1\n      - or:\n        - match: calculate modulo 256 via x86 assembly\n        # compiler may do this via zero-extended mov from 8-bit register\n        - count(mnemonic(movzx)): 4 or more\n      # should not call (many) functions\n      - count(characteristic(calls from)): (0, 4)\n      # should not be too simple or too complex (50 is picked by intuition)\n      - count(basic blocks): (4, 50)\n      - match: contain loop\n      - optional:\n        - or:\n          - number: 0xFF\n          - number: 0x100\n"
+                                           },
+                                           {
+                                               "id":  "9",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using AES via x86 extensions",
+                                               "description":  "data-manipulation/encryption/aes",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: aesenc"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using AES via x86 extensions\n    namespace: data-manipulation/encryption/aes\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encryption-Standard Algorithm [E1027.m05]\n      - Cryptography::Encrypt Data::AES [C0027.001]\n  features:\n    - or:\n      - mnemonic: aesenc = Perform One Round of an AES Encryption Flow\n      - mnemonic: vaesenc\n      - mnemonic: aesenclast = Perform Last Round of an AES Encryption Flow\n      - mnemonic: vaesenclast\n      - mnemonic: aesimc = Perform the AES InvMixColumn Transformation\n      - mnemonic: vaesimc\n      - mnemonic: aeskeygenassist = AES Round Key Generation Assist\n      - mnemonic: vaeskeygenassist\n"
+                                           },
+                                           {
+                                               "id":  "10",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "access PEB ldr_data",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "gs access",
+                                                                  "PEB access"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: access PEB ldr_data\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    references:\n      - https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm\n      - https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8\n    examples:\n      - 3FDFB2D522E7DEECAAAF2F87420F7E75:0x4117B7\n  features:\n    - or:\n      - and:\n        - arch: i386\n        - description: x32\n\n        - match: PEB access\n\n        # x86 Windows uses fs:0 to access the TIB which contains SEH information at offset 0\n        # checking for fs:0 and a (possibly unrelated) number or offset often results in false positives\n\n        - offset: 0x0C = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x0C = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x14 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x1C = PEB.LDR_DATA.InInitializationOrderModuleList\n\n      - and:\n        - arch: amd64\n        - description: x64\n\n        - match: PEB access\n\n        - offset: 0x18 = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x10 = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x20 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x30 = PEB.LDR_DATA.InInitializationOrderModuleList\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "11",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write file on Windows",
+                                               "description":  "host-interaction/file-system/write",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: WriteFile"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write file on Windows\n    namespace: host-interaction/file-system/write\n    authors:\n      - william.ballenthin@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - File System::Writes File [C0052]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x1400025C4\n  features:\n    - or:\n      - and:\n        - os: windows\n        - optional:\n          - basic block:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n          - call:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n        - or:\n          - api: kernel32.WriteFile\n          - api: kernel32.WriteFileEx\n          - api: NtWriteFile\n          - api: ZwWriteFile\n          - api: _fwrite\n          - api: fwrite\n      - api: System.IO.File::WriteAllBytes\n      - api: System.IO.File::WriteAllBytesAsync\n      - api: System.IO.File::WriteAllLines\n      - api: System.IO.File::WriteAllLinesAsync\n      - api: System.IO.File::WriteAllText\n      - api: System.IO.File::WriteAllTextAsync\n      - api: System.IO.File::AppendAllLines\n      - api: System.IO.File::AppendAllLinesAsync\n      - api: System.IO.File::AppendAllText\n      - api: System.IO.File::AppendAllTextAsync\n      - api: System.IO.File::AppendText\n      - api: System.IO.FileInfo::AppendText\n"
+                                           },
+                                           {
+                                               "id":  "vti_match_0",
+                                               "name":  "Tries to detect application sandbox",
+                                               "description":  "vmray_detect_wine_by_getprocaddress",
+                                               "match_data":  [
+                                                                  "loader_go_upx.exe tries to detect \"wine\" by calling GetProcAddress() on \"wine_get_version\"."
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#files_dropped",
+                                                                "value":  "8a5175036316cf8fd92551b400a3b062c6e48e0da3cda66dcf95ab2305aa8dfe"
+                                                            },
+                                                            {
+                                                                "ref":  "#process_tree",
+                                                                "value":  "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\loader_go_upx.exe\" "
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "vti_match_1",
+                                               "name":  "Unusual large memory allocation",
+                                               "description":  "vmray_allocates_unusual_large_memory_region",
+                                               "match_data":  [
+                                                                  "loader_go_upx.exe allocates an unusual large memory region of 64.00 MB at 0x25c15010000."
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#files_dropped",
+                                                                "value":  "8a5175036316cf8fd92551b400a3b062c6e48e0da3cda66dcf95ab2305aa8dfe"
+                                                            },
+                                                            {
+                                                                "ref":  "#process_tree",
+                                                                "value":  "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\loader_go_upx.exe\" "
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "vti_match_2",
+                                               "name":  "Unusual large memory allocation",
+                                               "description":  "vmray_allocates_unusual_large_memory_region",
+                                               "match_data":  [
+                                                                  "loader_go_upx.exe allocates an unusual large memory region of 512.00 MB at 0x25c19010000."
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#files_dropped",
+                                                                "value":  "8a5175036316cf8fd92551b400a3b062c6e48e0da3cda66dcf95ab2305aa8dfe"
+                                                            },
+                                                            {
+                                                                "ref":  "#process_tree",
+                                                                "value":  "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\loader_go_upx.exe\" "
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "vti_match_3",
+                                               "name":  "Creates a page with write and execute permissions",
+                                               "description":  "vmray_change_page_protection",
+                                               "match_data":  [
+                                                                  "loader_go_upx.exe changes the protection of a page from writable (\"PAGE_READWRITE\") to executable (\"PAGE_EXECUTE_READ\")."
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#files_dropped",
+                                                                "value":  "8a5175036316cf8fd92551b400a3b062c6e48e0da3cda66dcf95ab2305aa8dfe"
+                                                            },
+                                                            {
+                                                                "ref":  "#process_tree",
+                                                                "value":  "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\loader_go_upx.exe\" "
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "vti_match_4",
+                                               "name":  "Connects to remote host",
+                                               "description":  "vmray_tcp_out_connection",
+                                               "match_data":  [
+                                                                  "loader_go_upx.exe opens an outgoing TCP connection to host \"8.149.128.10:443\"."
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#files_dropped",
+                                                                "value":  "8a5175036316cf8fd92551b400a3b062c6e48e0da3cda66dcf95ab2305aa8dfe"
+                                                            },
+                                                            {
+                                                                "ref":  "#process_tree",
+                                                                "value":  "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\loader_go_upx.exe\" "
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "vti_match_5",
+                                               "format":  "SIG_FORMAT_YARA",
+                                               "name":  "Malicious content matched by YARA rules",
+                                               "description":  "vmray_yara_match_high",
+                                               "match_data":  [
+                                                                  "YARA detected \"Rozena\" from ruleset \"Malware\" in memory dump data from  loader_go_upx.exe."
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_HIGH",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#files_dropped",
+                                                                "value":  "8a5175036316cf8fd92551b400a3b062c6e48e0da3cda66dcf95ab2305aa8dfe"
+                                                            },
+                                                            {
+                                                                "ref":  "#files_dropped",
+                                                                "value":  "0eb234f635951da88aef3c3667337a8813c7a427f014103e9eacc7143fe829e8"
+                                                            },
+                                                            {
+                                                                "ref":  "#files_dropped",
+                                                                "value":  "9fdaa6bab65e176169211204509edf5713d1a384c98863c08863b87b9dc6bdd3"
+                                                            },
+                                                            {
+                                                                "ref":  "#process_tree",
+                                                                "value":  "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\loader_go_upx.exe\" "
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "vti_match_6",
+                                               "format":  "SIG_FORMAT_YARA",
+                                               "name":  "Malicious content matched by YARA rules",
+                                               "description":  "vmray_yara_match_high",
+                                               "match_data":  [
+                                                                  "YARA detected \"Metasploit_reverse_shellcode\" from ruleset \"Hacktools\" in memory dump data from  loader_go_upx.exe."
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_HIGH",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#files_dropped",
+                                                                "value":  "8a5175036316cf8fd92551b400a3b062c6e48e0da3cda66dcf95ab2305aa8dfe"
+                                                            },
+                                                            {
+                                                                "ref":  "#files_dropped",
+                                                                "value":  "0eb234f635951da88aef3c3667337a8813c7a427f014103e9eacc7143fe829e8"
+                                                            },
+                                                            {
+                                                                "ref":  "#process_tree",
+                                                                "value":  "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\loader_go_upx.exe\" "
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "vti_match_8",
+                                               "name":  "Resolves API functions dynamically",
+                                               "description":  "vmray_dynamic_api_usage_by_api",
+                                               "match_data":  [
+                                                                  "loader_go_upx.exe resolves 22 API functions by name."
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#files_dropped",
+                                                                "value":  "8a5175036316cf8fd92551b400a3b062c6e48e0da3cda66dcf95ab2305aa8dfe"
+                                                            },
+                                                            {
+                                                                "ref":  "#process_tree",
+                                                                "value":  "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\loader_go_upx.exe\" "
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "vti_match_9",
+                                               "name":  "A monitored process crashed",
+                                               "description":  "vmray_monitored_proc_crashed",
+                                               "match_data":  [
+                                                                  "loader_go_upx.exe crashed."
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#files_dropped",
+                                                                "value":  "8a5175036316cf8fd92551b400a3b062c6e48e0da3cda66dcf95ab2305aa8dfe"
+                                                            },
+                                                            {
+                                                                "ref":  "#process_tree",
+                                                                "value":  "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\loader_go_upx.exe\" "
+                                                            }
+                                                        ]
+                                           }
+                                       ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get kernel32 base address",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "0"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "check OS version",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "2"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using RC4 PRGA",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "6"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using AES via x86 extensions",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "9"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "access PEB ldr_data",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "10"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Unusual large memory allocation",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "vti_match_1"
+                                                                  },
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "vti_match_2"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Creates a page with write and execute permissions",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "vti_match_3"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Resolves API functions dynamically",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "vti_match_8"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1095",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Connects to remote host",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "vti_match_4"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1497.001",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Tries to detect application sandbox",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "vti_match_0"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "files_dropped":  [
+                                       {
+                                           "sha256":  "0eb234f635951da88aef3c3667337a8813c7a427f014103e9eacc7143fe829e8"
+                                       },
+                                       {
+                                           "sha256":  "9fdaa6bab65e176169211204509edf5713d1a384c98863c08863b87b9dc6bdd3"
+                                       }
+                                   ],
+                 "attack_techniques":  {
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get kernel32 base address",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "0"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "access PEB ldr_data",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "10"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "check OS version",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "2"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using RC4 PRGA",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "6"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using AES via x86 extensions",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "9"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Unusual large memory allocation",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "vti_match_1"
+                                                                          },
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "vti_match_2"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027.002":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Creates a page with write and execute permissions",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "vti_match_3"
+                                                                              }
+                                                                          ]
+                                                             },
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Resolves API functions dynamically",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "vti_match_8"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1095":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Connects to remote host",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "vti_match_4"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1497.001":  [
+                                                             {
+                                                                 "severity":  "LOW",
+                                                                 "description":  "Tries to detect application sandbox",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "vti_match_0"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ]
+                                       }
+             }
+}

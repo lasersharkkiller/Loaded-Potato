@@ -1,0 +1,390 @@
+{
+    "data":  {
+                 "verdict_confidence":  80,
+                 "modules_loaded":  [
+                                        "ws2_32",
+                                        "C:\\Windows\\system32\\mswsock.dll",
+                                        "C:\\Windows\\System32\\wshtcpip.dll",
+                                        "WS2_32.dll",
+                                        "CRYPT32.dll",
+                                        "api-ms-win-downlevel-advapi32-l1-1-0.dll",
+                                        "WININET.dll",
+                                        "WINHTTP.dll",
+                                        "KERNEL32.dll",
+                                        "USER32.dll",
+                                        "ADVAPI32.dll",
+                                        "ole32.dll",
+                                        "DNSAPI.dll",
+                                        "CRYPTSP.dll",
+                                        "C:\\Windows\\system32\\rsaenh.dll",
+                                        "SspiCli.dll",
+                                        "USERENV.dll",
+                                        "API-MS-Win-Security-SDDL-L1-1-0.dll",
+                                        "CRYPTBASE.dll"
+                                    ],
+                 "mbc":  [
+                             {
+                                 "id":  "OC0006"
+                             },
+                             {
+                                 "id":  "C0005.001"
+                             },
+                             {
+                                 "id":  "C0002"
+                             },
+                             {
+                                 "id":  "OB0001"
+                             },
+                             {
+                                 "id":  "OB0002"
+                             },
+                             {
+                                 "id":  "OB0006"
+                             },
+                             {
+                                 "id":  "F0001"
+                             }
+                         ],
+                 "payloads_extracted":  [
+                                            {
+                                                "sha256":  "13fb416975c98acd9d4747d2dd12065abab15b59cd8972763ff1fe01a847d97e",
+                                                "type":  "PE_DLL",
+                                                "size":  "288256",
+                                                "payload_type":  "Meterpreter Payload: 64-bit DLL",
+                                                "process_name":  "C:\\Users\\Bruno\\Desktop\\file.exe",
+                                                "timestamp":  "2025-10-17T13:11:47Z"
+                                            }
+                                        ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "1",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "resolve function by parsing PE exports",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "sara-rn"
+                                                           ],
+                                               "match_data":  [
+                                                                  "loop",
+                                                                  "mnemonic: movzx"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: resolve function by parsing PE exports\n    namespace: load-code/pe\n    authors:\n      - sara-rn\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, offset, mnemonic features\n    examples:\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x406BA1\n  features:\n    - and:\n      - os: windows\n      - or:\n        - characteristic: loop\n        - mnemonic: movzx\n      - and:\n        - offset: 0x3C = IMAGE_DOS_HEADER.PE.e_lfanew\n        - or:\n          - and:\n            - arch: i386\n            - offset: 0x78 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n          - and:\n            - arch: amd64\n            - offset: 0x88 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n        - 3 or more:\n          - offset: 0x14 = IMAGE_EXPORT_DIRECTORY.NumberOfFunctions\n          - offset: 0x24 = IMAGE_EXPORT_DIRECTORY.AddressOfNameOrdinals\n          - offset: 0x20 = IMAGE_EXPORT_DIRECTORY.AddressOfNames\n          - offset: 0x18 = IMAGE_EXPORT_DIRECTORY.NumberOfNames\n          - offset: 0x1C = IMAGE_EXPORT_DIRECTORY.AddressOfFunctions\n      - optional:\n        - or:\n          - api: LoadLibrary\n          - api: strcmp\n"
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "access PEB ldr_data",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "gs access",
+                                                                  "peb access",
+                                                                  "PEB access"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: access PEB ldr_data\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    references:\n      - https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm\n      - https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8\n    examples:\n      - 3FDFB2D522E7DEECAAAF2F87420F7E75:0x4117B7\n  features:\n    - or:\n      - and:\n        - arch: i386\n        - description: x32\n\n        - match: PEB access\n\n        # x86 Windows uses fs:0 to access the TIB which contains SEH information at offset 0\n        # checking for fs:0 and a (possibly unrelated) number or offset often results in false positives\n\n        - offset: 0x0C = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x0C = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x14 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x1C = PEB.LDR_DATA.InInitializationOrderModuleList\n\n      - and:\n        - arch: amd64\n        - description: x64\n\n        - match: PEB access\n\n        - offset: 0x18 = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x10 = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x20 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x30 = PEB.LDR_DATA.InInitializationOrderModuleList\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "packer_unknown_pe_section_name",
+                                               "name":  "packer_unknown_pe_section_name",
+                                               "description":  "The binary contains an unknown PE section name indicative of packing",
+                                               "match_data":  [
+                                                                  ".sjmf"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "binary_yara",
+                                               "name":  "binary_yara",
+                                               "description":  "Binary file triggered YARA rule",
+                                               "match_data":  [
+                                                                  "shellcode_peb_parsing"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_MEDIUM"
+                                           },
+                                           {
+                                               "id":  "procmem_yara",
+                                               "name":  "procmem_yara",
+                                               "description":  "Yara detections observed in process dumps, payloads or dropped files",
+                                               "match_data":  [
+                                                                  "Yara rule \u0027shellcode_get_eip\u0027 with data \u0027[\u0027{ E8 00 00 00 00 58 }\u0027, \u0027{ E8 00 00 00 00 5B }\u0027]\u0027",
+                                                                  "Yara rule \u0027shellcode_peb_parsing\u0027 with data \u0027[\u0027{ 31 D2 64 8B 52 30 8B 52 0C 8B 52 14 8B 72 28 }\u0027, \u0027{ 48 31 D2 65 48 8B 52 60 48 8B 52 18 48 8B 52 20 48 8B 72 50 }\u0027, \u0027{ 48 31 D2 56 65 48 8B 52 60 48 8B 52 18 48 8B 52 20 48 0F B7 4A 4A 48 8B 72 50 }\u0027]\u0027",
+                                                                  "Yara rule \u0027shellcode_peb_parsing\u0027 with data \u0027[\u0027{ 31 D2 64 8B 52 30 8B 52 0C 8B 52 14 8B 72 28 }\u0027, \u0027{ 48 31 D2 65 48 8B 52 60 48 8B 52 18 48 8B 52 20 48 8B 72 50 }\u0027]\u0027",
+                                                                  "Yara rule \u0027Meterpreter\u0027 with data \u0027[\u0027PACKET TRANSMIT\u0027, \u0027PACKET RECEIVE\u0027, \u0027\\\\\\\\%s\\\\pipe\\\\%s\u0027, \u0027\\\\\\x00\\\\\\x00%\\x00s\\x00\\\\\\x00p\\x00i\\x00p\\x00e\\x00\\\\\\x00%\\x00s\\x00\u0027, \u0027%\\x000\\x004\\x00x\\x00-\\x00%\\x000\\x004\\x00x\\x00:\\x00%\\x00s\\x00\u0027, \u0027server.dll\u0027]\u0027"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_MEDIUM"
+                                           }
+                                       ],
+                 "verdicts":  [
+                                  "MALWARE"
+                              ],
+                 "memory_dumps":  [
+                                      {
+                                          "file_name":  "7088.dmp",
+                                          "process":  "C:\\Users\\Bruno\\Desktop\\file.exe",
+                                          "size":  "59064320",
+                                          "base_address":  "65536"
+                                      }
+                                  ],
+                 "tags":  [
+                              "OBFUSCATED"
+                          ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2192",
+                                            "name":  "%windir%\\System32\\svchost.exe -k WerSvcGroup"
+                                        },
+                                        {
+                                            "process_id":  "2560",
+                                            "name":  "%TEMP%\\27BHZ8CNUXEMX38P.exe"
+                                        },
+                                        {
+                                            "process_id":  "2768",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        },
+                                        {
+                                            "process_id":  "2828",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        },
+                                        {
+                                            "process_id":  "7088",
+                                            "name":  "\"C:\\Users\\\u003cUSER\u003e\\Desktop\\file.exe\"",
+                                            "files_written":  [
+                                                                  "\\Device\\RasAcd"
+                                                              ]
+                                        }
+                                    ],
+                 "memory_pattern_urls":  [
+                                             "tcp://101.200.124.250:7890"
+                                         ],
+                 "crypto_plain_text":  [
+                                           ",?\\i????\u00012?3???I=Y3\u001a??yjm[+?\u0018???",
+                                           "???\f?\u0002?\u0001???\n???)?\u0001?\u000229566598416571085382370933559788????\f?\u0002?\u000b???????\f?\u0002?\u0019??\u0003?",
+                                           "???\f?\u0002?\u0001???\n???)?\u0001?\u000229566598416571085382370933559788????\f?\u0002?\u000b???\u0011???\f?\u0002?\u000b???\u0013???\f?\u0002?\u000b???\u0012???\f?\u0002?\u000b???\u0016???\f?\u0002?\u000b???\u0015???\f?\u0002?\u000b???\u000b???\f?\u0002?\u000b???\r???\f?\u0002?\u000b???\n???\f?\u0002?\u000b???\f???\f?\u0002?\u000b???\u0017???\f?\u0002?\u000b???\u000e???\f?\u0002?\u000b???\u001e???",
+                                           "???\f?\u0002?\u0001???\n???)?\u0001?\u000205147050017863818355147993363952????\f?\u0002?\u000b??\u0003????\f?\u0002?\u0019??\u0003?"
+                                       ],
+                 "verdict_labels":  [
+                                        "MetasploitShellcode",
+                                        "Meterpreter"
+                                    ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "101.200.124.250",
+                                        "destination_port":  7890,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "registry_keys_opened":  [
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Services\\WinSock2\\Parameters\\AutodialDLL",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Services\\WinSock2\\Parameters\\WinSock_Registry_Version"
+                                          ],
+                 "memory_pattern_ips":  [
+                                            "101.200.124.250"
+                                        ],
+                 "processes_created":  [
+                                           "\"C:\\Users\\\u003cUSER\u003e\\Desktop\\file.exe\""
+                                       ],
+                 "ids_alerts":  [
+                                    {
+                                        "rule_msg":  "ET HUNTING PE EXE Download over raw TCP",
+                                        "rule_category":  "Misc activity",
+                                        "rule_id":  "1:2035480",
+                                        "alert_severity":  "low",
+                                        "rule_source":  "Proofpoint Emerging Threats Open",
+                                        "alert_context":  {
+                                                              "src_ip":  "101.200.124.250",
+                                                              "src_port":  7890
+                                                          },
+                                        "rule_url":  "https://rules.emergingthreats.net/",
+                                        "rule_references":  [
+                                                                "https://github.com/corkami/docs/blob/master/PE/PE.md"
+                                                            ],
+                                        "rule_raw":  "alert tcp $EXTERNAL_NET any -\u003e $HOME_NET any (msg:\"ET HUNTING PE EXE Download over raw TCP\"; flow:established,to_client; stream_size:client,\u003c,5; dsize:\u003e11; content:\"MZ\"; startswith; byte_jump:4,58,relative,little; content:\"PE|00 00|\"; fast_pattern; distance:-64; within:4; reference:url,github.com/corkami/docs/blob/master/PE/PE.md; classtype:misc-activity; sid:2035480; rev:3; metadata:attack_target Client_Endpoint, created_at 2022_03_16, deployment Perimeter, performance_impact Moderate, confidence Medium, signature_severity Informational, tag Description_Generated_By_Proofpoint_Nexus, updated_at 2022_03_17;)"
+                                    },
+                                    {
+                                        "rule_msg":  "SURICATA Applayer Protocol detection skipped",
+                                        "rule_category":  "Generic Protocol Command Decode",
+                                        "rule_id":  "1:2260003",
+                                        "alert_severity":  "low",
+                                        "rule_source":  "Suricata",
+                                        "alert_context":  {
+                                                              "dest_ip":  "101.200.124.250",
+                                                              "dest_port":  7890
+                                                          },
+                                        "rule_url":  "https://www.openinfosecfoundation.org/",
+                                        "rule_raw":  "alert ip any any -\u003e any any (msg:\"SURICATA Applayer Protocol detection skipped\"; flow:established; app-layer-event:applayer_proto_detection_skipped; flowint:applayer.anomaly.count,+,1; classtype:protocol-command-decode; sid:2260003; rev:1;)"
+                                    },
+                                    {
+                                        "rule_msg":  "SURICATA STREAM excessive retransmissions",
+                                        "rule_category":  "Generic Protocol Command Decode",
+                                        "rule_id":  "1:2210054",
+                                        "alert_severity":  "low",
+                                        "rule_source":  "Suricata",
+                                        "alert_context":  {
+                                                              "src_ip":  "101.200.124.250",
+                                                              "src_port":  7890
+                                                          },
+                                        "rule_url":  "https://www.openinfosecfoundation.org/",
+                                        "rule_raw":  "alert tcp any any -\u003e any any (msg:\"SURICATA STREAM excessive retransmissions\"; flowbits:isnotset,tcp.retransmission.alerted; flowint:tcp.retransmission.count,\u003e=,10; flowbits:set,tcp.retransmission.alerted; classtype:protocol-command-decode; sid:2210054; rev:1;)"
+                                    },
+                                    {
+                                        "rule_msg":  "ET MALWARE Possible Metasploit Payload Common Construct Bind_API (from server)",
+                                        "rule_category":  "A Network Trojan was detected",
+                                        "rule_id":  "1:2025644",
+                                        "alert_severity":  "high",
+                                        "rule_source":  "Proofpoint Emerging Threats Open",
+                                        "alert_context":  {
+                                                              "src_ip":  "101.200.124.250",
+                                                              "src_port":  7890
+                                                          },
+                                        "rule_url":  "https://rules.emergingthreats.net/",
+                                        "rule_raw":  "alert tcp $EXTERNAL_NET any -\u003e $HOME_NET any (msg:\"ET MALWARE Possible Metasploit Payload Common Construct Bind_API (from server)\"; flow:from_server,established; content:\"|60 89 e5 31|\"; content:\"|64 8b|\"; distance:1; within:2; content:\"|30 8b|\"; distance:1; within:2; content:\"|0c 8b 52 14 8b 72 28 0f b7 4a 26 31 ff|\"; distance:1; within:13; content:\"|ac 3c 61 7c 02 2c 20 c1 cf 0d 01 c7 e2|\"; within:15; content:\"|52 57 8b 52 10|\"; distance:1; within:5; classtype:trojan-activity; sid:2025644; rev:1; metadata:affected_product Any, attack_target Client_and_Server, created_at 2016_05_16, deployment Perimeter, deployment Internet, deployment Internal, deployment Datacenter, confidence Medium, signature_severity Critical, tag Metasploit, updated_at 2019_07_26;)"
+                                    }
+                                ],
+                 "calls_highlighted":  [
+                                           "GetTickCount"
+                                       ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "access PEB ldr_data",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "2"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "Binary file triggered YARA rule",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "binary_yara"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "Yara detections observed in process dumps, payloads or dropped files",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "procmem_yara"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "The binary contains an unknown PE section name indicative of packing",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "packer_unknown_pe_section_name"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027.002",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "The binary contains an unknown PE section name indicative of packing",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "packer_unknown_pe_section_name"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "files_opened":  [
+                                      "C:\\Windows\\system32\\mswsock.dll",
+                                      "C:\\Windows\\System32\\wshtcpip.dll",
+                                      "\\Device\\Afd\\Endpoint",
+                                      "C:\\Windows\\system32\\version.DLL",
+                                      "C:\\Windows\\system32\\WINHTTP.dll",
+                                      "C:\\Windows\\system32\\webio.dll",
+                                      "C:\\Windows\\system32\\CRYPTSP.dll",
+                                      "C:\\Windows\\system32\\rsaenh.dll",
+                                      "C:\\Windows\\system32\\SspiCli.dll",
+                                      "C:\\Users\\\u003cUSER\u003e\\AppData\\Roaming\\Microsoft",
+                                      "C:\\Users\\\u003cUSER\u003e\\AppData\\Roaming\\Microsoft\\Crypto",
+                                      "C:\\Users\\\u003cUSER\u003e\\AppData\\Roaming\\Microsoft\\Crypto\\RSA",
+                                      "C:\\Users\\\u003cUSER\u003e\\AppData\\Roaming\\Microsoft\\Crypto\\RSA\\S-1-5-21-4270068108-2931534202-3907561125-1001",
+                                      "C:\\Users\\\u003cUSER\u003e\\AppData\\Roaming\\Microsoft\\Crypto\\RSA\\S-1-5-21-4270068108-2931534202-3907561125-1001\\bd92d27a61e9b9c8576c007ef5f46261_574cbd14-d75b-425c-a623-6adf5a9d77b1"
+                                  ],
+                 "attack_techniques":  {
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "access PEB ldr_data",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "2"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1071":  [
+                                                         {
+                                                             "severity":  "MEDIUM",
+                                                             "description":  "Binary file triggered YARA rule",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "binary_yara"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "MEDIUM",
+                                                             "description":  "Yara detections observed in process dumps, payloads or dropped files",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "procmem_yara"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "The binary contains an unknown PE section name indicative of packing",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "packer_unknown_pe_section_name"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027.002":  [
+                                                             {
+                                                                 "severity":  "LOW",
+                                                                 "description":  "The binary contains an unknown PE section name indicative of packing",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "packer_unknown_pe_section_name"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ]
+                                       }
+             }
+}

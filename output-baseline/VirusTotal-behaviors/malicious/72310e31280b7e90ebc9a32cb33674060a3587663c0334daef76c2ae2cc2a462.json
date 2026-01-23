@@ -1,0 +1,309 @@
+{
+    "data":  {
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using XOR",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encode data using XOR"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "link function at runtime on Linux",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "link function at runtime on Linux"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using Salsa20 or ChaCha",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encrypt data using Salsa20 or ChaCha"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "signature_matches":  [
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create thread",
+                                               "description":  "host-interaction/thread/create",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "joakim@intezer.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create thread\n    namespace: host-interaction/thread/create\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n      - joakim@intezer.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: thread\n    mbc:\n      - Process::Create Thread [C0038]\n    examples:\n      - 946A99F36A46D335DEC080D9A4371940:0x10001DA0\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x408020\n  features:\n    - or:\n      - and:\n        - os: windows\n        - or:\n          - api: kernel32.CreateThread\n          - api: _beginthread\n          - api: _beginthreadex\n          - api: PsCreateSystemThread\n          - api: SHCreateThread\n          - api: SHCreateThreadWithHandle\n          - api: kernel32.CreateRemoteThread\n          - api: kernel32.CreateRemoteThreadEx\n          - api: RtlCreateUserThread\n          - api: ntdll.NtCreateThread\n          - api: ntdll.NtCreateThreadEx\n          - api: ntdll.ZwCreateThread\n          - api: ntdll.ZwCreateThreadEx\n      - and:\n        - or:\n          - os: linux\n          - os: android\n        - api: pthread_create\n      - and:\n        - api: System.Threading.Thread::Start\n        - optional:\n          - api: System.Threading.Thread::ctor\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "lock file",
+                                               "description":  "host-interaction/mutex",
+                                               "authors":  [
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: lock file\n    namespace: host-interaction/mutex\n    authors:\n      - joakim@intezer.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - Process::Create Mutex [C0042]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x40858F\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - api: fcntl\n      - number: 1 = F_WRLCK\n      - number: 6 = F_SETLK\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create process on Linux",
+                                               "description":  "host-interaction/process/create",
+                                               "authors":  [
+                                                               "joakim@intezer.com",
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create process on Linux\n    namespace: host-interaction/process/create\n    authors:\n      - joakim@intezer.com\n      - mehunhoff@google.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - Process::Create Process [C0017]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x40236D\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: execve\n        - and:\n          - match: execute syscall\n          - arch: aarch64\n          - number: 0xdd = execve\n        - api: execl\n        - api: execlp\n        - api: execle\n        - api: execv\n        - api: execvp\n        - api: execvpe\n        - api: posix_spawn\n        - api: posix_spawnp\n        - api: popen\n        - api: fork\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using XOR",
+                                               "description":  "data-manipulation/encoding/xor",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using XOR\n    namespace: data-manipulation/encoding/xor\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires characteristic, Not features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::XOR [C0026.002]\n    examples:\n      - 2D3EDC218A90F03089CC01715A9F047F:0x403D7E\n  features:\n    - and:\n      - characteristic: tight loop\n      - characteristic: nzxor\n      - not:\n        - description: filter for potential false positives\n        - or:\n          - or:\n            - description: unsigned bitwise negation operation (~i)\n            - number: 0xFFFFFFFF = bitwise negation for unsigned 32 bits\n            - number: 0xFFFFFFFFFFFFFFFF = bitwise negation for unsigned 64 bits\n          - or:\n            - description: signed bitwise negation operation (~i)\n            - number: 0x0FFFFFFF = bitwise negation for signed 32 bits\n            - number: 0x0FFFFFFFFFFFFFFF = bitwise negation for signed 64 bits\n          - or:\n            - description: Magic constants used in the implementation of strings functions.\n            # such as `strlen` and `strcat` in the Windows standard library:\n            # (((i - 0x81010101) ^ ~i) \u0026 0x81010100)\n            ## 32 bits\n            - number: 0x7EFEFEFF = optimized string constant for 32 bits\n            - number: 0x81010101 = -0x81010101 = 0x7EFEFEFF\n            - number: 0x81010100 = 0x81010100 = ~0x7EFEFEFF\n            ## 64 bits\n            - number: 0x7EFEFEFEFEFEFEFF = optimized string constant for 64 bits\n            - number: 0x8101010101010101 = -0x8101010101010101 = 0x7EFEFEFEFEFEFEFF\n            - number: 0x8101010101010100 = 0x8101010101010100 = ~0x7EFEFEFEFEFEFEFF\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write file on Linux",
+                                               "description":  "host-interaction/file-system/write",
+                                               "authors":  [
+                                                               "joakim@intezer.com",
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write file on Linux\n    namespace: host-interaction/file-system/write\n    authors:\n      - joakim@intezer.com\n      - mehunhoff@google.com\n    scopes:\n      static: function\n      dynamic: thread\n    mbc:\n      - File System::Writes File [C0052]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x401E14\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: fputc\n        - api: fputs\n        - api: putc\n        - api: write\n        - api: fputwc\n        - api: putwc\n        - api: fputws\n        - api: fwrite\n        - api: putwchar\n        - api: dprintf\n        - api: vdprintf\n        - api: fprintf\n        - api: vfprintf\n      - optional:\n        - match: create or open file\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create semaphore on Linux",
+                                               "description":  "host-interaction/mutex",
+                                               "authors":  [
+                                                               "@ramen0x3f"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create semaphore on Linux\n    namespace: host-interaction/mutex\n    authors:\n      - \"@ramen0x3f\"\n    scopes:\n      static: function\n      dynamic: thread\n    examples:\n      - 294b8db1f2702b60fb2e42fdc50c2cee6a5046112da9a5703a548a4fa50477bc:0x408de0\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - api: sem_init\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "unlock semaphore on Linux",
+                                               "description":  "host-interaction/mutex",
+                                               "authors":  [
+                                                               "@ramen0x3f"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: unlock semaphore on Linux\n    namespace: host-interaction/mutex\n    authors:\n      - \"@ramen0x3f\"\n    scopes:\n      static: function\n      dynamic: thread\n    examples:\n      - 294b8db1f2702b60fb2e42fdc50c2cee6a5046112da9a5703a548a4fa50477bc:0x408e40\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - api: sem_post\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "lock semaphore on Linux",
+                                               "description":  "host-interaction/mutex",
+                                               "authors":  [
+                                                               "@ramen0x3f"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: lock semaphore on Linux\n    namespace: host-interaction/mutex\n    authors:\n      - \"@ramen0x3f\"\n    scopes:\n      static: function\n      dynamic: thread\n    examples:\n      - 294b8db1f2702b60fb2e42fdc50c2cee6a5046112da9a5703a548a4fa50477bc:0x408e40\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: sem_wait\n        - api: sem_timedwait\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "move file",
+                                               "description":  "host-interaction/file-system/move",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: move file\n    namespace: host-interaction/file-system/move\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: thread\n    mbc:\n      - File System::Move File [C0063]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x401350\n  features:\n    - or:\n      - api: kernel32.MoveFile\n      - api: kernel32.MoveFileEx\n      - api: MoveFileWithProgress\n      - api: MoveFileTransacted\n      - api: rename\n      - api: _wrename\n      - api: System.IO.FileInfo::MoveTo\n      - api: System.IO.File::Move\n      - basic block:\n        - and:\n          - number: 1 = FO_MOVE\n          - or:\n            - api: kernel32.SHFileOperation\n      - call:\n        - and:\n          - number: 1 = FO_MOVE\n          - api: kernel32.SHFileOperation\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "link function at runtime on Linux",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: link function at runtime on Linux\n    namespace: linking/runtime-linking\n    authors:\n      - joakim@intezer.com\n    scopes:\n      static: function\n      dynamic: thread\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: dlopen\n        - api: dlmopen\n      - or:\n        - api: dlsym\n        - api: dlvsym\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "read file on Linux",
+                                               "description":  "host-interaction/file-system/read",
+                                               "authors":  [
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: read file on Linux\n    namespace: host-interaction/file-system/read\n    authors:\n      - joakim@intezer.com\n    scopes:\n      static: function\n      dynamic: thread\n    mbc:\n      - File System::Read File [C0051]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x4059AD\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - optional:\n        - match: create or open file\n      - or:\n        - api: fgetc\n        - api: fgets\n        - api: getc\n        - api: getchar\n        - api: read\n        - api: getline\n        - api: getdelim\n        - api: fgetwc\n        - api: getwc\n        - api: fscanf\n        - api: vfscanf\n        - api: fread\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using Salsa20 or ChaCha",
+                                               "description":  "data-manipulation/encryption/salsa20",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using Salsa20 or ChaCha\n    namespace: data-manipulation/encryption/salsa20\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: thread\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    references:\n      - http://cr.yp.to/snuffle/ecrypt.c\n  features:\n    # The constant words spell \"expand 32-byte k\" in ASCII (i.e. the 4 words are \"expa\", \"nd 3\", \"2-by\", and \"te k\")\n    - or:\n      - description: part of key setup\n      - string: \"expand 32-byte k\"\n        description: sigma\n      - string: \"expand 16-byte k\"\n        description: tau\n      # if sigma and tau are in contiguous memory, may result in concatenated string\n      - string: \"expand 32-byte kexpand 16-byte k\"\n      - bytes: 65 78 70 61 6E 64 20 33 32 2D 62 79 74 65 20 6B = \"expand 32-byte k\"\n      - bytes: 65 78 70 61 6E 64 20 31 36 2D 62 79 74 65 20 6B = \"expand 16-byte k\"\n      - and:\n        - string: \"expa\"\n        - string: \"nd 3\"\n        - string: \"2-by\"\n        - string: \"te k\"\n      - and:\n        - number: 0x61707865 = \"apxe\"\n        - number: 0x3320646E = \"3 dn\"\n        - number: 0x79622D32 = \"yb-2\"\n        - number: 0x6B206574 = \"k et\"\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "http://cr.yp.to/snuffle/ecrypt.c"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "linked against OpenSSL",
+                                               "description":  "linking/static/openssl",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: linked against OpenSSL\n    namespace: linking/static/openssl\n    authors:\n      - william.ballenthin@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    mbc:\n      - Cryptography::Crypto Library [C0059]\n    examples:\n      - 6cc148363200798a12091b97a17181a1\n  features:\n    - or:\n      - string: \"RC4 for x86_64, CRYPTOGAMS by \u003cappro@openssl.org\u003e\"\n      - string: \"AES for x86_64, CRYPTOGAMS by \u003cappro@openssl.org\u003e\"\n      - string: \"DSA-SHA1-old\"\n      - string: \"OpenSSL DH Method\"\n      - string: \"Eric Young\u0027s PKCS#1 RSA\"\n"
+                                           }
+                                       ],
+                 "mbc":  [
+                             {
+                                 "id":  "C0038",
+                                 "objective":  "Process",
+                                 "behavior":  "Create Thread",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "create thread"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0042",
+                                 "objective":  "Process",
+                                 "behavior":  "Create Mutex",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "lock file"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0017",
+                                 "objective":  "Process",
+                                 "behavior":  "Create Process",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "create process on Linux"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m02",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encoding-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encode data using XOR"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0026.002",
+                                 "objective":  "Data",
+                                 "behavior":  "Encode Data",
+                                 "method":  "XOR",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encode data using XOR"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0052",
+                                 "objective":  "File System",
+                                 "behavior":  "Writes File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "write file on Linux"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0063",
+                                 "objective":  "File System",
+                                 "behavior":  "Move File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "move file"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0051",
+                                 "objective":  "File System",
+                                 "behavior":  "Read File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "read file on Linux"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0059",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Crypto Library",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "linked against OpenSSL"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "attack_techniques":  {
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using XOR",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encode data using XOR"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using Salsa20 or ChaCha",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encrypt data using Salsa20 or ChaCha"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "link function at runtime on Linux",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "link function at runtime on Linux"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

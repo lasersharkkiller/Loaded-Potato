@@ -1,0 +1,60 @@
+{
+    "data":  {
+                 "signature_matches":  [
+                                           {
+                                               "id":  "0",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "execute syscall",
+                                               "description":  "anti-analysis : may be used to evade hooks or hinder analysis",
+                                               "authors":  [
+                                                               "@kulinacs",
+                                                               "@mr-tz",
+                                                               "mehunhoff@google.com",
+                                                               "still@teamt5.org"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: syscall"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: execute syscall\n    namespace: anti-analysis\n    authors:\n      - \"@kulinacs\"\n      - \"@mr-tz\"\n      - mehunhoff@google.com\n      - still@teamt5.org\n    description: may be used to evade hooks or hinder analysis\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires mnemonic features\n    references:\n      - https://github.com/j00ru/windows-syscalls\n      - https://codemachine.com/articles/system_call_instructions.html\n      - https://www.felixcloutier.com/x86/sysenter\n  features:\n    - or:\n      - and:\n        - or:\n          - os: linux\n          - os: android\n        - api: syscall # https://man7.org/linux/man-pages/man2/syscall.2.html\n      - and:\n        - or:\n          - mnemonic: sysenter\n          - mnemonic: syscall\n          - instruction:\n            - mnemonic: int\n            - operand[0].number: 0x2e\n        - or:\n          - mnemonic: ret\n          - mnemonic: retn\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/j00ru/windows-syscalls"
+                                                            },
+                                                            {
+                                                                "ref":  "https://codemachine.com/articles/system_call_instructions.html"
+                                                            },
+                                                            {
+                                                                "ref":  "https://www.felixcloutier.com/x86/sysenter"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "delete file",
+                                               "description":  "host-interaction/file-system/delete",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: remove"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: delete file\n    namespace: host-interaction/file-system/delete\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - File System::Delete File [C0047]\n    examples:\n      - 946A99F36A46D335DEC080D9A4371940:0x100015F0\n      # MoveFileEx\n      - 31600AD0D1A7EA615690DF111AE36C73:0x401A15\n      # NtDeleteFile\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x140001E04\n  features:\n    - or:\n      - api: kernel32.DeleteFile\n      - api: DeleteFileTransacted\n      - api: NtDeleteFile\n      - api: ZwDeleteFile\n      - api: remove\n      - api: _wremove\n      - api: System.IO.File::Delete\n      - api: System.IO.FileSystemInfo::Delete\n      # static\n      - basic block:\n        - and:\n          - number: 3 = FO_DELETE\n          - or:\n            - api: kernel32.SHFileOperation\n      - basic block:\n        - and:\n          - number: 4 = MOVEFILE_DELAY_UNTIL_REBOOT\n          - number: 0 = NULL\n          - api: MoveFileEx\n      # dynamic\n      - call:\n        - and:\n          - number: 3 = FO_DELETE\n          - or:\n            - api: kernel32.SHFileOperation\n      - call:\n        - and:\n          - number: 4 = MOVEFILE_DELAY_UNTIL_REBOOT\n          - number: 0 = NULL\n          - api: MoveFileEx\n"
+                                           }
+                                       ],
+                 "mbc":  [
+                             {
+                                 "id":  "C0047",
+                                 "objective":  "File System",
+                                 "behavior":  "Delete File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "2"
+                                              }
+                                          ]
+                             }
+                         ]
+             }
+}

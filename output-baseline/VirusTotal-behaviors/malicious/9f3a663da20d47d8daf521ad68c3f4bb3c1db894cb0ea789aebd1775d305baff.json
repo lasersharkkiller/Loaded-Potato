@@ -1,0 +1,507 @@
+{
+    "data":  {
+                 "signature_matches":  [
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using XOR",
+                                               "description":  "data-manipulation/encoding/xor",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using XOR\n    namespace: data-manipulation/encoding/xor\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: basic block\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::XOR [C0026.002]\n    examples:\n      - 2D3EDC218A90F03089CC01715A9F047F:0x403D7E\n  features:\n    - and:\n      - characteristic: tight loop\n      - characteristic: nzxor\n      - not:\n        - description: filter for potential false positives\n        - or:\n          - or:\n            - description: unsigned bitwise negation operation (~i)\n            - number: 0xFFFFFFFF = bitwise negation for unsigned 32 bits\n            - number: 0xFFFFFFFFFFFFFFFF = bitwise negation for unsigned 64 bits\n          - or:\n            - description: signed bitwise negation operation (~i)\n            - number: 0x0FFFFFFF = bitwise negation for signed 32 bits\n            - number: 0x0FFFFFFFFFFFFFFF = bitwise negation for signed 64 bits\n          - or:\n            - description: Magic constants used in the implementation of strings functions.\n            # such as `strlen` and `strcat` in the Windows standard library:\n            # (((i - 0x81010101) ^ ~i) \u0026 0x81010100)\n            ## 32 bits\n            - number: 0x7EFEFEFF = optimized string constant for 32 bits\n            - number: 0x81010101 = -0x81010101 = 0x7EFEFEFF\n            - number: 0x81010100 = 0x81010100 = ~0x7EFEFEFF\n            ## 64 bits\n            - number: 0x7EFEFEFEFEFEFEFF = optimized string constant for 64 bits\n            - number: 0x8101010101010101 = -0x8101010101010101 = 0x7EFEFEFEFEFEFEFF\n            - number: 0x8101010101010100 = 0x8101010101010100 = ~0x7EFEFEFEFEFEFEFF\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain loop",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain loop\n    authors:\n      - moritz.raabe@mandiant.com\n    lib: true\n    scope: function\n    examples:\n      - 08AC667C65D36D6542917655571E61C8:0x406EAA\n  features:\n    - or:\n      - characteristic: loop\n      - characteristic: tight loop\n      - characteristic: recursive call\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "packed with generic packer",
+                                               "description":  "anti-analysis/packer/generic",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: packed with generic packer\n    namespace: anti-analysis/packer/generic\n    authors:\n      - william.ballenthin@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information::Software Packing [T1027.002]\n    mbc:\n      - Anti-Static Analysis::Software Packing::Standard Compression [F0001.002]\n    examples:\n      - Practical Malware Analysis Lab 18-01.exe_:0x409dc0\n  features:\n    - and:\n      - or:\n        - mnemonic: pusha\n        - mnemonic: pushad  # vivisect\n      - or:\n        - mnemonic: popa\n        - mnemonic: popad  # vivisect\n      - characteristic: cross section flow\n      - not:\n        - match: contain pusha popa sequence\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain an embedded PE file",
+                                               "description":  "executable/subfile/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain an embedded PE file\n    namespace: executable/subfile/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: file\n    mbc:\n      - Execution::Install Additional Program [B0023]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x4060\n  features:\n    - or:\n      - count(characteristic(embedded pe)): 1 or more\n      - count(string(This program cannot be run in DOS mode.)): 2 or more\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "(internal) packer file limitation",
+                                               "description":  "internal/limitation/file : This sample appears to be packed.\n\nPacked samples have often been obfuscated to hide their logic.\ncapa cannot handle obfuscation well. This means the results may be misleading or incomplete.\nIf possible, you should try to unpack this input file before analyzing it with capa.\n",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: (internal) packer file limitation\n    namespace: internal/limitation/file\n    authors:\n      - william.ballenthin@mandiant.com\n    description: |\n      This sample appears to be packed.\n\n      Packed samples have often been obfuscated to hide their logic.\n      capa cannot handle obfuscation well. This means the results may be misleading or incomplete.\n      If possible, you should try to unpack this input file before analyzing it with capa.\n    scope: file\n    examples:\n      - CD2CBA9E6313E8DF2C1273593E649682\n  features:\n    - or:\n      - match: anti-analysis/packer\n"
+                                           }
+                                       ],
+                 "verdicts":  [
+                                  "MALWARE"
+                              ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using XOR",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encode data using XOR"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "packed with generic packer",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "packed with generic packer"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "verdict_confidence":  50,
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "msn.com",
+                                         "resolved_ips":  [
+                                                              "204.79.197.219"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "valicert.com",
+                                         "resolved_ips":  [
+                                                              "3.64.163.50"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "thawte.com",
+                                         "resolved_ips":  [
+                                                              "45.60.206.209",
+                                                              "45.60.196.209"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "adobe.com",
+                                         "resolved_ips":  [
+                                                              "23.223.198.226",
+                                                              "23.223.198.225"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "xxx.xx"
+                                     },
+                                     {
+                                         "hostname":  "broofa.com",
+                                         "resolved_ips":  [
+                                                              "208.113.218.126"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "us.ibm.com"
+                                     },
+                                     {
+                                         "hostname":  "socal-raves.org"
+                                     },
+                                     {
+                                         "hostname":  "gmail.com"
+                                     },
+                                     {
+                                         "hostname":  "v.loewis.de"
+                                     },
+                                     {
+                                         "hostname":  "mail.python.org",
+                                         "resolved_ips":  [
+                                                              "188.166.95.178"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "zzz.org"
+                                     },
+                                     {
+                                         "hostname":  "mx01.emig.gmx.net",
+                                         "resolved_ips":  [
+                                                              "212.227.17.5"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "bzip.org"
+                                     },
+                                     {
+                                         "hostname":  "freebsd.org"
+                                     },
+                                     {
+                                         "hostname":  "lima.mudlib.org"
+                                     },
+                                     {
+                                         "hostname":  "mxlb.ispgateway.de",
+                                         "resolved_ips":  [
+                                                              "80.67.18.126"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "bounce2.pobox.com"
+                                     },
+                                     {
+                                         "hostname":  "park-mx.above.com",
+                                         "resolved_ips":  [
+                                                              "103.224.212.34"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "babylon.socal-raves.org"
+                                     },
+                                     {
+                                         "hostname":  "bb.org"
+                                     },
+                                     {
+                                         "hostname":  "mx3.zoho.com",
+                                         "resolved_ips":  [
+                                                              "136.143.191.44"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "lyra.org"
+                                     },
+                                     {
+                                         "hostname":  "thawte-com.mail.protection.outlook.com",
+                                         "resolved_ips":  [
+                                                              "104.47.73.10",
+                                                              "104.47.73.138"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "alt3.aspmx.l.google.com",
+                                         "resolved_ips":  [
+                                                              "142.250.150.26"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "skippinet.com.au"
+                                     },
+                                     {
+                                         "hostname":  "pb-bounce4.pobox.com",
+                                         "resolved_ips":  [
+                                                              "64.147.108.74"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "mx3.mail.ovh.net",
+                                         "resolved_ips":  [
+                                                              "91.121.53.175"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "mxg.dd.org",
+                                         "resolved_ips":  [
+                                                              "207.136.192.136"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "zeus.iit.demokritos.gr",
+                                         "resolved_ips":  [
+                                                              "143.233.226.2"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "example.com"
+                                     },
+                                     {
+                                         "hostname":  "mxa-004aba01.gslb.pphosted.com",
+                                         "resolved_ips":  [
+                                                              "205.220.162.3"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "mx0b-001b2d01.pphosted.com",
+                                         "resolved_ips":  [
+                                                              "148.163.158.5"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "python.org"
+                                     },
+                                     {
+                                         "hostname":  "mxb-004aba01.gslb.pphosted.com",
+                                         "resolved_ips":  [
+                                                              "205.220.174.2"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "pythonware.com"
+                                     },
+                                     {
+                                         "hostname":  "cgl-backup.cgl.ucsf.edu",
+                                         "resolved_ips":  [
+                                                              "169.230.27.18"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "cmx1.servicemail24.de",
+                                         "resolved_ips":  [
+                                                              "84.17.190.206"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "mail2.g23.pair.com",
+                                         "resolved_ips":  [
+                                                              "66.39.132.40"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "mail2.lemburg.com",
+                                         "resolved_ips":  [
+                                                              "148.251.113.226"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "in2-smtp.messagingengine.com",
+                                         "resolved_ips":  [
+                                                              "64.147.123.52",
+                                                              "64.147.123.51"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "mailrouter.execulink.com",
+                                         "resolved_ips":  [
+                                                              "199.166.6.104"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "mail.mailroute.net",
+                                         "resolved_ips":  [
+                                                              "199.89.3.120",
+                                                              "199.89.1.120"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "2mx.integra.net",
+                                         "resolved_ips":  [
+                                                              "204.130.255.6"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "mailfilter02.leaseweb.us",
+                                         "resolved_ips":  [
+                                                              "108.62.122.56"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "cmu-mx-04.andrew.cmu.edu",
+                                         "resolved_ips":  [
+                                                              "128.2.157.83"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "mxa-00379502.gslb.gpphosted.com",
+                                         "resolved_ips":  [
+                                                              "67.231.155.129"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "lemburg.com"
+                                     },
+                                     {
+                                         "hostname":  "alt4.gmail-smtp-in.l.google.com",
+                                         "resolved_ips":  [
+                                                              "74.125.200.27"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "llnl.gov"
+                                     },
+                                     {
+                                         "hostname":  "maila.microsoft.hr",
+                                         "resolved_ips":  [
+                                                              "194.152.243.102"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "ziade.org"
+                                     },
+                                     {
+                                         "hostname":  "time.windows.com",
+                                         "resolved_ips":  [
+                                                              "51.145.123.29"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "mx-stp.mail.saunalahti.fi",
+                                         "resolved_ips":  [
+                                                              "62.142.5.236"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "nic.fi"
+                                     },
+                                     {
+                                         "hostname":  "www.google.com",
+                                         "resolved_ips":  [
+                                                              "142.250.179.100"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "mx66.freebsd.org",
+                                         "resolved_ips":  [
+                                                              "96.47.72.85"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "CMU-MX-04.ANDREW.cmu.edu",
+                                         "resolved_ips":  [
+                                                              "128.2.157.83"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "ietf.org"
+                                     },
+                                     {
+                                         "hostname":  "microsoft-com.mail.protection.outlook.com",
+                                         "resolved_ips":  [
+                                                              "40.93.207.1",
+                                                              "40.93.212.0",
+                                                              "52.101.40.29",
+                                                              "40.93.207.5",
+                                                              "40.93.207.7",
+                                                              "104.47.53.36",
+                                                              "104.47.54.36"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "zinfandel.lacita.com"
+                                     },
+                                     {
+                                         "hostname":  "ddd.com"
+                                     },
+                                     {
+                                         "hostname":  "digicool.com",
+                                         "resolved_ips":  [
+                                                              "219.94.163.24"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "us-smtp-inbound-2.mimecast.com",
+                                         "resolved_ips":  [
+                                                              "207.211.30.141",
+                                                              "205.139.110.221",
+                                                              "205.139.110.141",
+                                                              "207.211.30.221",
+                                                              "207.211.30.242",
+                                                              "205.139.110.242"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "mx00.schlund.de",
+                                         "resolved_ips":  [
+                                                              "212.227.15.41"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "wellpartner.com"
+                                     },
+                                     {
+                                         "hostname":  "^.vi"
+                                     },
+                                     {
+                                         "hostname":  "dot.ca.gov"
+                                     }
+                                 ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2628",
+                                            "name":  "%SAMPLEPATH%",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2696",
+                                                                 "name":  "%windir%\\outlook.exe"
+                                                             }
+                                                         ]
+                                        }
+                                    ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "213.186.33.99",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "files_dropped":  [
+                                       {
+                                           "path":  "%windir%\\outlook.exe",
+                                           "sha256":  "96b9c4ead67d03eb2c69103a983274e013e3466e80d8f95bd7cf3aea8be05b28"
+                                       }
+                                   ],
+                 "registry_keys_set":  [
+                                           {
+                                               "key":  "HKLM\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Explorer3",
+                                               "value":  "0"
+                                           },
+                                           {
+                                               "key":  "HKLM\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Run\\System",
+                                               "value":  "%windir%\\sys32.exe"
+                                           }
+                                       ],
+                 "ids_alerts":  [
+                                    {
+                                        "rule_msg":  "(eth) truncated ethernet header",
+                                        "rule_category":  "misc-activity",
+                                        "rule_id":  "116:424",
+                                        "alert_severity":  "low",
+                                        "rule_source":  "Snort registered user ruleset",
+                                        "rule_url":  "https://www.snort.org/downloads/#rule-downloads",
+                                        "rule_raw":  "alert ( gid:116; sid:424; rev:2; msg:\"(eth) truncated ethernet header\"; metadata: policy max-detect-ips drop, rule-type decode; classtype:misc-activity;)"
+                                    },
+                                    {
+                                        "rule_msg":  "PROTOCOL-ICMP Destination Unreachable Network Unreachable",
+                                        "rule_category":  "misc-activity",
+                                        "rule_id":  "1:401",
+                                        "alert_severity":  "low",
+                                        "rule_source":  "Snort registered user ruleset",
+                                        "rule_url":  "https://www.snort.org/downloads/#rule-downloads",
+                                        "rule_raw":  "alert icmp $EXTERNAL_NET any -\u003e $HOME_NET any ( msg:\"PROTOCOL-ICMP Destination Unreachable Network Unreachable\"; icode:0; itype:3; metadata:ruleset community; classtype:misc-activity; sid:401; rev:9; )"
+                                    }
+                                ],
+                 "verdict_labels":  [
+                                        "Mailcard"
+                                    ],
+                 "attack_techniques":  {
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using XOR",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encode data using XOR"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027.002":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "packed with generic packer",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "packed with generic packer"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ]
+                                       }
+             }
+}

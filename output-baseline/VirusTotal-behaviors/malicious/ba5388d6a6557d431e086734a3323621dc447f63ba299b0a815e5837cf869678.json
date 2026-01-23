@@ -1,0 +1,130 @@
+{
+    "data":  {
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1016",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get socket status",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "1"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "verdicts":  [
+                                  "UNKNOWN_VERDICT"
+                              ],
+                 "processes_terminated":  [
+                                              "wmiadap.exe /F /T /R"
+                                          ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "1",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get socket status",
+                                               "description":  "communication/socket",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: select"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get socket status\n    namespace: communication/socket\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::System Network Configuration Discovery [T1016]\n    mbc:\n      - Communication::Socket Communication::Get Socket Status [C0001.012]\n    examples:\n      - 6A352C3E55E8AE5ED39DC1BE7FB964B1:0x1000C1F0\n  features:\n    - or:\n      - api: ws2_32.select\n      - api: ws2_32.#18 = select\n"
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "inspect section memory permissions",
+                                               "description":  "load-code/pe : translate section memory permissions (specified in the \u0027Characteristics\u0027 field of the image section header) into page protection constants",
+                                               "authors":  [
+                                                               "@Ana06"
+                                                           ],
+                                               "match_data":  [
+                                                                  "PAGE_EXECUTE_READ",
+                                                                  "PAGE_NOACCESS",
+                                                                  "IMAGE_SCN_MEM_EXECUTE"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: inspect section memory permissions\n    namespace: load-code/pe\n    authors:\n      - \"@Ana06\"\n    description: \"translate section memory permissions (specified in the \u0027Characteristics\u0027 field of the image section header) into page protection constants\"\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Discovery::Code Discovery::Inspect Section Memory Permissions [B0046.002]\n    examples:\n      - E4C33AC3638EEF68311F8AC0D72483C7:0x401480\n  features:\n    - and:\n      - os: windows\n      - 3 or more:\n        - and:\n          - number: 0x40000000 = IMAGE_SCN_MEM_READ\n          - number: 0x2 = PAGE_READONLY\n        - and:\n          - number: 0x20000000 = IMAGE_SCN_MEM_EXECUTE\n          - number: 0x10 = PAGE_EXECUTE\n        - and:\n          - or:\n            - number: 0x60000000 = IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_EXECUTE\n            - and:\n              - number: 0x40000000 = IMAGE_SCN_MEM_READ\n              - number: 0x20000000 = IMAGE_SCN_MEM_EXECUTE\n          - number: 0x20 = PAGE_EXECUTE_READ\n        - and:\n          - or:\n            - number: 0xC0000000 = IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE\n            - and:\n              - number: 0x40000000 = IMAGE_SCN_MEM_READ\n              - number: 0x80000000 = IMAGE_SCN_MEM_WRITE\n          - number: 0x4 = PAGE_READWRITE\n        - and:\n          - or:\n            - number: 0xE0000000 = IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE | IMAGE_SCN_MEM_EXECUTE\n            - and:\n              - number: 0x40000000 = IMAGE_SCN_MEM_READ\n              - number: 0x80000000 = IMAGE_SCN_MEM_WRITE\n              - number: 0x20000000 = IMAGE_SCN_MEM_EXECUTE\n          - number: 0x40 = PAGE_EXECUTE_READWRITE\n      - optional:\n        - number: 0x1 = PAGE_NOACCESS\n"
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contains PDB path",
+                                               "description":  "executable/pe/pdb",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "regex: /:\\\\.*\\.pdb/"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contains PDB path\n    namespace: executable/pe/pdb\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    examples:\n      - 464EF2CA59782CE697BC329713698CCC  # level32.exe\n  features:\n    - string: /:\\\\.*\\.pdb/\n"
+                                           }
+                                       ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2532",
+                                            "name":  "%SANDBOX_DLL_LOADER_AMD64% %SAMPLEPATH% %WORKDIR% 483",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2600",
+                                                                 "name":  "rundll32.exe %SAMPLEPATH%,OPENSSL_Applink"
+                                                             },
+                                                             {
+                                                                 "process_id":  "2608",
+                                                                 "name":  "rundll32.exe %SAMPLEPATH%,PyInit__ssl"
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2764",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        },
+                                        {
+                                            "process_id":  "2808",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        }
+                                    ],
+                 "mbc":  [
+                             {
+                                 "id":  "C0001.012",
+                                 "objective":  "Communication",
+                                 "behavior":  "Socket Communication",
+                                 "method":  "Get Socket Status",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "1"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0046.002",
+                                 "objective":  "Discovery",
+                                 "behavior":  "Code Discovery",
+                                 "method":  "Inspect Section Memory Permissions",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "2"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "attack_techniques":  {
+                                           "T1016":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get socket status",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "1"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

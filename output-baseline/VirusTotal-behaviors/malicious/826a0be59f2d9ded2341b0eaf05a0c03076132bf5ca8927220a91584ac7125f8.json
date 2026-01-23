@@ -1,0 +1,454 @@
+{
+    "data":  {
+                 "verdicts":  [
+                                  "MALWARE"
+                              ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "1",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "send HTTP request",
+                                               "description":  "communication/http/client",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: InternetConnect",
+                                                                  "api: HttpSendRequest",
+                                                                  "api: HttpOpenRequest"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: send HTTP request\n    namespace: communication/http/client\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Communication::HTTP Communication::Send Request [C0002.003]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5:0x13145D60\n      - 6A352C3E55E8AE5ED39DC1BE7FB964B1:0x100026E0\n  features:\n    - or:\n      - api: System.Net.WebRequest::GetResponse\n      - api: System.Net.WebRequest::GetResponseAsync\n      - and:\n        - or:\n          - api: wininet.HttpOpenRequest\n          - api: wininet.InternetConnect\n        - or:\n          - api: wininet.HttpSendRequest\n          - api: wininet.HttpSendRequestEx\n      - and:\n        - api: winhttp.WinHttpSendRequest\n        - api: winhttp.WinHttpWriteData\n        - optional:\n          - or:\n            - api: winhttp.WinHttpOpenRequest\n            - api: winhttp.WinHttpConnect\n      - and:\n        - match: send data on socket\n        - string: /HTTP/i\n"
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "open clipboard",
+                                               "description":  "host-interaction/clipboard",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: CloseClipboard",
+                                                                  "api: OpenClipboard"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: open clipboard\n    namespace: host-interaction/clipboard\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    att\u0026ck:\n      - Collection::Clipboard Data [T1115]\n    examples:\n      - 6f99a2c8944cb02ff28c6f9ced59b161:0x403180\n  features:\n    - and:\n      - api: user32.OpenClipboard\n      - optional:\n        - api: user32.CloseClipboard\n"
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "send data",
+                                               "description":  "communication : all known techniques for sending data to a potential C2 server",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: HttpOpenRequest",
+                                                                  "send HTTP request",
+                                                                  "api: InternetConnect"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: send data\n    namespace: communication\n    authors:\n      - william.ballenthin@mandiant.com\n      - joakim@intezer.com\n    description: all known techniques for sending data to a potential C2 server\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Command and Control::C2 Communication::Send Data [B0030.001]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5:0x13145D60\n  features:\n    - or:\n      - and:\n        - os: windows\n        - or:\n          - match: send HTTP request\n          - match: send data on socket\n          - match: send file via HTTP\n          - match: send data to Internet\n      - and:\n        - os: linux\n        - or: # Require network bound socket.\n          - match: create TCP socket\n          - match: create UDP socket\n        - or:\n          - match: send HTTP request\n          - match: send data on socket\n          - match: send file via HTTP\n"
+                                           },
+                                           {
+                                               "id":  "4",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "connect to HTTP server",
+                                               "description":  "communication/http/client",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: InternetOpen",
+                                                                  "create HTTP request",
+                                                                  "api: InternetCloseHandle"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: connect to HTTP server\n    namespace: communication/http/client\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Communication::HTTP Communication::Connect to Server [C0002.009]\n    examples:\n      - 6f99a2c8944cb02ff28c6f9ced59b161:0x40E2F0\n  features:\n    - and:\n      - optional:\n        - match: create HTTP request\n      - api: wininet.InternetConnect\n"
+                                           },
+                                           {
+                                               "id":  "5",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "read data from Internet",
+                                               "description":  "communication/http/client",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: InternetOpen",
+                                                                  "api: InternetReadFile",
+                                                                  "connect to HTTP server"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: read data from Internet\n    namespace: communication/http/client\n    authors:\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Communication::HTTP Communication::Get Response [C0002.017]\n    examples:\n      - 6f99a2c8944cb02ff28c6f9ced59b161:0x40D590\n  features:\n    - and:\n      - optional:\n        - or:\n          - match: connect to HTTP server\n          - match: connect to URL\n      - or:\n        - api: wininet.InternetReadFile\n        - api: wininet.InternetReadFileEx\n        - api: System.Net.WebClient::DownloadString\n        - api: System.Net.WebClient::DownloadStringAsync\n        - api: System.Net.WebClient::DownloadStringTaskAsync\n        - api: System.Net.WebClient::DownloadData\n        - api: System.Net.WebClient::DownloadDataAsync\n        - api: System.Net.WebClient::DownloadDataTaskAsync\n"
+                                           },
+                                           {
+                                               "id":  "6",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "read clipboard data",
+                                               "description":  "host-interaction/clipboard",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: CloseClipboard",
+                                                                  "api: OpenClipboard",
+                                                                  "api: GlobalUnlock"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: read clipboard data\n    namespace: host-interaction/clipboard\n    authors:\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    att\u0026ck:\n      - Collection::Clipboard Data [T1115]\n    references:\n      - https://learn.microsoft.com/en-us/windows/win32/dataxchg/using-the-clipboard\n    examples:\n      - C91887D861D9BD4A5872249B641BC9F9:0x40156F\n      - 93dfc146f60bd796eb28d4e4f348f2e4:0x401050\n  features:\n    - and:\n      - optional:\n        - match: open clipboard\n        - match: contain loop\n        - api: kernel32.GlobalAlloc\n        - api: kernel32.GlobalLock\n        - api: kernel32.GlobalUnlock\n      - or:\n        - basic block:\n          - and:\n            - api: user32.GetClipboardData\n            - optional:\n              - number: 0x1 = CF_TEXT\n              - number: 0x7 = CF_OEMTEXT\n              - number: 0xD = CF_UNICODETEXT\n        - call:\n          - and:\n            - api: user32.GetClipboardData\n            - optional:\n              - number: 0x1 = CF_TEXT\n              - number: 0x7 = CF_OEMTEXT\n              - number: 0xD = CF_UNICODETEXT\n        - api: System.Windows.Forms.Clipboard::GetAudioStream\n        - api: System.Windows.Forms.Clipboard::GetData\n        - api: System.Windows.Forms.Clipboard::GetDataObject\n        - api: System.Windows.Forms.Clipboard::GetFileDropList\n        - api: System.Windows.Forms.Clipboard::GetImage\n        - api: System.Windows.Forms.Clipboard::GetText\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://learn.microsoft.com/en-us/windows/win32/dataxchg/using-the-clipboard"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "8",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "reference Base64 string",
+                                               "description":  "data-manipulation/encoding/base64",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "regex: /ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: reference Base64 string\n    namespace: data-manipulation/encoding/base64\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Data::Encode Data::Base64 [C0026.001]\n      - Data::Check String [C0019]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5\n      - 074072B261FC27B65C72671F13510C05\n      - 5DB2D2BE20D59AA0BE6709A6850F1775\n  features:\n    - string: /ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\n"
+                                           },
+                                           {
+                                               "id":  "9",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create HTTP request",
+                                               "description":  "communication/http/client",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: InternetOpen",
+                                                                  "api: InternetCloseHandle"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create HTTP request\n    namespace: communication/http/client\n    authors:\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Communication::HTTP Communication::Create Request [C0002.012]\n    examples:\n      - 6f99a2c8944cb02ff28c6f9ced59b161:0x40E2F0\n  features:\n    - and:\n      - or:\n        - api: wininet.InternetOpen\n        - api: System.Net.WebRequest::Create\n        - api: System.Net.WebRequest::CreateDefault\n        - api: System.Net.WebRequest::CreateHttp\n      - optional:\n        - api: wininet.InternetCloseHandle\n"
+                                           },
+                                           {
+                                               "id":  "10",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write clipboard data",
+                                               "description":  "host-interaction/clipboard",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: CloseClipboard",
+                                                                  "api: OpenClipboard",
+                                                                  "api: EmptyClipboard"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write clipboard data\n    namespace: host-interaction/clipboard\n    authors:\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Impact::Clipboard Modification [E1510]\n    references:\n      - https://learn.microsoft.com/en-us/windows/win32/dataxchg/using-the-clipboard\n    examples:\n      - 6F99A2C8944CB02FF28C6F9CED59B161:0x403180\n  features:\n    - and:\n      - optional:\n        - match: open clipboard\n        - api: user32.EmptyClipboard\n        - api: System.Windows.Forms.Clipboard::Clear\n      - or:\n        - api: user32.SetClipboardData\n        - api: System.Windows.Forms.Clipboard::SetAudio\n        - api: System.Windows.Forms.Clipboard::SetData\n        - api: System.Windows.Forms.Clipboard::SetDataObject\n        - api: System.Windows.Forms.Clipboard::SetFileDropList\n        - api: System.Windows.Forms.Clipboard::SetImage\n        - api: System.Windows.Forms.Clipboard::SetText\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://learn.microsoft.com/en-us/windows/win32/dataxchg/using-the-clipboard"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "11",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using RC4 KSA",
+                                               "description":  "data-manipulation/encryption/rc4",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "tight loop",
+                                                                  "calculate modulo 256 via x86 assembly",
+                                                                  "mnemonic: idiv"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using RC4 KSA\n    namespace: data-manipulation/encryption/rc4\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic, Not features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Cryptography::Encrypt Data::RC4 [C0027.009]\n      - Cryptography::Encryption Key::RC4 KSA [C0028.002]\n    examples:\n      - 34404A3FB9804977C6AB86CB991FB130:0x403D40\n      - 9324D1A8AE37A36AE560C37448C9705A:0x404950\n      - 2B8BEC5BCB1777EAA155D832F7AFC797:0x405C42\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x40646E\n  features:\n    - or:\n      - and:\n        - basic block:\n          - and:\n            - description: initialize S\n            # misses if regular loop is used,\n            # however we cannot model that a loop contains a certain number\n            - characteristic: tight loop\n            - or:\n              - number: 0xFF\n              - number: 0x100\n        - or:\n          - description: modulo 256\n          - match: calculate modulo 256 via x86 assembly\n          - basic block:\n            - and:\n              - description: modulo via zero-extended mov from 8-bit register\n              - count(mnemonic(movzx)): 2 or more\n              # avoid false positives; filter out unexpected instructions\n              - not:\n                - or:\n                  - mnemonic: shl\n                  - mnemonic: rol\n                  - characteristic: nzxor\n        - or:\n          - description: modulo key length\n          - mnemonic: div\n          - mnemonic: idiv\n      - and:\n        - description: write DWORDs instead of bytes\n        - or:\n          - number: 0x03020100\n          - number: 0xFFFEFDFC\n        - instruction:\n          - or:\n            - mnemonic: add\n            - mnemonic: sub\n          - number: 0x04040404\n"
+                                           },
+                                           {
+                                               "id":  "14",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "receive data",
+                                               "description":  "communication : all known techniques for receiving data from a potential C2 server",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: InternetOpen",
+                                                                  "api: InternetReadFile",
+                                                                  "connect to HTTP server"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: receive data\n    namespace: communication\n    authors:\n      - william.ballenthin@mandiant.com\n    description: all known techniques for receiving data from a potential C2 server\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Command and Control::C2 Communication::Receive Data [B0030.002]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5:0x13145D60\n  features:\n    - or:\n      - match: receive data on socket\n      - match: read data from Internet\n      - match: download URL\n"
+                                           },
+                                           {
+                                               "id":  "language_check_registry",
+                                               "name":  "language_check_registry",
+                                               "description":  "Checks system language via registry key (possible geofencing)",
+                                               "match_data":  [
+                                                                  "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\Nls\\CustomLocale\\en-US",
+                                                                  "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\Nls\\ExtendedLocale\\en-US"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           }
+                                       ],
+                 "mbc":  [
+                             {
+                                 "id":  "C0002.003",
+                                 "objective":  "Communication",
+                                 "behavior":  "HTTP Communication",
+                                 "method":  "Send Request",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "1"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0030.001",
+                                 "objective":  "Command and Control",
+                                 "behavior":  "C2 Communication",
+                                 "method":  "Send Data",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "3"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0002.009",
+                                 "objective":  "Communication",
+                                 "behavior":  "HTTP Communication",
+                                 "method":  "Connect to Server",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "4"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0002.017",
+                                 "objective":  "Communication",
+                                 "behavior":  "HTTP Communication",
+                                 "method":  "Get Response",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "5"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0026.001",
+                                 "objective":  "Data",
+                                 "behavior":  "Encode Data",
+                                 "method":  "Base64",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "8"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0019",
+                                 "objective":  "Data",
+                                 "behavior":  "Check String",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "8"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0002.012",
+                                 "objective":  "Communication",
+                                 "behavior":  "HTTP Communication",
+                                 "method":  "Create Request",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "9"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1510",
+                                 "objective":  "Impact",
+                                 "behavior":  "Clipboard Modification",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "10"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0027.009",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encrypt Data",
+                                 "method":  "RC4",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "11"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0028.002",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encryption Key",
+                                 "method":  "RC4 KSA",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "11"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0030.002",
+                                 "objective":  "Command and Control",
+                                 "behavior":  "C2 Communication",
+                                 "method":  "Receive Data",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "14"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "OC0006"
+                             },
+                             {
+                                 "id":  "C0002"
+                             }
+                         ],
+                 "registry_keys_opened":  [
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\GRE_Initialize\\DisableMetaFiles",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\AppsUseLightTheme",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\GRE_Initialize\\DisableUmpdBufferSizeCheck",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\GRE_Initialize"
+                                          ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1115",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "open clipboard",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "2"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1115",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "read clipboard data",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "6"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "reference Base64 string",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "8"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using RC4 KSA",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "11"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "processes_created":  [
+                                           "\"C:\\Windows\\System32\\rundll32.exe\" \"C:\\Users\\\u003cUSER\u003e\\Desktop\\clip64.dll\",#1"
+                                       ],
+                 "text_decoded":  [
+                                      "{\u0027Amadey\u0027: {\u0027CNCs\u0027: [[\u0027http://adeyqa.net/9jf4FD8sD/index.php\u0027, \u0027http://adeyqa.com/0kgXhd4hsq/index.php\u0027, \u0027http://adeyjo.net/L4fi32Bzk9A/index.php\u0027]], \u0027version\u0027: [\u00275.70\u0027], \u0027cryptokey\u0027: [\u0027570705a3c618c30036dcac1d1717a07e\u0027], \u0027cryptokey_type\u0027: [\u0027RC4\u0027], \u0027campaign_id\u0027: [\u0027a8ac53\u0027]}}"
+                                  ],
+                 "files_opened":  [
+                                      "C:\\Users\\\u003cUSER\u003e\\Desktop\\clip64.dll.manifest",
+                                      "C:\\Users\\\u003cUSER\u003e\\Desktop\\clip64.dll",
+                                      "C:\\Users\\\u003cUSER\u003e\\Desktop\\clip64.dll.123.Manifest",
+                                      "C:\\Users\\\u003cUSER\u003e\\Desktop\\clip64.dll.124.Manifest"
+                                  ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2740",
+                                            "name":  "\"C:\\Windows\\System32\\rundll32.exe\" \"C:\\Users\\\u003cUSER\u003e\\Desktop\\clip64.dll\",#1"
+                                        }
+                                    ],
+                 "verdict_labels":  [
+                                        "Amadey"
+                                    ],
+                 "attack_techniques":  {
+                                           "T1115":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "open clipboard",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "2"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "read clipboard data",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "6"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "reference Base64 string",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "8"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using RC4 KSA",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "11"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

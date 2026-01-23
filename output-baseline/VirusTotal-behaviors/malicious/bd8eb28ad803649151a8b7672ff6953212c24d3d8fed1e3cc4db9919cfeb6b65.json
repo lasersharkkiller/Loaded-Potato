@@ -1,0 +1,144 @@
+{
+    "data":  {
+                 "mbc":  [
+                             {
+                                 "id":  "F0001.002",
+                                 "objective":  "Anti-Static Analysis",
+                                 "behavior":  "Software Packing",
+                                 "method":  "Standard Compression",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "packed with generic packer"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "F0001.008",
+                                 "objective":  "Anti-Static Analysis",
+                                 "behavior":  "Software Packing",
+                                 "method":  "UPX",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "packed with UPX"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2224",
+                                            "name":  "%windir%\\System32\\svchost.exe -k WerSvcGroup"
+                                        },
+                                        {
+                                            "process_id":  "2796",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        },
+                                        {
+                                            "process_id":  "2596",
+                                            "name":  "%SAMPLEPATH%"
+                                        },
+                                        {
+                                            "process_id":  "2836",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        }
+                                    ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1027.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "packed with generic packer",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "packed with generic packer"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "packed with UPX",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "packed with UPX"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "processes_terminated":  [
+                                              "%windir%\\System32\\svchost.exe -k WerSvcGroup",
+                                              "wmiadap.exe /F /T /R"
+                                          ],
+                 "verdict_confidence":  50,
+                 "verdict_labels":  [
+                                        "Zombie"
+                                    ],
+                 "verdicts":  [
+                                  "MALWARE"
+                              ],
+                 "signature_matches":  [
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain loop",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain loop\n    authors:\n      - moritz.raabe@mandiant.com\n    lib: true\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic features\n    examples:\n      - 08AC667C65D36D6542917655571E61C8:0x406EAA\n  features:\n    - or:\n      - characteristic: loop\n      - characteristic: tight loop\n      - characteristic: recursive call\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "packed with generic packer",
+                                               "description":  "anti-analysis/packer/generic",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: packed with generic packer\n    namespace: anti-analysis/packer/generic\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information::Software Packing [T1027.002]\n    mbc:\n      - Anti-Static Analysis::Software Packing::Standard Compression [F0001.002]\n    examples:\n      - Practical Malware Analysis Lab 18-01.exe_:0x409dc0\n  features:\n    - and:\n      - or:\n        - mnemonic: pusha\n        - mnemonic: pushad  # vivisect\n      - or:\n        - mnemonic: popa\n        - mnemonic: popad  # vivisect\n      - characteristic: cross section flow\n      - not:\n        - match: contain pusha popa sequence\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "packed with UPX",
+                                               "description":  "anti-analysis/packer/upx",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: packed with UPX\n    namespace: anti-analysis/packer/upx\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information::Software Packing [T1027.002]\n    mbc:\n      - Anti-Static Analysis::Software Packing::UPX [F0001.008]\n    examples:\n      - CD2CBA9E6313E8DF2C1273593E649682\n      - Practical Malware Analysis Lab 01-02.exe_:0x0401000\n  features:\n    - or:\n      - and:\n        - format: pe\n        - or:\n          - section: UPX0\n          - section: UPX1\n      - and:\n        - format: elf\n        - or:\n          - string: \"UPX!\"\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "(internal) packer file limitation",
+                                               "description":  "internal/limitation/file : This sample appears to be packed.\n\nPacked samples have often been obfuscated to hide their logic.\ncapa cannot handle obfuscation well using static analysis. This means the results may be misleading or incomplete.\nIf possible, you should try to unpack this input file before analyzing it with capa.\nAlternatively, run the sample in a supported sandbox and invoke capa against the report to obtain dynamic analysis results.\n",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: (internal) packer file limitation\n    namespace: internal/limitation/file\n    authors:\n      - william.ballenthin@mandiant.com\n    description: |\n      This sample appears to be packed.\n\n      Packed samples have often been obfuscated to hide their logic.\n      capa cannot handle obfuscation well using static analysis. This means the results may be misleading or incomplete.\n      If possible, you should try to unpack this input file before analyzing it with capa.\n      Alternatively, run the sample in a supported sandbox and invoke capa against the report to obtain dynamic analysis results.\n    scopes:\n      static: file\n      dynamic: file\n    examples:\n      - CD2CBA9E6313E8DF2C1273593E649682\n  features:\n    - or:\n      - match: anti-analysis/packer\n"
+                                           }
+                                       ],
+                 "attack_techniques":  {
+                                           "T1027.002":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "packed with generic packer",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "packed with generic packer"
+                                                                              }
+                                                                          ]
+                                                             },
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "packed with UPX",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "packed with UPX"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ]
+                                       }
+             }
+}

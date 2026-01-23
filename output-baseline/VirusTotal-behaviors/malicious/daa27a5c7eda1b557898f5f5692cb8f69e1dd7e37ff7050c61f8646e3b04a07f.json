@@ -1,0 +1,655 @@
+{
+    "data":  {
+                 "signature_matches":  [
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain obfuscated stackstrings",
+                                               "description":  "anti-analysis/obfuscation/string/stackstring",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain obfuscated stackstrings\n    namespace: anti-analysis/obfuscation/string/stackstring\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information::Indicator Removal from Tools [T1027.005]\n    mbc:\n      - Anti-Static Analysis::Executable Code Obfuscation::Argument Obfuscation [B0032.020]\n      - Anti-Static Analysis::Executable Code Obfuscation::Stack Strings [B0032.017]\n    examples:\n      - Practical Malware Analysis Lab 16-03.exe_:0x4013D0\n  features:\n    - characteristic: stack string\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "access PEB ldr_data",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: access PEB ldr_data\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    references:\n      - https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm\n      - https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8\n    examples:\n      - 3FDFB2D522E7DEECAAAF2F87420F7E75:0x4117B7\n  features:\n    - or:\n      - and:\n        - arch: i386\n        - description: x32\n\n        - match: PEB access\n\n        # x86 Windows uses fs:0 to access the TIB which contains SEH information at offset 0\n        # checking for fs:0 and a (possibly unrelated) number or offset often results in false positives\n\n        - offset: 0x0C = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x0C = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x14 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x1C = PEB.LDR_DATA.InInitializationOrderModuleList\n\n      - and:\n        - arch: amd64\n        - description: x64\n\n        - match: PEB access\n\n        - offset: 0x18 = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x10 = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x20 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x30 = PEB.LDR_DATA.InInitializationOrderModuleList\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse PE header",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse PE header\n    namespace: load-code/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic, operand[1].offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x403DD0\n  features:\n    - and:\n      - os: windows\n      - and:\n        - mnemonic: cmp\n        - or:\n          - number: 0x4550 = IMAGE_NT_SIGNATURE (PE)\n          - and:\n            - number: 0x50\n            - number: 0x45\n        - or:\n          - number: 0x5A4D = IMAGE_DOS_SIGNATURE (MZ)\n          - and:\n            - number: 0x4D\n            - number: 0x5A\n        - optional:\n          - and:\n            - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n            - or:\n              - and:\n                - arch: i386\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n              - and:\n                - arch: amd64\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x30 = IMAGE_NT_HEADERS64.OptionalHeader.ImageBase\n          - basic block:\n            - and:\n              - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n              - 3 or more:\n                - operand[1].offset: 0x4 = IMAGE_NT_HEADERS.FileHeader.Machine\n                - operand[1].offset: 0x6 = IMAGE_NT_HEADERS.FileHeader.NumberOfSections\n                - operand[1].offset: 0x14 = IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader\n                - operand[1].offset: 0x16 = IMAGE_NT_HEADERS.FileHeader.Characteristics\n                - operand[1].offset: 0x28 = IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint  # for 32 and 64 bit\n                - or:\n                  - and:\n                    - arch: i386\n                    - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                  - and:\n                    - arch: amd64\n                    - operand[1].offset: 0x30 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "inspect section memory permissions",
+                                               "description":  "load-code/pe : translate section memory permissions (specified in the \u0027Characteristics\u0027 field of the image section header) into page protection constants",
+                                               "authors":  [
+                                                               "@Ana06"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: inspect section memory permissions\n    namespace: load-code/pe\n    authors:\n      - \"@Ana06\"\n    description: \"translate section memory permissions (specified in the \u0027Characteristics\u0027 field of the image section header) into page protection constants\"\n    scopes:\n      static: function\n      dynamic: thread\n    mbc:\n      - Discovery::Code Discovery::Inspect Section Memory Permissions [B0046.002]\n    examples:\n      - E4C33AC3638EEF68311F8AC0D72483C7:0x401480\n  features:\n    - and:\n      - os: windows\n      - 3 or more:\n        - and:\n          - number: 0x40000000 = IMAGE_SCN_MEM_READ\n          - number: 0x2 = PAGE_READONLY\n        - and:\n          - number: 0x20000000 = IMAGE_SCN_MEM_EXECUTE\n          - number: 0x10 = PAGE_EXECUTE\n        - and:\n          - or:\n            - number: 0x60000000 = IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_EXECUTE\n            - and:\n              - number: 0x40000000 = IMAGE_SCN_MEM_READ\n              - number: 0x20000000 = IMAGE_SCN_MEM_EXECUTE\n          - number: 0x20 = PAGE_EXECUTE_READ\n        - and:\n          - or:\n            - number: 0xC0000000 = IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE\n            - and:\n              - number: 0x40000000 = IMAGE_SCN_MEM_READ\n              - number: 0x80000000 = IMAGE_SCN_MEM_WRITE\n          - number: 0x4 = PAGE_READWRITE\n        - and:\n          - or:\n            - number: 0xE0000000 = IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE | IMAGE_SCN_MEM_EXECUTE\n            - and:\n              - number: 0x40000000 = IMAGE_SCN_MEM_READ\n              - number: 0x80000000 = IMAGE_SCN_MEM_WRITE\n              - number: 0x20000000 = IMAGE_SCN_MEM_EXECUTE\n          - number: 0x40 = PAGE_EXECUTE_READWRITE\n      - optional:\n        - number: 0x1 = PAGE_NOACCESS\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using SHA256",
+                                               "description":  "data-manipulation/hashing/sha256",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com",
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using SHA256\n    namespace: data-manipulation/hashing/sha256\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: thread\n    mbc:\n      - Cryptography::Cryptographic Hash::SHA256 [C0029.003]\n    references:\n      - https://www.rfc-editor.org/rfc/rfc6234\n    examples:\n      - C0CFFCF211035A839E28D542DE300298:0x180011400\n      - 6CC148363200798A12091B97A17181A1:0x140120240\n      - 44d40faf3f1fe4ed969befab7afcd2f0:0x10033570\n  features:\n    - or:\n      - and:\n        - number: 0x6A09E667 = H(0)0\n        - number: 0xBB67AE85 = H(0)1\n        - number: 0x3C6EF372 = H(0)2\n        - number: 0xA54FF53A = H(0)3\n        - number: 0x510E527F = H(0)4\n        - number: 0x9B05688C = H(0)5\n        - number: 0x1F83D9AB = H(0)6\n        - number: 0x5BE0CD19 = H(0)7\n      - bytes: 67 E6 09 6A 85 AE 67 BB 72 F3 6E 3C 3A F5 4F A5 7F 52 0E 51 8C 68 05 9B AB D9 83 1F 19 CD E0 5B = H(0)\n      - and:\n        # there are 64 constants but we\u0027ll only include 8 here for simplicity\n        - number: 0x428a2f98\n        - number: 0x71374491\n        - number: 0xb5c0fbcf\n        - number: 0xe9b5dba5\n        - number: 0x3956c25b\n        - number: 0x59f111f1\n        - number: 0x923f82a4\n        - number: 0xab1c5ed5\n        - not:\n          - or:\n            - number: 0xd728ae22 = lower half of SHA512 constant, 0x428a2f98d728ae22\n            - number: 0x23ef65cd = lower half of SHA512 constant, 0x7137449123ef65cd\n      - and:\n        - format: dotnet\n        - or:\n          - api: System.Security.Cryptography.SHA256Managed::Initialize\n          - api: System.Security.Cryptography.SHA256CryptoServiceProvider::Initialize\n          - api: System.Security.Cryptography.SHA256::Create\n          - api: System.Security.Cryptography.SHA256Managed::ctor\n        - api: System.Security.Cryptography.HashAlgorithm::ComputeHash\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.rfc-editor.org/rfc/rfc6234"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "compiled from Visual Basic",
+                                               "description":  "compiler/vb",
+                                               "authors":  [
+                                                               "@williballenthin"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: compiled from Visual Basic\n    namespace: compiler/vb\n    authors:\n      - \"@williballenthin\"\n    scopes:\n      static: file\n      dynamic: file\n    examples:\n      - 9bca6b99e7981208af4c7925b96fb9cf\n  features:\n    - and:\n      - string: /VB5!.*/\n      - import: msvbvm60.ThunRTMain\n"
+                                           }
+                                       ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1027.005",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "contain obfuscated stackstrings",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "contain obfuscated stackstrings"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "access PEB ldr_data",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "access PEB ldr_data"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "parse PE header",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "parse PE header"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "registry_keys_set":  [
+                                           {
+                                               "key":  "HKEY_USERS\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\SystemCertificates\\Root\\Certificates\\0174E68C97DDF1E0EEEA415EA336A163D2B61AFD\\Blob",
+                                               "value":  "5C 00 00 00 01 00 00 00 04 00 00 00 00 10 00 00 04 00 00 00 01 00 00 00 10 00 00 00 0D BE 92 DE FF 7D 36 BB 48 C4 A6 B1 15 24 95 38 0F 00 00 00 01 00 00 00 20 00 00 00 53 FE B9 19 2E D4 80 F2 09 12 4A 2C 57 D7 E8 97 7A 2E 9F 39 46 1D BF 21 4D F1 12 CB 16 02 4F A2 14 00 00 00 01 00 00 00 14 00 00 00 78 B8 30 FD 63 AC 7B 89 4A 07 3B ED F6 8A 83 9C C3 52 02 65 19 00 00 00 01 00 00 00 10 00 00 00 B5 74 AF 30 C5 C1 BA 3A 69 A7 10 02 00 82 4D D0 03 00 00 00 01 00 00 00 14 00 00 00 01 74 E6 8C 97 DD F1 E0 EE EA 41 5E A3 36 A1 63 D2 B6 1A FD 20 00 00 00 01 00 00 00 F8 05 00 00 30 82 05 F4 30 82 03 DC A0 03 02 01 02 02 09 00 E0 EA 61 4C 28 56 32 64 30 0D 06 09 2A 86 48 86 F7 0D 01 01 0B 05 00 30 81 8E 31 0B 30 09 06 03 55 04 06 13 02 49 4C 31 0F 30 0D 06 03 55 04 08 0C 06 43 65 6E 74 65 72 31 0C 30 0A 06 03 55 04 07 0C 03 4C 6F 64 31 10 30 0E 06 03 55 04 0A 0C 07 47 6F 50 72 6F 78 79 31 10 30 0E 06 03 55 04 0B 0C 07 47 6F 50 72 6F 78 79 31 1A 30 18 06 03 55 04 03 0C 11 67 6F 70 72 6F 78 79 2E 67 69 74 68 75 62 2E 69 6"
+                                           },
+                                           {
+                                               "key":  "HKEY_USERS\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ProxyServer",
+                                               "value":  "%HTTP_PROXY%:8080"
+                                           },
+                                           {
+                                               "key":  "HKEY_USERS\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ProxyEnable",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "key":  "HKEY_USERS\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\Connections\\SavedLegacySettings",
+                                               "value":  "46 00 00 00 10 01 00 00 03 00 00 00 14 00 00 00 65 78 74 72 61 63 74 6F 72 2E 70 72 6F 78 79 3A 38 30 38 30 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 D0 5C 01 4D C1 D5 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+                                           }
+                                       ],
+                 "http_conversations":  [
+                                            {
+                                                "url":  "http://airlux.bg/inc/.../strings.txt",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2",
+                                                                        "Cache-Control":  "no-cache",
+                                                                        "Pragma":  "no-cache"
+                                                                    },
+                                                "response_headers":  {
+                                                                         "Report-To":  "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=GbAHnVFEuTm0WMSm3eBknD%2F4J1s%2FOZRpa%2BglHd0%2FiqClr679dGHN9tHTiErdOUssC2yLlTWZuPPlFZqGUD2REUMJYhzdnLJN2%2FnGfz%2FIh2AUKWd0g5khsCsyIg%3D%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
+                                                                         "X-Redirect-Reason":  "https_required",
+                                                                         "X-Request-Id":  "b80474b3-4d64-4f03-9436-806a1a75dcf3-1734898666",
+                                                                         "Cf-Ray":  "8f62cc1a8859d1de-ICN",
+                                                                         "Content-Type":  "text/html; charset=utf-8",
+                                                                         "X-Frame-Options":  "DENY",
+                                                                         "Server-Timing":  "processing;dur=14;desc=\"gc:1\", db;dur=3, db_async;dur=1.815, asn;desc=\"4766\", edge;desc=\"ICN\", country;desc=\"KR\", servedBy;desc=\"5cpg\", requestID;desc=\"b80474b3-4d64-4f03-9436-806a1a75dcf3-1734898666\"; cfRequestDuration;dur=276.000023",
+                                                                         "Powered-By":  "Shopify",
+                                                                         "X-Content-Type-Options":  "nosniff",
+                                                                         "X-Storefront-Renderer-Rendered":  "1",
+                                                                         "X-Xss-Protection":  "1; mode=block",
+                                                                         "X-Download-Options":  "noopen",
+                                                                         "X-Sorting-Hat-Podid":  "345",
+                                                                         "X-Dc":  "gcp-asia-southeast1,gcp-europe-west3,gcp-europe-west3",
+                                                                         "Cf-Cache-Status":  "DYNAMIC",
+                                                                         "Location":  "https://www.airlux.bg/inc/.../strings.txt",
+                                                                         "Server":  "cloudflare",
+                                                                         "Connection":  "keep-alive",
+                                                                         "X-Shopid":  "79465972058",
+                                                                         "Date":  "Sun, 22 Dec 2024 20:17:46 GMT",
+                                                                         "X-Sorting-Hat-Shopid":  "79465972058",
+                                                                         "Alt-Svc":  "h3=\":443\"; ma=86400",
+                                                                         "X-Shardid":  "345",
+                                                                         "Nel":  "{\"success_fraction\":0.01,\"report_to\":\"cf-nel\",\"max_age\":604800}",
+                                                                         "X-Permitted-Cross-Domain-Policies":  "none",
+                                                                         "Content-Security-Policy":  "frame-ancestors \u0027none\u0027;"
+                                                                     },
+                                                "response_status_code":  301
+                                            },
+                                            {
+                                                "url":  "https://www.airlux.bg:443/inc/.../strings.txt",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2",
+                                                                        "Cache-Control":  "no-cache",
+                                                                        "Pragma":  "no-cache"
+                                                                    },
+                                                "response_headers":  {
+                                                                         "Cf-Ray":  "8f62cc2178c7c076-ICN",
+                                                                         "X-Request-Id":  "6a3ce84b-f5f6-4f0d-bb64-4dc975fbe156-1734898667",
+                                                                         "Vary":  "Accept-Encoding",
+                                                                         "Content-Type":  "text/plain; charset=utf-8",
+                                                                         "Server-Timing":  "processing;dur=18;desc=\"gc:1\", db;dur=5, db_async;dur=1.449, asn;desc=\"4766\", edge;desc=\"ICN\", country;desc=\"KR\", servedBy;desc=\"dfnl\", requestID;desc=\"6a3ce84b-f5f6-4f0d-bb64-4dc975fbe156-1734898667\"; cfRequestDuration;dur=275.000095",
+                                                                         "Set-Cookie":  "_shopify_y=f3a7b6e3-b516-4ed6-9645-87de91a4cc85; Expires=Mon, 22-Dec-25 20:17:47 GMT; Domain=airlux.bg; Path=/; SameSite=Lax; _shopify_s=43c13a78-0307-4639-a35e-274ea6b318fe; Expires=Sun, 22-Dec-24 20:47:47 GMT; Domain=airlux.bg; Path=/; SameSite=Lax",
+                                                                         "X-Cache":  "hit, server",
+                                                                         "X-Frame-Options":  "DENY",
+                                                                         "X-Sorting-Hat-Podid":  "345",
+                                                                         "X-Sorting-Hat-Shopid":  "79465972058",
+                                                                         "Connection":  "close",
+                                                                         "X-Permitted-Cross-Domain-Policies":  "none",
+                                                                         "Nel":  "{\"success_fraction\":0.01,\"report_to\":\"cf-nel\",\"max_age\":604800}",
+                                                                         "X-Storefront-Renderer-Rendered":  "1",
+                                                                         "Content-Security-Policy":  "block-all-mixed-content; frame-ancestors \u0027none\u0027; upgrade-insecure-requests;",
+                                                                         "Report-To":  "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=CK02SBheyAbCE7PdzdrxIbrYUMtsNaE7IPh8f9bt%2FlXTEwJV27Pqlmr1KZdORcOR0rb7aBSKujIjRutTBI%2Fp39ug2LM6l08ZFTbKdNHXXkG7Y5cPkSCRB6yvrrzv5V4%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
+                                                                         "X-Xss-Protection":  "1; mode=block",
+                                                                         "Content-Language":  "bg-BG",
+                                                                         "X-Shopify-Nginx-No-Cookies":  "0",
+                                                                         "Powered-By":  "Shopify",
+                                                                         "Strict-Transport-Security":  "max-age=7889238",
+                                                                         "X-Content-Type-Options":  "nosniff",
+                                                                         "Transfer-Encoding":  "chunked",
+                                                                         "Etag":  "W/\"cacheable:5a0f2abdbc1c29ef3f474f2551690b91\"",
+                                                                         "X-Download-Options":  "noopen",
+                                                                         "Server":  "cloudflare",
+                                                                         "X-Dc":  "gcp-asia-southeast1,gcp-europe-west3,gcp-europe-west3",
+                                                                         "Cf-Cache-Status":  "DYNAMIC",
+                                                                         "X-Shopid":  "79465972058",
+                                                                         "Date":  "Sun, 22 Dec 2024 20:17:48 GMT",
+                                                                         "Alt-Svc":  "h3=\":443\"; ma=86400",
+                                                                         "X-Shardid":  "345"
+                                                                     },
+                                                "response_status_code":  404
+                                            },
+                                            {
+                                                "url":  "http://www.artemon.cz/dov/strings.txt",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2",
+                                                                        "Cache-Control":  "no-cache",
+                                                                        "Pragma":  "no-cache"
+                                                                    },
+                                                "response_headers":  {
+                                                                         "Date":  "Sun, 22 Dec 2024 20:17:48 GMT",
+                                                                         "Server":  "Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips PHP/5.4.16",
+                                                                         "Content-Type":  "text/html; charset=iso-8859-1"
+                                                                     },
+                                                "response_status_code":  404
+                                            },
+                                            {
+                                                "url":  "http://www.aviafilm.com.ua/forum/files/.../strings.txt",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2",
+                                                                        "Cache-Control":  "no-cache",
+                                                                        "Pragma":  "no-cache"
+                                                                    },
+                                                "response_headers":  {
+                                                                         "Vary":  "Accept-Encoding,User-Agent",
+                                                                         "Etag":  "\"d616-5b4d207b-363b62869ae948a2;gz\"",
+                                                                         "Server":  "LiteSpeed",
+                                                                         "Content-Type":  "text/plain",
+                                                                         "Keep-Alive":  "timeout=5, max=100",
+                                                                         "Accept-Ranges":  "bytes",
+                                                                         "Connection":  "Keep-Alive",
+                                                                         "Date":  "Sun, 22 Dec 2024 20:17:50 GMT",
+                                                                         "Last-Modified":  "Mon, 16 Jul 2018 22:47:23 GMT"
+                                                                     },
+                                                "response_status_code":  200
+                                            },
+                                            {
+                                                "url":  "http://www.ip-adress.com/",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2",
+                                                                        "Cache-Control":  "no-cache",
+                                                                        "Pragma":  "no-cache"
+                                                                    },
+                                                "response_headers":  {
+                                                                         "Vary":  "Accept-Encoding",
+                                                                         "Cache-Control":  "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+                                                                         "Report-To":  "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=TGhe5MNe0Au3z3Id0OaqUqFw7Q%2Fjh6cVqWH9U2XSBYNvcl1mC2UvEnRGbItK7%2FaK32e29GpcXFQ0QLDNJp6%2B8krv1kQCdS6cumcEcrs9XICHwxgbECEsu4GY8r5TXjlW1HT5Xg%3D%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
+                                                                         "Cf-Ray":  "8f62cc925db408c7-LAX",
+                                                                         "Expires":  "Thu, 01 Jan 1970 00:00:01 GMT",
+                                                                         "Content-Type":  "text/plain; charset=UTF-8",
+                                                                         "Server-Timing":  "cfL4;desc=\"?proto=TCP\u0026rtt=129730\u0026min_rtt=129730\u0026rtt_var=64865\u0026sent=1\u0026recv=3\u0026lost=0\u0026retrans=0\u0026sent_bytes=0\u0026recv_bytes=211\u0026delivery_rate=0\u0026cwnd=243\u0026unsent_bytes=0\u0026cid=0000000000000000\u0026ts=0\u0026x=0\"",
+                                                                         "Referrer-Policy":  "same-origin",
+                                                                         "X-Frame-Options":  "SAMEORIGIN",
+                                                                         "Server":  "cloudflare",
+                                                                         "Connection":  "keep-alive",
+                                                                         "Date":  "Sun, 22 Dec 2024 20:18:05 GMT",
+                                                                         "Alt-Svc":  "h3=\":443\"; ma=86400",
+                                                                         "Nel":  "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}"
+                                                                     },
+                                                "response_status_code":  403
+                                            },
+                                            {
+                                                "url":  "http://www.interpraevent.at/pear/HTTP/Header/eu.txt",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2",
+                                                                        "Cache-Control":  "no-cache",
+                                                                        "Pragma":  "no-cache"
+                                                                    },
+                                                "response_headers":  {
+                                                                         "Date":  "Sun, 22 Dec 2024 20:18:13 GMT",
+                                                                         "Server":  "Apache",
+                                                                         "Content-Type":  "text/html; charset=iso-8859-1",
+                                                                         "Location":  "https://www.interpraevent.at/pear/HTTP/Header/eu.txt"
+                                                                     },
+                                                "response_status_code":  301
+                                            },
+                                            {
+                                                "url":  "https://www.interpraevent.at:443/pear/HTTP/Header/eu.txt",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2",
+                                                                        "Cache-Control":  "no-cache",
+                                                                        "Pragma":  "no-cache"
+                                                                    },
+                                                "response_headers":  {
+                                                                         "Vary":  "Accept",
+                                                                         "Cache-Control":  "no-cache, private",
+                                                                         "Server":  "Apache",
+                                                                         "Upgrade":  "h2,h2c",
+                                                                         "Transfer-Encoding":  "chunked",
+                                                                         "Content-Type":  "text/html; charset=UTF-8",
+                                                                         "X-Frame-Options":  "sameorigin",
+                                                                         "Connection":  "close",
+                                                                         "X-Content-Type-Options":  "nosniff",
+                                                                         "Date":  "Sun, 22 Dec 2024 20:18:15 GMT",
+                                                                         "X-Generator":  "Sulu/2.6.2",
+                                                                         "X-Xss-Protection":  "1; mode=block"
+                                                                     },
+                                                "response_status_code":  404
+                                            },
+                                            {
+                                                "url":  "https://www.travelnext.nl:443/wp-content/languages/themes/eu.txt",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2",
+                                                                        "Cache-Control":  "no-cache"
+                                                                    },
+                                                "response_headers":  {
+                                                                         "Report-To":  "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=WYW8qdHFg9fSxchcI8iQ9MuPLquy10h6B4Xakte6XpnCDtEgrrU734wa73WGrEGnWuSJ59RHxFSB61PJKOOiaoAay1fAzfDA4Ryri1LFA3pghQ8gvkZdZzJahoN3AiNG6Z3q\"}],\"group\":\"cf-nel\",\"max_age\":604800}",
+                                                                         "Cache-Control":  "private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0",
+                                                                         "Vary":  "Accept-Encoding",
+                                                                         "Cf-Ray":  "8f62ccd51ee73269-ICN",
+                                                                         "Content-Type":  "text/plain; charset=UTF-8",
+                                                                         "Transfer-Encoding":  "chunked",
+                                                                         "Expires":  "Thu, 01 Jan 1970 00:00:01 GMT",
+                                                                         "Referrer-Policy":  "same-origin",
+                                                                         "X-Frame-Options":  "SAMEORIGIN",
+                                                                         "Server":  "cloudflare",
+                                                                         "Connection":  "close",
+                                                                         "Date":  "Sun, 22 Dec 2024 20:18:16 GMT",
+                                                                         "Alt-Svc":  "h3=\":443\"; ma=86400",
+                                                                         "Nel":  "{\"success_fraction\":0.01,\"report_to\":\"cf-nel\",\"max_age\":604800}"
+                                                                     },
+                                                "response_status_code":  403
+                                            },
+                                            {
+                                                "url":  "http://cpl.yonsei.ac.kr/bbs/icon/private_icon/eu.txt",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2",
+                                                                        "Cache-Control":  "no-cache",
+                                                                        "Pragma":  "no-cache"
+                                                                    },
+                                                "response_headers":  {
+                                                                         "Etag":  "\"8d00f-4420-5c884e02\"",
+                                                                         "Date":  "Sun, 22 Dec 2024 20:18:16 GMT",
+                                                                         "Server":  "Apache/1.3.29 (Unix) PHP/4.2.3",
+                                                                         "Content-Type":  "text/plain",
+                                                                         "Last-Modified":  "Wed, 13 Mar 2019 00:25:38 GMT",
+                                                                         "Accept-Ranges":  "bytes"
+                                                                     },
+                                                "response_status_code":  200
+                                            },
+                                            {
+                                                "url":  "https://www.myroms.org:443/blog/wp-includes/js/crop/rwk.txt",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2",
+                                                                        "Cache-Control":  "no-cache"
+                                                                    },
+                                                "response_headers":  {
+                                                                         "Cache-Control":  "no-cache, must-revalidate, max-age=0",
+                                                                         "Server":  "Apache/2.4.62 (Rocky Linux) OpenSSL/3.2.2 mod_fcgid/2.3.9 SVN/1.14.1 mod_wsgi/4.7.1 Python/3.9",
+                                                                         "Expires":  "Wed, 11 Jan 1984 05:00:00 GMT",
+                                                                         "Transfer-Encoding":  "chunked",
+                                                                         "Content-Type":  "text/html; charset=UTF-8",
+                                                                         "Connection":  "close",
+                                                                         "Date":  "Sun, 22 Dec 2024 20:18:19 GMT",
+                                                                         "Link":  "\u003chttps://www.myroms.org/blog/wp-json/\u003e; rel=\"https://api.w.org/\"",
+                                                                         "X-Powered-By":  "PHP/8.3.14"
+                                                                     },
+                                                "response_status_code":  404
+                                            },
+                                            {
+                                                "url":  "http://artist.ba/artistnovi/administrator/excel/rwk.txt",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2",
+                                                                        "Cache-Control":  "no-cache",
+                                                                        "Pragma":  "no-cache"
+                                                                    },
+                                                "response_headers":  {
+                                                                         "Date":  "Sun, 22 Dec 2024 20:18:22 GMT",
+                                                                         "Server":  "nginx",
+                                                                         "Content-Type":  "text/html",
+                                                                         "Location":  "https://artist.ba/artistnovi/administrator/excel/rwk.txt",
+                                                                         "Connection":  "keep-alive"
+                                                                     },
+                                                "response_status_code":  301
+                                            },
+                                            {
+                                                "url":  "https://artist.ba:443/artistnovi/administrator/excel/rwk.txt",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2",
+                                                                        "Cache-Control":  "no-cache",
+                                                                        "Pragma":  "no-cache"
+                                                                    },
+                                                "response_headers":  {
+                                                                         "Etag":  "\"31b-626a29f3d80aa\"",
+                                                                         "Server":  "nginx",
+                                                                         "Transfer-Encoding":  "chunked",
+                                                                         "Content-Type":  "text/html",
+                                                                         "Accept-Ranges":  "bytes",
+                                                                         "Connection":  "close",
+                                                                         "Date":  "Sun, 22 Dec 2024 20:18:23 GMT",
+                                                                         "Last-Modified":  "Mon, 11 Nov 2024 12:55:58 GMT"
+                                                                     },
+                                                "response_status_code":  403
+                                            },
+                                            {
+                                                "url":  "https://www.modelclub.gr:443/market/oc-content/languages/rwk.txt",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2",
+                                                                        "Cache-Control":  "no-cache"
+                                                                    },
+                                                "response_headers":  {
+                                                                         "Etag":  "\"3f-56cbb82852000\"",
+                                                                         "Cache-Control":  "max-age=3600",
+                                                                         "Server":  "nginx",
+                                                                         "Vary":  "User-Agent",
+                                                                         "Content-Type":  "text/plain",
+                                                                         "Transfer-Encoding":  "chunked",
+                                                                         "Accept-Ranges":  "bytes",
+                                                                         "Connection":  "close",
+                                                                         "X-Content-Type-Options":  "nosniff",
+                                                                         "Date":  "Sun, 22 Dec 2024 20:18:25 GMT",
+                                                                         "Expires":  "Sun, 22 Dec 2024 18:48:37 GMT",
+                                                                         "Last-Modified":  "Mon, 21 May 2018 18:31:28 GMT"
+                                                                     },
+                                                "response_status_code":  200
+                                            }
+                                        ],
+                 "verdicts":  [
+                                  "UNKNOWN_VERDICT"
+                              ],
+                 "processes_terminated":  [
+                                              "%CONHOST% \"-1092226377-733813520735129-343668722-814580178-1181223332470272983-527094603",
+                                              "%CONHOST% \"120742755-92361294516366171815710670851020708645783328475-5055437431147628950",
+                                              "%CONHOST% \"1473051170438028309-9809305901236289240-141057889195481654215459663291438254705",
+                                              "%CONHOST% \"-14667234211368718911-708059577-230620784-1386760843-5550124193217057241505782422",
+                                              "%CONHOST% \"-924771965-938094960613518095-2059966863131618948-1871845854-1075520529-313127168",
+                                              "%CONHOST% \"13450560481388908985-1116302161-14566215731600885408-161979264716858853331976782157",
+                                              "wmiadap.exe /F /T /R",
+                                              "explorer.exe \"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\ULJ11IJ3C6HLYQ03.lnk\"",
+                                              "%windir%\\explorer.exe /factory,{75dff2b7-6936-4c06-a8bb-676a7b00b24b} -Embedding",
+                                              "\"%SAMPLEPATH%\" ",
+                                              "%ComSpec% /c toy83a5562284a8.bat",
+                                              "%ComSpec% /c vxwbdcd4.bat",
+                                              "%ComSpec% /c wvxd37719f567bf56310.bat",
+                                              "%ComSpec% /c ouw46220d5d173f8d24ac384.bat",
+                                              "%SAMPLEPATH%",
+                                              "%ComSpec% /c %TEMP%\\nuw9d1d723ec12bd21444b\\orz443875923ec.bat",
+                                              "netsh  firewall delete allowedprogram program=\"%SAMPLEPATH%\"  profile=All",
+                                              "%ComSpec% /c %TEMP%\\nuw9d1d723ec12bd21444b\\szxedac965d7a8a568d.bat",
+                                              "netsh.exe  firewall add allowedprogram PROGRAM=\"%SAMPLEPATH%\" NAME=\"Session Win32\"  MODE=ENABLE PROFILE=ALL"
+                                          ],
+                 "command_executions":  [
+                                            "%SAMPLEPATH%",
+                                            "%ComSpec% /c %TEMP%\\nuw9d1d723ec12bd21444b\\orz443875923ec.bat",
+                                            "netsh  firewall delete allowedprogram program=\"%SAMPLEPATH%\"  profile=All",
+                                            "%ComSpec% /c %TEMP%\\nuw9d1d723ec12bd21444b\\szxedac965d7a8a568d.bat",
+                                            "netsh.exe  firewall add allowedprogram PROGRAM=\"%SAMPLEPATH%\" NAME=\"Session Win32\"  MODE=ENABLE PROFILE=ALL"
+                                        ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "1036",
+                                            "name":  "%CONHOST% \"-1092226377-733813520735129-343668722-814580178-1181223332470272983-527094603"
+                                        },
+                                        {
+                                            "process_id":  "3032",
+                                            "name":  "%CONHOST% \"120742755-92361294516366171815710670851020708645783328475-5055437431147628950"
+                                        },
+                                        {
+                                            "process_id":  "3040",
+                                            "name":  "%CONHOST% \"1473051170438028309-9809305901236289240-141057889195481654215459663291438254705"
+                                        },
+                                        {
+                                            "process_id":  "2716",
+                                            "name":  "%CONHOST% \"-14667234211368718911-708059577-230620784-1386760843-5550124193217057241505782422"
+                                        },
+                                        {
+                                            "process_id":  "1624",
+                                            "name":  "%CONHOST% \"-924771965-938094960613518095-2059966863131618948-1871845854-1075520529-313127168"
+                                        },
+                                        {
+                                            "process_id":  "2740",
+                                            "name":  "%CONHOST% \"13450560481388908985-1116302161-14566215731600885408-161979264716858853331976782157"
+                                        },
+                                        {
+                                            "process_id":  "2008",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        },
+                                        {
+                                            "process_id":  "2100",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        },
+                                        {
+                                            "process_id":  "2636",
+                                            "name":  "%windir%\\system32\\DllHost.exe /Processid:{3EB3C877-1F16-487C-9050-104DBCD66683}"
+                                        },
+                                        {
+                                            "process_id":  "2892",
+                                            "name":  "explorer.exe \"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\ULJ11IJ3C6HLYQ03.lnk\""
+                                        },
+                                        {
+                                            "process_id":  "2928",
+                                            "name":  "%windir%\\explorer.exe /factory,{75dff2b7-6936-4c06-a8bb-676a7b00b24b} -Embedding",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2960",
+                                                                 "name":  "\"%SAMPLEPATH%\" ",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "3024",
+                                                                                      "name":  "%ComSpec% /c toy83a5562284a8.bat"
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "3048",
+                                                                                      "name":  "%ComSpec% /c vxwbdcd4.bat"
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "3064",
+                                                                                      "name":  "%ComSpec% /c wvxd37719f567bf56310.bat"
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "3016",
+                                                                                      "name":  "%ComSpec% /c ouw46220d5d173f8d24ac384.bat"
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2540",
+                                            "name":  "%SAMPLEPATH%",
+                                            "time_offset":  2,
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2708",
+                                                                 "name":  "%ComSpec% /c %TEMP%\\nuw9d1d723ec12bd21444b\\orz443875923ec.bat",
+                                                                 "time_offset":  18,
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "2748",
+                                                                                      "name":  "netsh  firewall delete allowedprogram program=\"%SAMPLEPATH%\"  profile=All",
+                                                                                      "time_offset":  25
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "2732",
+                                                                 "name":  "%ComSpec% /c %TEMP%\\nuw9d1d723ec12bd21444b\\szxedac965d7a8a568d.bat",
+                                                                 "time_offset":  21,
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "2764",
+                                                                                      "name":  "netsh.exe  firewall add allowedprogram PROGRAM=\"%SAMPLEPATH%\" NAME=\"Session Win32\"  MODE=ENABLE PROFILE=ALL",
+                                                                                      "time_offset":  28
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        }
+                                    ],
+                 "mbc":  [
+                             {
+                                 "id":  "B0032.020",
+                                 "objective":  "Anti-Static Analysis",
+                                 "behavior":  "Executable Code Obfuscation",
+                                 "method":  "Argument Obfuscation",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "contain obfuscated stackstrings"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0032.017",
+                                 "objective":  "Anti-Static Analysis",
+                                 "behavior":  "Executable Code Obfuscation",
+                                 "method":  "Stack Strings",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "contain obfuscated stackstrings"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0046.002",
+                                 "objective":  "Discovery",
+                                 "behavior":  "Code Discovery",
+                                 "method":  "Inspect Section Memory Permissions",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "inspect section memory permissions"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0029.003",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Cryptographic Hash",
+                                 "method":  "SHA256",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "hash data using SHA256"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "attack_techniques":  {
+                                           "T1027.005":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "contain obfuscated stackstrings",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "contain obfuscated stackstrings"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "access PEB ldr_data",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "access PEB ldr_data"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "parse PE header",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "parse PE header"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

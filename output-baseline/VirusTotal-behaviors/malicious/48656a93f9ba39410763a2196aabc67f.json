@@ -1,0 +1,580 @@
+{
+    "data":  {
+                 "command_executions":  [
+                                            "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe c8087186a215553d2f95c68c03398ec906faa51bce946.dll"
+                                        ],
+                 "signature_matches":  [
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "calculate modulo 256 via x86 assembly",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: calculate modulo 256 via x86 assembly\n    authors:\n      - moritz.raabe@mandiant.com\n    lib: true\n    scope: instruction\n    mbc:\n      - Data::Modulo [C0058]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x4049A9\n  features:\n    #  and ecx, 800000FFh\n    #  and ecx, 0FFh\n    - and:\n      - mnemonic: and\n      - or:\n        - number: 0x800000FF\n        - number: 0xFF\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "delay execution",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "@ramen0x3f"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: delay execution\n    authors:\n      - michael.hunhoff@mandiant.com\n      - \"@ramen0x3f\"\n    lib: true\n    scope: basic block\n    mbc:\n      - Anti-Behavioral Analysis::Dynamic Analysis Evasion::Delayed Execution [B0003.003]\n    references:\n      - https://docs.microsoft.com/en-us/windows/win32/sync/wait-functions\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/TimingAttacks/timing.cpp\n    examples:\n      - al-khaser_x86.exe_:0x449770\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x402FA6\n  features:\n    - or:\n      - and:\n        - os: windows\n        - or:\n          - api: kernel32.Sleep\n          - api: kernel32.SleepEx\n          - api: kernel32.WaitForSingleObject\n          - api: kernel32.SignalObjectAndWait\n          - api: kernel32.WaitForSingleObjectEx\n          - api: kernel32.WaitForMultipleObjects\n          - api: kernel32.WaitForMultipleObjectsEx\n          - api: kernel32.RegisterWaitForSingleObject\n          - api: WaitOnAddress\n          - api: user32.MsgWaitForMultipleObjects\n          - api: user32.MsgWaitForMultipleObjectsEx\n          - api: NtDelayExecution\n          - api: KeWaitForSingleObject\n          - api: KeDelayExecutionThread\n      - and:\n        - os: linux\n        - or:\n          - api: sleep\n          - api: usleep\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://docs.microsoft.com/en-us/windows/win32/sync/wait-functions"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/TimingAttacks/timing.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create or open file",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create or open file\n    authors:\n      - michael.hunhoff@mandiant.com\n      - joakim@intezer.com\n    lib: true\n    scope: basic block\n    mbc:\n      - File System::Create File [C0016]\n    examples:\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x401D7E\n  features:\n    - or:\n      - api: CreateFile\n      - api: CreateFileEx\n      - api: IoCreateFile\n      - api: IoCreateFileEx\n      - api: ZwOpenFile\n      - api: ZwCreateFile\n      - api: NtOpenFile\n      - api: NtCreateFile\n      - api: fopen\n      - api: fopen64\n      - api: fdopen\n      - api: freopen\n      - api: open\n      - api: openat\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain loop",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain loop\n    authors:\n      - moritz.raabe@mandiant.com\n    lib: true\n    scope: function\n    examples:\n      - 08AC667C65D36D6542917655571E61C8:0x406EAA\n  features:\n    - or:\n      - characteristic: loop\n      - characteristic: tight loop\n      - characteristic: recursive call\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "link function at runtime on Windows",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: link function at runtime on Windows\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x404130\n      - Practical Malware Analysis Lab 01-04.exe_:0x401350\n  features:\n    - and:\n      - os: windows\n      - or:\n        - api: kernel32.GetProcAddress\n        - api: ntdll.LdrGetProcedureAddress\n      - optional:\n        - characteristic: indirect call\n        - api: kernel32.LoadLibrary\n        - api: kernel32.GetModuleHandle\n        - api: kernel32.GetModuleHandleEx\n        - api: ntdll.LdrLoadDll\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "resolve function by parsing PE exports",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "sara-rn"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: resolve function by parsing PE exports\n    namespace: load-code/pe\n    authors:\n      - sara-rn\n    scope: function\n    examples:\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x406BA1\n  features:\n    - and:\n      - os: windows\n      - or:\n        - characteristic: loop\n        - mnemonic: movzx\n      - and:\n        - offset: 0x3C = IMAGE_DOS_HEADER.PE.e_lfanew\n        - or:\n          - and:\n            - arch: i386\n            - offset: 0x78 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n          - and:\n            - arch: amd64\n            - offset: 0x88 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n        - 3 or more:\n          - offset: 0x14 = IMAGE_EXPORT_DIRECTORY.NumberOfFunctions\n          - offset: 0x24 = IMAGE_EXPORT_DIRECTORY.AddressOfNameOrdinals\n          - offset: 0x20 = IMAGE_EXPORT_DIRECTORY.AddressOfNames\n          - offset: 0x18 = IMAGE_EXPORT_DIRECTORY.NumberOfNames\n          - offset: 0x1C = IMAGE_EXPORT_DIRECTORY.AddressOfFunctions\n      - optional:\n        - or:\n          - api: LoadLibrary\n          - api: strcmp\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "link many functions at runtime",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: link many functions at runtime\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n      - joakim@intezer.com\n    scope: function\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - b7b5e1253710d8927cbe07d52d2d2e10:0x401000\n  features:\n    - or:\n      - and:\n        - os: windows\n        - match: link function at runtime on Windows\n        - or:\n          - count(api(kernel32.GetProcAddress)): 5 or more\n          - count(api(ntdll.LdrGetProcedureAddress)): 5 or more\n      - and:\n        - os: linux\n        - match: link function at runtime on Linux\n        - or:\n          - count(api(dlsym)): 5 or more\n          - count(api(dlvsym)): 5 or more\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "print debug messages",
+                                               "description":  "host-interaction/log/debug/write-event",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: print debug messages\n    namespace: host-interaction/log/debug/write-event\n    authors:\n      - michael.hunhoff@mandiant.com\n    scope: function\n    examples:\n      - 493167E85E45363D09495D0841C30648:0x401000\n  features:\n    - or:\n      - api: DbgPrint\n      - api: kernel32.OutputDebugString\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain a resource (.rsrc) section",
+                                               "description":  "executable/pe/section/rsrc",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain a resource (.rsrc) section\n    namespace: executable/pe/section/rsrc\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: file\n    examples:\n      - A933A1A402775CFA94B6BEE0963F4B46:0x41fd25\n  features:\n    - section: .rsrc\n"
+                                           }
+                                       ],
+                 "registry_keys_deleted":  [
+                                               "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS",
+                                               "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02_52-56-00-00-00-02",
+                                               "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\{3903E592-516A-4628-BD5F-B2BE4EC7A24D}",
+                                               "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\ZONEMAP",
+                                               "HKLM\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\ZONEMAP",
+                                               "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02"
+                                           ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2876",
+                                            "name":  "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe"
+                                        }
+                                    ],
+                 "sigma_analysis_results":  [
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "CommandLine":  "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe c8087186a215553d2f95c68c03398ec906faa51bce946.dll",
+                                                                                             "Image":  "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe",
+                                                                                             "EventID":  "1"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "CommandLine":  "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe",
+                                                                                             "Image":  "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe",
+                                                                                             "EventID":  "1"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "high",
+                                                    "rule_id":  "25fc56c1bee673d7ff3edcf371e4d2a36c0af83222da348961b87735c8efa61f",
+                                                    "rule_source":  "Sigma Integrated Rule Set (GitHub)",
+                                                    "rule_title":  "System File Execution Location Anomaly",
+                                                    "rule_description":  "Detects a Windows program executable started from a suspicious folder",
+                                                    "rule_author":  "Florian Roth (Nextron Systems), Patrick Bareiss, Anton Kutepov, oscd.community, Nasreddine Bencherchali"
+                                                },
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "CommandLine":  "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe",
+                                                                                             "Image":  "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe",
+                                                                                             "EventID":  "1"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "high",
+                                                    "rule_id":  "53f67594c85a67cef198b525b556658fa4e46d1e49901472adbc8b7f0ba475a8",
+                                                    "rule_source":  "Sigma Integrated Rule Set (GitHub)",
+                                                    "rule_title":  "Bad Opsec Defaults Sacrificial Processes With Improper Arguments",
+                                                    "rule_description":  "Detects attackers using tooling with bad opsec defaults.\nE.g. spawning a sacrificial process to inject a capability into the process without taking into account how the process is normally run.\nOne trivial example of this is using rundll32.exe without arguments as a sacrificial process (default in CS, now highlighted by c2lint), running WerFault without arguments (Kraken - credit am0nsec), and other examples.\n",
+                                                    "rule_author":  "Oleg Kolesnikov @securonix invrep_de, oscd.community, Florian Roth (Nextron Systems), Christian Burkard (Nextron Systems)"
+                                                },
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "CommandLine":  "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe",
+                                                                                             "Image":  "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe",
+                                                                                             "EventID":  "1"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "high",
+                                                    "rule_id":  "87574dead19ceb246e10ccb4cb4fd5009c71c46de0d77965d2170bfafc2c3b14",
+                                                    "rule_source":  "Sigma Integrated Rule Set (GitHub)",
+                                                    "rule_title":  "Rundll32 Execution Without CommandLine Parameters",
+                                                    "rule_description":  "Detects suspicious start of rundll32.exe without any parameters as found in CobaltStrike beacon activity",
+                                                    "rule_author":  "Florian Roth (Nextron Systems)"
+                                                },
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "CommandLine":  "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe",
+                                                                                             "Image":  "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe",
+                                                                                             "EventID":  "1"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "medium",
+                                                    "rule_id":  "2fd6d2b16365ba7157eee4934b406ac7d530b4ec62cc1b45c69ee4f07989f139",
+                                                    "rule_source":  "SOC Prime Threat Detection Marketplace",
+                                                    "rule_title":  "LOLBAS rundll32 without expected arguments (via cmdline)",
+                                                    "rule_description":  "Detects use of rundll32 as a LOLBAS binary where rundll32 is passed unexpected arguments such as a .iso instead of .dll (i.e. rundll32.exe test.iso, evilexport).",
+                                                    "rule_author":  "SOC Prime Team"
+                                                },
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "CommandLine":  "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe",
+                                                                                             "Image":  "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe",
+                                                                                             "EventID":  "1"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "medium",
+                                                    "rule_id":  "e7856bac967038b016efab8e4f315a2f16ccd6ba62f20d73df0ad3826fe654a3",
+                                                    "rule_source":  "Sigma Integrated Rule Set (GitHub)",
+                                                    "rule_title":  "Rundll32 Execution With Uncommon DLL Extension",
+                                                    "rule_description":  "Detects the execution of rundll32 with a command line that doesn\u0027t contain a common extension",
+                                                    "rule_author":  "Tim Shelton, Florian Roth (Nextron Systems), Yassine Oukessou"
+                                                },
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "EventType":  "SetValue",
+                                                                                             "Details":  "WpadDecisionTime",
+                                                                                             "EventID":  "13",
+                                                                                             "TargetObject":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "EventType":  "SetValue",
+                                                                                             "Details":  "WpadDecision",
+                                                                                             "EventID":  "13",
+                                                                                             "TargetObject":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\{3903E592-516A-4628-BD5F-B2BE4EC7A24D}"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "EventType":  "SetValue",
+                                                                                             "Details":  "WpadNetworkName",
+                                                                                             "EventID":  "13",
+                                                                                             "TargetObject":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\{3903E592-516A-4628-BD5F-B2BE4EC7A24D}"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "EventType":  "SetValue",
+                                                                                             "Details":  "WpadDecision",
+                                                                                             "EventID":  "13",
+                                                                                             "TargetObject":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "EventType":  "SetValue",
+                                                                                             "Details":  "WpadDecisionReason",
+                                                                                             "EventID":  "13",
+                                                                                             "TargetObject":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\{3903E592-516A-4628-BD5F-B2BE4EC7A24D}"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "EventType":  "SetValue",
+                                                                                             "Details":  "WpadDecisionReason",
+                                                                                             "EventID":  "13",
+                                                                                             "TargetObject":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "EventType":  "SetValue",
+                                                                                             "Details":  "WpadDetectedUrl",
+                                                                                             "EventID":  "13",
+                                                                                             "TargetObject":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "EventType":  "SetValue",
+                                                                                             "Details":  "WpadDecisionTime",
+                                                                                             "EventID":  "13",
+                                                                                             "TargetObject":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\{3903E592-516A-4628-BD5F-B2BE4EC7A24D}"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "EventType":  "SetValue",
+                                                                                             "Details":  "WpadDecisionReason",
+                                                                                             "EventID":  "13",
+                                                                                             "TargetObject":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02_52-56-00-00-00-02"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "EventType":  "SetValue",
+                                                                                             "Details":  "WpadDecision",
+                                                                                             "EventID":  "13",
+                                                                                             "TargetObject":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02_52-56-00-00-00-02"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "EventType":  "SetValue",
+                                                                                             "Details":  "WpadDecisionTime",
+                                                                                             "EventID":  "13",
+                                                                                             "TargetObject":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02_52-56-00-00-00-02"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "EventType":  "SetValue",
+                                                                                             "Details":  "SavedLegacySettings",
+                                                                                             "EventID":  "13",
+                                                                                             "TargetObject":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\CONNECTIONS"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "EventType":  "SetValue",
+                                                                                             "Details":  "WpadDetectedUrl",
+                                                                                             "EventID":  "13",
+                                                                                             "TargetObject":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02_52-56-00-00-00-02"
+                                                                                         }
+                                                                          },
+                                                                          {
+                                                                              "values":  {
+                                                                                             "EventType":  "SetValue",
+                                                                                             "Details":  "ProxyEnable",
+                                                                                             "EventID":  "13",
+                                                                                             "TargetObject":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "low",
+                                                    "rule_id":  "7ca43f2acf2c039e776af286dca2b5216d23967e6e8fe43dd5a5cc95f86e52e5",
+                                                    "rule_source":  "Sigma Integrated Rule Set (GitHub)",
+                                                    "rule_title":  "Modification of IE Registry Settings",
+                                                    "rule_description":  "Detects modification of the registry settings used for Internet Explorer and other Windows components that use these settings. An attacker can abuse this registry key to add a domain to the trusted sites Zone or insert javascript for persistence",
+                                                    "rule_author":  "frack113"
+                                                }
+                                            ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "link function at runtime on Windows",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "link function at runtime on Windows"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "link many functions at runtime",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "link many functions at runtime"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "modules_loaded":  [
+                                        "c:\\windows\\system32\\imm32.dll",
+                                        "c:\\windows\\syswow64\\ws2_32.dll",
+                                        "c:\\windows\\system32\\dhcpcsvc.dll",
+                                        "c:\\windows\\system32\\srvcli.dll",
+                                        "c:\\windows\\winsxs\\x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0.7601.17514_none_41e6975e2bd6f2b2\\comctl32.dll",
+                                        "c:\\windows\\syswow64\\urlmon.dll",
+                                        "c:\\windows\\system32\\iphlpapi.dll",
+                                        "c:\\windows\\syswow64\\usp10.dll",
+                                        "c:\\windows\\syswow64\\iertutil.dll",
+                                        "c:\\windows\\system32\\rsaenh.dll",
+                                        "c:\\windows\\system32\\mpr.dll",
+                                        "c:\\windows\\system32\\mswsock.dll",
+                                        "c:\\windows\\system32\\rpcrtremote.dll",
+                                        "c:\\windows\\syswow64\\api-ms-win-downlevel-version-l1-1-0.dll",
+                                        "c:\\windows\\syswow64\\sechost.dll",
+                                        "c:\\windows\\syswow64\\userenv.dll",
+                                        "c:\\windows\\system32\\npmproxy.dll",
+                                        "c:\\windows\\system32\\apphelp.dll",
+                                        "c:\\windows\\system32\\api-ms-win-downlevel-shlwapi-l2-1-0.dll",
+                                        "c:\\windows\\syswow64\\gdi32.dll",
+                                        "c:\\windows\\system32\\fwpuclnt.dll",
+                                        "c:\\windows\\system32\\dhcpcsvc6.dll",
+                                        "c:\\windows\\system32\\secur32.dll",
+                                        "c:\\windows\\system32\\rasadhlp.dll",
+                                        "c:\\windows\\syswow64\\normaliz.dll",
+                                        "c:\\windows\\syswow64\\rpcrt4.dll",
+                                        "c:\\windows\\system32\\wkscli.dll",
+                                        "c:\\windows\\apppatch\\aclayers.dll",
+                                        "c:\\windows\\system32\\wow64.dll",
+                                        "c:\\windows\\syswow64\\oleaut32.dll",
+                                        "c:\\windows\\system32\\winnsi.dll",
+                                        "c:\\windows\\syswow64\\api-ms-win-downlevel-ole32-l1-1-0.dll",
+                                        "c:\\windows\\syswow64\\kernelbase.dll",
+                                        "c:\\windows\\system32\\cryptsp.dll",
+                                        "c:\\windows\\system32\\webio.dll",
+                                        "c:\\windows\\system32\\netapi32.dll",
+                                        "c:\\windows\\system32\\nlaapi.dll",
+                                        "c:\\windows\\syswow64\\wininet.dll",
+                                        "c:\\windows\\syswow64\\user32.dll",
+                                        "c:\\windows\\syswow64\\advapi32.dll",
+                                        "c:\\windows\\system32\\netprofm.dll",
+                                        "c:\\windows\\syswow64\\msctf.dll",
+                                        "c:\\windows\\system32\\wow64win.dll",
+                                        "c:\\users\\johnson\\appdata\\local\\temp\\c8087186a215553d2f95c68c03398ec906faa51bce946.dll",
+                                        "c:\\windows\\syswow64\\sspicli.dll",
+                                        "c:\\windows\\system32\\winspool.drv",
+                                        "c:\\windows\\syswow64\\api-ms-win-downlevel-normaliz-l1-1-0.dll",
+                                        "c:\\windows\\syswow64\\kernel32.dll",
+                                        "c:\\windows\\system32\\version.dll",
+                                        "c:\\windows\\system32\\api-ms-win-downlevel-advapi32-l2-1-0.dll",
+                                        "c:\\windows\\syswow64\\shlwapi.dll",
+                                        "c:\\windows\\system32\\wshtcpip.dll",
+                                        "c:\\windows\\syswow64\\ntdll.dll",
+                                        "c:\\windows\\system32\\ntdll.dll",
+                                        "c:\\windows\\syswow64\\profapi.dll",
+                                        "c:\\windows\\syswow64\\api-ms-win-downlevel-shlwapi-l1-1-0.dll",
+                                        "c:\\windows\\system32\\winhttp.dll",
+                                        "c:\\windows\\system32\\wow64cpu.dll",
+                                        "c:\\windows\\syswow64\\cryptbase.dll",
+                                        "c:\\windows\\syswow64\\ole32.dll",
+                                        "c:\\windows\\syswow64\\nsi.dll",
+                                        "c:\\windows\\syswow64\\clbcatq.dll",
+                                        "c:\\windows\\syswow64\\crypt32.dll",
+                                        "c:\\windows\\syswow64\\msasn1.dll",
+                                        "c:\\windows\\apppatch\\acwow64.dll",
+                                        "c:\\windows\\syswow64\\psapi.dll",
+                                        "c:\\windows\\syswow64\\api-ms-win-downlevel-advapi32-l1-1-0.dll",
+                                        "c:\\windows\\syswow64\\shell32.dll",
+                                        "c:\\windows\\system32\\dnsapi.dll",
+                                        "c:\\windows\\syswow64\\lpk.dll",
+                                        "c:\\windows\\system32\\samcli.dll",
+                                        "c:\\windows\\system32\\netutils.dll",
+                                        "c:\\windows\\syswow64\\api-ms-win-downlevel-user32-l1-1-0.dll",
+                                        "c:\\windows\\system32\\wship6.dll",
+                                        "c:\\windows\\syswow64\\msvcrt.dll"
+                                    ],
+                 "verdicts":  [
+                                  "MALWARE"
+                              ],
+                 "registry_keys_set":  [
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02",
+                                               "value":  "WpadDecisionTime"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\{3903E592-516A-4628-BD5F-B2BE4EC7A24D}",
+                                               "value":  "WpadDecision"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\{3903E592-516A-4628-BD5F-B2BE4EC7A24D}",
+                                               "value":  "WpadNetworkName"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02",
+                                               "value":  "WpadDecision"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\{3903E592-516A-4628-BD5F-B2BE4EC7A24D}",
+                                               "value":  "WpadDecisionReason"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02",
+                                               "value":  "WpadDecisionReason"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02",
+                                               "value":  "WpadDetectedUrl"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\{3903E592-516A-4628-BD5F-B2BE4EC7A24D}",
+                                               "value":  "WpadDecisionTime"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02_52-56-00-00-00-02",
+                                               "value":  "WpadDecisionReason"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02_52-56-00-00-00-02",
+                                               "value":  "WpadDecision"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02_52-56-00-00-00-02",
+                                               "value":  "WpadDecisionTime"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\5.0\\CACHE\\HISTORY",
+                                               "value":  "CachePrefix"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\CONNECTIONS",
+                                               "value":  "SavedLegacySettings"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\5.0\\CACHE\\CONTENT",
+                                               "value":  "CachePrefix"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\ZONEMAP",
+                                               "value":  "UNCAsIntranet"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\ZONEMAP",
+                                               "value":  "AutoDetect"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS\\WPAD\\52-55-0A-00-02-02_52-56-00-00-00-02",
+                                               "value":  "WpadDetectedUrl"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-3712457824-2419000099-45725732-1001\\SOFTWARE\\MICROSOFT\\WINDOWS\\CURRENTVERSION\\INTERNET SETTINGS",
+                                               "value":  "ProxyEnable"
+                                           }
+                                       ],
+                 "processes_created":  [
+                                           "C:\\Users\\Johnson\\AppData\\Local\\Temp\\rundll32.exe"
+                                       ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "scanmalware.info",
+                                         "resolved_ips":  [
+                                                              "52.45.178.122"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "malwarecheck.info",
+                                         "resolved_ips":  [
+                                                              "52.45.178.122"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "wpad"
+                                     }
+                                 ],
+                 "mutexes_created":  [
+                                         "Local\\ZonesCacheCounterMutex",
+                                         "Local\\ZonesLockedCacheCounterMutex"
+                                     ],
+                 "http_conversations":  [
+                                            {
+                                                "url":  "http://scanmalware.info/check/",
+                                                "request_method":  "POST",
+                                                "response_headers":  {
+                                                                         "Status-Line":  "HTTP/1.1 200",
+                                                                         "Cache-Control":  "no-cache, no-store, must-revalidate",
+                                                                         "Pragma":  "no-cache",
+                                                                         "X-Sinkhole":  "malware-sinkhole dnssinkhole@protonmail.com ",
+                                                                         "Expires":  "0"
+                                                                     },
+                                                "response_status_code":  200
+                                            },
+                                            {
+                                                "url":  "http://malwarecheck.info/check/",
+                                                "request_method":  "POST",
+                                                "response_headers":  {
+                                                                         "Status-Line":  "HTTP/1.1 200",
+                                                                         "Cache-Control":  "no-cache, no-store, must-revalidate",
+                                                                         "Pragma":  "no-cache",
+                                                                         "X-Sinkhole":  "malware-sinkhole dnssinkhole@protonmail.com ",
+                                                                         "Expires":  "0"
+                                                                     },
+                                                "response_status_code":  200
+                                            }
+                                        ],
+                 "attack_techniques":  {
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "link function at runtime on Windows",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "link function at runtime on Windows"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "link many functions at runtime",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "link many functions at runtime"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

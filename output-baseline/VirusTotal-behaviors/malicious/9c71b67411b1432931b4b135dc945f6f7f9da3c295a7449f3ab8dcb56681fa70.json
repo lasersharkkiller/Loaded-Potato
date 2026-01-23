@@ -1,0 +1,1834 @@
+{
+    "data":  {
+                 "signature_matches":  [
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create process on Windows",
+                                               "description":  "host-interaction/process/create",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create process on Windows\n    namespace: host-interaction/process/create\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: basic block\n    mbc:\n      - Process::Create Process [C0017]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x406DB0\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      - 692f7fd6d198e804d6af98eb9e390d61:0x6000003\n  features:\n    - or:\n      - api: kernel32.WinExec\n      - api: kernel32.CreateProcess\n      - api: shell32.ShellExecute\n      - api: shell32.ShellExecuteEx\n      - api: advapi32.CreateProcessAsUser\n      - api: advapi32.CreateProcessWithLogon\n      - api: advapi32.CreateProcessWithToken\n      - api: kernel32.CreateProcessInternal\n      - api: ntdll.NtCreateUserProcess\n      - api: ntdll.NtCreateProcess\n      - api: ntdll.NtCreateProcessEx\n      - api: ntdll.ZwCreateProcess\n      - api: ZwCreateProcessEx\n      - api: ntdll.ZwCreateUserProcess\n      - api: ntdll.RtlCreateUserProcess\n      - api: System.Diagnostics.Process::Start\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain loop",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain loop\n    authors:\n      - moritz.raabe@mandiant.com\n    lib: true\n    scope: function\n    examples:\n      - 08AC667C65D36D6542917655571E61C8:0x406EAA\n  features:\n    - or:\n      - characteristic: loop\n      - characteristic: tight loop\n      - characteristic: recursive call\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse PE header",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse PE header\n    namespace: load-code/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x403DD0\n  features:\n    # TODO filter out false positives\n    - and:\n      - os: windows\n      - and:\n        - mnemonic: cmp\n        - or:\n          - number: 0x4550 = IMAGE_NT_SIGNATURE (PE)\n          - and:\n            - number: 0x50\n            - number: 0x45\n        - or:\n          - number: 0x5A4D = IMAGE_DOS_SIGNATURE (MZ)\n          - and:\n            - number: 0x4D\n            - number: 0x5A\n        - optional:\n          - and:\n            - offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n            - or:\n              - and:\n                - arch: i386\n                - offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                - offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n              - and:\n                - arch: amd64\n                - offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n                - offset: 0x30 = IMAGE_NT_HEADERS64.OptionalHeader.ImageBase\n          - basic block:\n            - and:\n              - offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n              - 3 or more:\n                - offset: 0x4 = IMAGE_NT_HEADERS.FileHeader.Machine\n                - offset: 0x6 = IMAGE_NT_HEADERS.FileHeader.NumberOfSections\n                - offset: 0x14 = IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader\n                - offset: 0x16 = IMAGE_NT_HEADERS.FileHeader.Characteristics\n                - offset: 0x28 = IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint  # for 32 and 64 bit\n                - or:\n                  - and:\n                    - arch: i386\n                    - offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                  - and:\n                    - arch: amd64\n                    - offset: 0x30 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain a resource (.rsrc) section",
+                                               "description":  "executable/pe/section/rsrc",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain a resource (.rsrc) section\n    namespace: executable/pe/section/rsrc\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: file\n    examples:\n      - A933A1A402775CFA94B6BEE0963F4B46:0x41fd25\n  features:\n    - section: .rsrc\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contains PDB path",
+                                               "description":  "executable/pe/pdb",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contains PDB path\n    namespace: executable/pe/pdb\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: file\n    examples:\n      - 464EF2CA59782CE697BC329713698CCC  # level32.exe\n  features:\n    - string: /:\\\\.*\\.pdb/\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "reference absolute stream path on Windows",
+                                               "description":  "host-interaction/file-system",
+                                               "authors":  [
+                                                               "blas.kojusner@mandiant.com",
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: reference absolute stream path on Windows\n    namespace: host-interaction/file-system\n    authors:\n      - blas.kojusner@mandiant.com\n      - william.ballenthin@mandiant.com\n    scope: basic block\n    references:\n      - https://learn.microsoft.com/en-us/windows/win32/fileio/file-streams\n    examples:\n      - 51828683DC26BFABD3994494099AE97D:0x11A9\n  features:\n    - and:\n      - string: /^(..\\?\\\\)?([\\w]\\:|\\\\)(\\\\+((?![\\\u003c\\\u003e\\\"\\/\\|\\*\\?\\:\\\\])[\\x20-\\x5B\\x5D-\\x7E])+)+(\\:\\$?([a-zA-Z0-9_]+))?/\n        # ^(..\\?\\\\)? -\u003e Check for path starting with \"\\\\?\\\"\n        # ([\\w]\\:|\\\\) -\u003e Check for absolute path beginning\n        # (\\\\+((?![\\\u003c\\\u003e\\\"\\/\\|\\*\\?\\:\\\\])[\\x20-\\x5B\\x5D-\\x7E])+)+ -\u003e Check for valid path and filename\n        #   \\\\+ -\u003e Check for at least one backslash path separator\n        #   (?![\\\u003c\\\u003e\\\"\\/\\|\\*\\?\\:\\\\]) -\u003e path component must not start with \u003c, \u003e, \", ...\n        #   [\\x20-\\x5B\\x5D-\\x7E] -\u003e path component must be printable ASCII, except backslash path separator\n        # : -\u003e Check for start of stream filename\n        # \\$?([a-zA-Z0-9_]+))? -\u003e Check for valid stream filename\n        ### Example Matches:\n        ### \\\\\\\\server\\share\\\\file:stream\n        ### \\\\\\\\server\\share\\dir.ext\\\\file.ext:stream \n        ### \\\\\\\\server\\share\\dir.ext\\\\file.tar.gz:stream\n        ### \\\\\\\\server\\share\\dir.ext\\\\file:stream.tar.gz\n        ### \\\\\\\\server\\share\\dir\\\\file.ext:stream.ext\n        ### \\\\\\\\?\\C:\\dir1\\dir2\\\\file:stream\n        ### C:\\dir\\\\file:stream.ext\n        ### C:\\dir\\\\file:}{+,.\u0027;[]-=-0987654321`~!@#$%^\u0026()_+-.ext\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://learn.microsoft.com/en-us/windows/win32/fileio/file-streams"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse PE header",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse PE header\n    namespace: load-code/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x403DD0\n  features:\n    - and:\n      - os: windows\n      - and:\n        - mnemonic: cmp\n        - or:\n          - number: 0x4550 = IMAGE_NT_SIGNATURE (PE)\n          - and:\n            - number: 0x50\n            - number: 0x45\n        - or:\n          - number: 0x5A4D = IMAGE_DOS_SIGNATURE (MZ)\n          - and:\n            - number: 0x4D\n            - number: 0x5A\n        - optional:\n          - and:\n            - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n            - or:\n              - and:\n                - arch: i386\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n              - and:\n                - arch: amd64\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x30 = IMAGE_NT_HEADERS64.OptionalHeader.ImageBase\n          - basic block:\n            - and:\n              - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n              - 3 or more:\n                - operand[1].offset: 0x4 = IMAGE_NT_HEADERS.FileHeader.Machine\n                - operand[1].offset: 0x6 = IMAGE_NT_HEADERS.FileHeader.NumberOfSections\n                - operand[1].offset: 0x14 = IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader\n                - operand[1].offset: 0x16 = IMAGE_NT_HEADERS.FileHeader.Characteristics\n                - operand[1].offset: 0x28 = IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint  # for 32 and 64 bit\n                - or:\n                  - and:\n                    - arch: i386\n                    - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                  - and:\n                    - arch: amd64\n                    - operand[1].offset: 0x30 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "link function at runtime on Windows",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: link function at runtime on Windows\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x404130\n      - Practical Malware Analysis Lab 01-04.exe_:0x401350\n  features:\n    - and:\n      - os: windows\n      - or:\n        - api: kernel32.GetProcAddress\n        - api: ntdll.LdrGetProcedureAddress\n      - optional:\n        - characteristic: indirect call\n        - api: kernel32.LoadLibrary\n        - api: kernel32.GetModuleHandle\n        - api: kernel32.GetModuleHandleEx\n        - api: ntdll.LdrLoadDll\n"
+                                           }
+                                       ],
+                 "text_highlighted":  [
+                                          "cps.exe"
+                                      ],
+                 "files_deleted":  [
+                                       "C:\\Windows\\System32\\spp\\store\\2.0\\cache\\cache.dat",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3A54.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3B3F.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3B7E.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3FD4.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3FE4.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3FE5.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF925.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF9D1.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERFA01.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER720.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER7BD.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER80C.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER886.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER942.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER962.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE83.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE84.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE94.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF05B.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF126.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF175.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER1008.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER100A.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER101B.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER436C.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER47B2.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER488E.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER77DA.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER77FC.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER780C.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2C5A.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2DC2.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2E01.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3D63.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3D64.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3D74.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3EF8.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4030.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4060.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4590.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4591.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER45A2.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERFDF7.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERFFFB.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4A.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER21F.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER220.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER230.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF452.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF52D.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF56D.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER1392.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER13B4.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER1480.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2DE1.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2E9C.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2ECC.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER339F.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER33AF.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER33C0.tmp.txt",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_ng11wjck.sab.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_zb1gnnbv.zxg.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_dpkm0aeh.jnc.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xgrbpw2m.gke.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_lwpxvd2n.5vg.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_z5ri1dex.tde.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_g0fwrrio.tjy.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_yza4ayhe.ju0.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_dzajd0lc.3xg.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_s34hfdiq.n3e.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_dvbhwuhc.z22.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xol41ozl.f4h.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_atdtn4yl.02w.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_v5y0fhx5.kvc.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_ifa5sb5s.va4.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xa3ehrfc.llc.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_c41s3rnm.dly.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_zqmqqunl.xta.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_capaldqm.4k5.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xwfckf0x.dly.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_1ealfr5d.psh.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_1zbsualf.pyp.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_gegtdqx1.122.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_panwwlal.f0n.ps1"
+                                   ],
+                 "tags":  [
+                              "DIRECT_CPU_CLOCK_ACCESS",
+                              "DETECT_DEBUG_ENVIRONMENT",
+                              "RUNTIME_MODULES",
+                              "LONG_SLEEPS"
+                          ],
+                 "processes_created":  [
+                                           "${SamplePath}\\9c71b67411b1432931b4b135dc945f6f7f9da3c295a7449f3ab8dcb56681fa70.exe",
+                                           "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe",
+                                           "%SAMPLEPATH%\\cps.exe",
+                                           "%SAMPLEPATH%\\9c71b67411b1432931b4b135dc945f6f7f9da3c295a7449f3ab8dcb56681fa70.exe",
+                                           "C:\\Windows\\System32\\wuapihost.exe",
+                                           "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe -windowstyle hidden -executionpolicy bypass -file C:\\programdata\\komar2.ps1"
+                                       ],
+                 "processes_terminated":  [
+                                              "%SAMPLEPATH%",
+                                              "\"pwsh.exe\" -windowstyle hidden -executionpolicy bypass -file %ProgramData%\\komar2.ps1",
+                                              "wmiadap.exe /F /T /R",
+                                              "${SamplePath}\\9c71b67411b1432931b4b135dc945f6f7f9da3c295a7449f3ab8dcb56681fa70.exe",
+                                              "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe",
+                                              "%SAMPLEPATH%\\cps.exe",
+                                              "C:\\Windows\\System32\\conhost.exe",
+                                              "%SAMPLEPATH%\\9c71b67411b1432931b4b135dc945f6f7f9da3c295a7449f3ab8dcb56681fa70.exe",
+                                              "C:\\Windows\\System32\\wuapihost.exe",
+                                              "cps.exe",
+                                              "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe -windowstyle hidden -executionpolicy bypass -file C:\\programdata\\komar2.ps1"
+                                          ],
+                 "files_written":  [
+                                       "C:\\Users\\user\\AppData\\Local\\Microsoft\\Windows\\PowerShell\\StartupProfileData-NonInteractive",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_ng11wjck.sab.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_zb1gnnbv.zxg.psm1",
+                                       "C:\\Users\\user\\AppData\\Roaming",
+                                       "C:\\Windows\\system32\\catroot",
+                                       "C:\\Windows\\system32\\catroot2",
+                                       "\\Device\\ConDrv",
+                                       "\\Device\\ConDrv\\\\Connect",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_dpkm0aeh.jnc.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xgrbpw2m.gke.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_lwpxvd2n.5vg.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_z5ri1dex.tde.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_g0fwrrio.tjy.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_yza4ayhe.ju0.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_dzajd0lc.3xg.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_s34hfdiq.n3e.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_dvbhwuhc.z22.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xol41ozl.f4h.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_atdtn4yl.02w.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_v5y0fhx5.kvc.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_ifa5sb5s.va4.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xa3ehrfc.llc.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_c41s3rnm.dly.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_zqmqqunl.xta.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_capaldqm.4k5.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xwfckf0x.dly.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_1ealfr5d.psh.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_1zbsualf.pyp.ps1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_gegtdqx1.122.psm1",
+                                       "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_panwwlal.f0n.ps1"
+                                   ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "82.250.63.168.in-addr.arpa"
+                                     },
+                                     {
+                                         "hostname":  "154.210.82.20.in-addr.arpa"
+                                     },
+                                     {
+                                         "hostname":  "arc.msn.com",
+                                         "resolved_ips":  [
+                                                              "20.82.210.154"
+                                                          ]
+                                     }
+                                 ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2604",
+                                            "name":  "%SAMPLEPATH%",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2688",
+                                                                 "name":  "%windir%\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe -windowstyle hidden -executionpolicy bypass -file %ProgramData%\\komar2.ps1",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "2716",
+                                                                                      "name":  "\"pwsh.exe\" -windowstyle hidden -executionpolicy bypass -file %ProgramData%\\komar2.ps1",
+                                                                                      "time_offset":  1
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2672",
+                                            "name":  "%CONHOST% \"120467743-1531033901824054989-2137866755-1517944527-76599163118680646131785091627"
+                                        },
+                                        {
+                                            "process_id":  "2956",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        },
+                                        {
+                                            "process_id":  "2996",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        },
+                                        {
+                                            "process_id":  "3328",
+                                            "name":  "\"${SamplePath}\\9c71b67411b1432931b4b135dc945f6f7f9da3c295a7449f3ab8dcb56681fa70.exe\" ",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "3452",
+                                                                 "name":  "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe -windowstyle hidden -executionpolicy bypass -file C:\\programdata\\komar2.ps1",
+                                                                 "time_offset":  1568
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2944",
+                                            "name":  "%WINDIR%\\explorer.exe",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2644",
+                                                                 "name":  "%SAMPLEPATH%\\cps.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "3920",
+                                                                                      "name":  "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe"
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2300",
+                                            "name":  "cps.exe",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2500",
+                                                                 "name":  "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe -windowstyle hidden -executionpolicy bypass -file C:\\programdata\\komar2.ps1",
+                                                                 "time_offset":  1
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "5684",
+                                            "name":  "\u0027C:\\Users\\user\\Desktop\\cps.exe\u0027 ",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "5704",
+                                                                 "name":  "C:\\Windows\\System32\\conhost.exe C:\\Windows\\system32\\conhost.exe 0xffffffff -ForceV1"
+                                                             },
+                                                             {
+                                                                 "process_id":  "3968",
+                                                                 "name":  "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe -windowstyle hidden -executionpolicy bypass -file C:\\programdata\\komar2.ps1"
+                                                             }
+                                                         ]
+                                        }
+                                    ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "parse PE header",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "parse PE header"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "link function at runtime on Windows",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "link function at runtime on Windows"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1564.003",
+                                                     "severity":  "IMPACT_SEVERITY_HIGH",
+                                                     "signature_description":  "powershell hidden exec"
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "query ie security"
+                                                 },
+                                                 {
+                                                     "id":  "T1059.001",
+                                                     "severity":  "IMPACT_SEVERITY_HIGH",
+                                                     "signature_description":  "run powershell with ExecutionPolicy"
+                                                 },
+                                                 {
+                                                     "id":  "T1106",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "create new process"
+                                                 },
+                                                 {
+                                                     "id":  "T1622",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "get time manytimes"
+                                                 },
+                                                 {
+                                                     "id":  "T1059",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "script started by non script file"
+                                                 },
+                                                 {
+                                                     "id":  "T1059.001",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Suspicious powershell command line found"
+                                                 },
+                                                 {
+                                                     "id":  "T1059.001",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Bypasses PowerShell execution policy"
+                                                 },
+                                                 {
+                                                     "id":  "T1055",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Spawns processes"
+                                                 },
+                                                 {
+                                                     "id":  "T1497",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "May sleep (evasive loops) to hinder dynamic analysis"
+                                                 },
+                                                 {
+                                                     "id":  "T1497",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Contains long sleeps (\u003e= 3 min)"
+                                                 },
+                                                 {
+                                                     "id":  "T1057",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Queries a list of all running processes"
+                                                 },
+                                                 {
+                                                     "id":  "T1010",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Sample monitors Window changes (e.g. starting applications), analyze the sample with the simulation cookbook"
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Reads software policies"
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Queries the volume information (name, serial number etc) of a device"
+                                                 },
+                                                 {
+                                                     "id":  "T1095",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Performs DNS lookups"
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Performs DNS lookups"
+                                                 }
+                                             ],
+                 "files_dropped":  [
+                                       {
+                                           "path":  "C:\\Users\\Admin\\AppData\\Local\\Microsoft\\Windows\\PowerShell\\StartupProfileData-NonInteractive",
+                                           "sha256":  "32dbcf6fc42cf1a75cb1166248f142e0257835b91496b7551ff937fd95f286ec"
+                                       },
+                                       {
+                                           "path":  "%USERPROFILE%\\AppData\\Local\\Microsoft\\CLR_v4.0_32\\UsageLogs\\powershell.exe.log"
+                                       },
+                                       {
+                                           "path":  "C:\\Windows\\System32\\spp\\store\\2.0\\data.dat.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\Windows\\System32\\spp\\store\\2.0\\cache\\cache.dat"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3A54.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3A54.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3B3F.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3B3F.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3B7E.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3B7E.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3FD4.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3FD4.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3FE4.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3FE4.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3FE5.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3FE5.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF925.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF925.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF9D1.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF9D1.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERFA01.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERFA01.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER720.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER720.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER7BD.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER7BD.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER80C.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER80C.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER886.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER886.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER942.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER942.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER962.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER962.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE83.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE83.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE84.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE84.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE94.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE94.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF05B.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF05B.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF126.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF126.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF175.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF175.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER1008.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER1008.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER100A.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER100A.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER101B.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER101B.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER436C.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER436C.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER47B2.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER47B2.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER488E.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER488E.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER77DA.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER77DA.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER77FC.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER77FC.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER780C.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER780C.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2C5A.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2C5A.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2DC2.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2DC2.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2E01.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2E01.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3D63.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3D63.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3D64.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3D64.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3D74.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3D74.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3EF8.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER3EF8.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4030.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4030.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4060.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4060.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4590.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4590.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4591.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4591.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER45A2.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER45A2.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERFDF7.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERFDF7.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERFFFB.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERFFFB.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4A.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER4A.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER21F.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER21F.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER220.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER220.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER230.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER230.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF452.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF452.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF52D.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF52D.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF56D.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERF56D.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER1392.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER1392.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER13B4.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER13B4.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER1480.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER1480.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2DE1.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2DE1.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2E9C.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2E9C.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2ECC.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER2ECC.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER339F.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER339F.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER33AF.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER33AF.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER33C0.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER33C0.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_ng11wjck.sab.ps1",
+                                           "sha256":  "84e0bff4145faad15f9f629876530d92ef8bbd4d85da6c4add67e1cbe647dd64",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_zb1gnnbv.zxg.psm1",
+                                           "sha256":  "84e0bff4145faad15f9f629876530d92ef8bbd4d85da6c4add67e1cbe647dd64",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "\\Device\\ConDrv",
+                                           "sha256":  "cfce4e2952591e79a0dea1654a92dba4f099d348ab7c176bcd052d69b8929770",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_dpkm0aeh.jnc.psm1",
+                                           "sha256":  "0f3b4125dfab8bd4cec61fe8557504302796528f76099b712fbf3144c76902ef",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xgrbpw2m.gke.ps1",
+                                           "sha256":  "0f3b4125dfab8bd4cec61fe8557504302796528f76099b712fbf3144c76902ef",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_lwpxvd2n.5vg.psm1",
+                                           "sha256":  "a2e55791fc22778e4d12b353f71f2f46363d3bc933db0e1340128861044c2fb6",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_z5ri1dex.tde.ps1",
+                                           "sha256":  "a2e55791fc22778e4d12b353f71f2f46363d3bc933db0e1340128861044c2fb6",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_g0fwrrio.tjy.ps1",
+                                           "sha256":  "639f4e3c04e09ea4a27cc746c325883de5dd586b514440f86ee52d7e3d91315f",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_yza4ayhe.ju0.psm1",
+                                           "sha256":  "639f4e3c04e09ea4a27cc746c325883de5dd586b514440f86ee52d7e3d91315f",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_dzajd0lc.3xg.ps1",
+                                           "sha256":  "fd73f007376e8d63e9a710703b11d0bd1b2e49eeabef7095b192a214cd783763",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_s34hfdiq.n3e.psm1",
+                                           "sha256":  "fd73f007376e8d63e9a710703b11d0bd1b2e49eeabef7095b192a214cd783763",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_dvbhwuhc.z22.ps1",
+                                           "sha256":  "1cdfb74dfa823282f672578638679993466feff710bdccb04af05cc6910da639",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xol41ozl.f4h.psm1",
+                                           "sha256":  "1cdfb74dfa823282f672578638679993466feff710bdccb04af05cc6910da639",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_atdtn4yl.02w.ps1",
+                                           "sha256":  "8fc850a0b8be14d45bb00584f44fbda1169063e7e02525a15d377c81fbe7e9ec",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_v5y0fhx5.kvc.psm1",
+                                           "sha256":  "8fc850a0b8be14d45bb00584f44fbda1169063e7e02525a15d377c81fbe7e9ec",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_ifa5sb5s.va4.ps1",
+                                           "sha256":  "5464d9ad3ed65fa271477aa130914fe49b12b17f121cd996a6d1a3a48351b02b",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xa3ehrfc.llc.psm1",
+                                           "sha256":  "5464d9ad3ed65fa271477aa130914fe49b12b17f121cd996a6d1a3a48351b02b",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_c41s3rnm.dly.ps1",
+                                           "sha256":  "a29c726b6da59226542a53a44febaa5d3f237ec4cecd1feba005bfffdc685f8b",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_zqmqqunl.xta.psm1",
+                                           "sha256":  "a29c726b6da59226542a53a44febaa5d3f237ec4cecd1feba005bfffdc685f8b",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_capaldqm.4k5.psm1",
+                                           "sha256":  "3ccacebd9f9d5248dd71269d68841dae016649b96a41a4bddd5e3ec5830b76e7",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xwfckf0x.dly.ps1",
+                                           "sha256":  "3ccacebd9f9d5248dd71269d68841dae016649b96a41a4bddd5e3ec5830b76e7",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_1ealfr5d.psh.psm1",
+                                           "sha256":  "f6d340c4440f0d8fc1d03c2cddadd4a3720ba275a637d8fe11ba927cd1d47c94",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_1zbsualf.pyp.ps1",
+                                           "sha256":  "f6d340c4440f0d8fc1d03c2cddadd4a3720ba275a637d8fe11ba927cd1d47c94",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_gegtdqx1.122.psm1",
+                                           "sha256":  "3be90204eb3d59894160b66ee8b75301251953bae2bba35e705643ad0e2b2e15",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_panwwlal.f0n.ps1",
+                                           "sha256":  "3be90204eb3d59894160b66ee8b75301251953bae2bba35e705643ad0e2b2e15",
+                                           "type":  "TEXT"
+                                       }
+                                   ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "13.107.4.50",
+                                        "destination_port":  80,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "23.40.197.137",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "20.80.129.13",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "23.216.147.76",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "a83f:8110:0:0:b00:b00:2800:1800",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "a83f:8110:0:0:100:0:1800:0",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "192.168.0.30",
+                                        "destination_port":  137,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "23.216.147.64",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "52.251.79.25",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "20.99.132.105",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "20.99.133.109",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "a83f:8110:cce1:d301:10:0:0:0",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    }
+                                ],
+                 "windows_hidden":  [
+                                        "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe"
+                                    ],
+                 "modules_loaded":  [
+                                        "${SamplePath}\\9c71b67411b1432931b4b135dc945f6f7f9da3c295a7449f3ab8dcb56681fa70.exe",
+                                        "C:\\Windows\\System32\\ntdll.dll",
+                                        "C:\\Windows\\System32\\kernel32.dll",
+                                        "C:\\Windows\\System32\\KernelBase.dll",
+                                        "C:\\Windows\\System32\\user32.dll",
+                                        "C:\\Windows\\System32\\gdi32.dll",
+                                        "C:\\Windows\\System32\\lpk.dll",
+                                        "C:\\Windows\\System32\\usp10.dll",
+                                        "C:\\Windows\\System32\\msvcrt.dll",
+                                        "C:\\Windows\\System32\\advapi32.dll",
+                                        "C:\\Windows\\System32\\sechost.dll",
+                                        "C:\\Windows\\System32\\rpcrt4.dll",
+                                        "C:\\Windows\\System32\\shell32.dll",
+                                        "C:\\Windows\\System32\\shlwapi.dll",
+                                        "C:\\Windows\\System32\\ole32.dll",
+                                        "C:\\Windows\\winsxs\\amd64_microsoft.windows.gdiplus_6595b64144ccf1df_1.1.7601.24203_none_1455c96c8b9566b9\\GdiPlus.dll",
+                                        "C:\\Windows\\System32\\ws2_32.dll",
+                                        "C:\\Windows\\System32\\nsi.dll",
+                                        "C:\\Windows\\System32\\psapi.dll",
+                                        "C:\\Windows\\System32\\imm32.dll",
+                                        "C:\\Windows\\System32\\msctf.dll",
+                                        "C:\\Windows\\System32\\oleaut32.dll",
+                                        "C:\\Windows\\System32\\setupapi.dll",
+                                        "C:\\Windows\\System32\\cfgmgr32.dll",
+                                        "C:\\Windows\\System32\\devobj.dll",
+                                        "C:\\Windows\\System32\\IPHLPAPI.DLL",
+                                        "C:\\Windows\\System32\\winnsi.dll",
+                                        "C:\\Windows\\System32\\api-ms-win-core-synch-l1-2-0.dll",
+                                        "C:\\Windows\\System32\\version.dll",
+                                        "C:\\Windows\\System32\\cryptbase.dll",
+                                        "C:\\Windows\\System32\\apphelp.dll",
+                                        "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe",
+                                        "C:\\Windows\\SysWOW64\\ntdll.dll",
+                                        "C:\\Windows\\System32\\wow64.dll",
+                                        "C:\\Windows\\System32\\wow64win.dll",
+                                        "C:\\Windows\\System32\\wow64cpu.dll",
+                                        "C:\\Windows\\SysWOW64\\kernel32.dll",
+                                        "C:\\Windows\\SysWOW64\\KernelBase.dll",
+                                        "C:\\Windows\\SysWOW64\\advapi32.dll",
+                                        "C:\\Windows\\SysWOW64\\msvcrt.dll",
+                                        "C:\\Windows\\SysWOW64\\sechost.dll",
+                                        "C:\\Windows\\SysWOW64\\rpcrt4.dll",
+                                        "C:\\Windows\\SysWOW64\\sspicli.dll",
+                                        "C:\\Windows\\SysWOW64\\cryptbase.dll",
+                                        "C:\\Windows\\SysWOW64\\atl.dll",
+                                        "C:\\Windows\\SysWOW64\\user32.dll",
+                                        "C:\\Windows\\SysWOW64\\gdi32.dll",
+                                        "C:\\Windows\\SysWOW64\\lpk.dll",
+                                        "C:\\Windows\\SysWOW64\\usp10.dll",
+                                        "C:\\Windows\\SysWOW64\\ole32.dll",
+                                        "C:\\Windows\\SysWOW64\\oleaut32.dll",
+                                        "C:\\Windows\\SysWOW64\\mscoree.dll",
+                                        "C:\\Windows\\SysWOW64\\imm32.dll",
+                                        "C:\\Windows\\SysWOW64\\msctf.dll",
+                                        "C:\\Windows\\SysWOW64\\shell32.dll",
+                                        "C:\\Windows\\SysWOW64\\shlwapi.dll",
+                                        "C:\\Windows\\winsxs\\x86_microsoft.windows.gdiplus_6595b64144ccf1df_1.1.7601.24203_none_5c030043a0118fbf\\GdiPlus.dll",
+                                        "C:\\Windows\\SysWOW64\\ws2_32.dll",
+                                        "C:\\Windows\\SysWOW64\\nsi.dll",
+                                        "C:\\Windows\\SysWOW64\\psapi.dll",
+                                        "C:\\Windows\\SysWOW64\\setupapi.dll",
+                                        "C:\\Windows\\SysWOW64\\cfgmgr32.dll",
+                                        "C:\\Windows\\SysWOW64\\devobj.dll",
+                                        "C:\\Windows\\SysWOW64\\IPHLPAPI.DLL",
+                                        "C:\\Windows\\SysWOW64\\winnsi.dll",
+                                        "C:\\Windows\\SysWOW64\\api-ms-win-core-synch-l1-2-0.DLL",
+                                        "C:\\Windows\\SysWOW64\\version.dll",
+                                        "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\mscoreei.dll",
+                                        "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\clr.dll",
+                                        "C:\\Windows\\SysWOW64\\msvcr120_clr0400.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_32\\mscorlib\\v4.0_4.0.0.0__b77a5c561934e089\\mscorlib.dll",
+                                        "C:\\Windows\\SysWOW64\\api-ms-win-core-xstate-l2-1-0.dll",
+                                        "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\clrjit.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\Microsoft.PowerShell.ConsoleHost\\v4.0_3.0.0.0__31bf3856ad364e35\\Microsoft.PowerShell.ConsoleHost.dll",
+                                        "C:\\Windows\\SysWOW64\\cryptsp.dll",
+                                        "C:\\Windows\\SysWOW64\\rsaenh.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\System.Management.Automation\\v4.0_3.0.0.0__31bf3856ad364e35\\System.Management.Automation.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\System.Core\\v4.0_4.0.0.0__b77a5c561934e089\\System.Core.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\System\\v4.0_4.0.0.0__b77a5c561934e089\\System.dll",
+                                        "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\nlssorting.dll",
+                                        "C:\\Windows\\SysWOW64\\RpcRtRemote.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\System.Xml\\v4.0_4.0.0.0__b77a5c561934e089\\System.Xml.dll",
+                                        "C:\\Windows\\SysWOW64\\wintrust.dll",
+                                        "C:\\Windows\\SysWOW64\\crypt32.dll",
+                                        "C:\\Windows\\SysWOW64\\msasn1.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\mscorlib.resources\\v4.0_4.0.0.0_zh-Hans_b77a5c561934e089\\mscorlib.resources.dll",
+                                        "C:\\Windows\\SysWOW64\\msisip.dll",
+                                        "C:\\Windows\\SysWOW64\\wshext.dll",
+                                        "C:\\Windows\\winsxs\\x86_microsoft.windows.common-controls_6595b64144ccf1df_5.82.7601.18837_none_ec86b8d6858ec0bc\\comctl32.dll",
+                                        "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\pwrshsip.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\System.Management\\v4.0_4.0.0.0__b03f5f7f11d50a3a\\System.Management.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\System.DirectoryServices\\v4.0_4.0.0.0__b03f5f7f11d50a3a\\System.DirectoryServices.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\System.Configuration\\v4.0_4.0.0.0__b03f5f7f11d50a3a\\System.Configuration.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\Microsoft.CSharp\\v4.0_4.0.0.0__b03f5f7f11d50a3a\\Microsoft.CSharp.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\Microsoft.Management.Infrastructure\\v4.0_1.0.0.0__31bf3856ad364e35\\Microsoft.Management.Infrastructure.dll",
+                                        "%SAMPLEPATH%\\9c71b67411b1432931b4b135dc945f6f7f9da3c295a7449f3ab8dcb56681fa70.exe",
+                                        "C:\\Windows\\Microsoft.NET\\assembly\\GAC_MSIL\\Microsoft.PowerShell.ConsoleHost\\v4.0_3.0.0.0__31bf3856ad364e35\\Microsoft.PowerShell.ConsoleHost.dll",
+                                        "C:\\Windows\\Microsoft.NET\\assembly\\GAC_MSIL\\System.Management.Automation\\v4.0_3.0.0.0__31bf3856ad364e35\\System.Management.Automation.dll",
+                                        "api-ms-win-core-synch-l1-2-0",
+                                        "api-ms-win-core-fibers-l1-1-1",
+                                        "kernel32",
+                                        "api-ms-win-core-localization-l1-2-1",
+                                        "api-ms-win-core-string-l1-1-0",
+                                        "api-ms-win-core-datetime-l1-1-1",
+                                        "api-ms-win-core-localization-obsolete-l1-2-0",
+                                        "ADVAPI32.dll",
+                                        "SHLWAPI.dll",
+                                        "api-ms-win-appmodel-runtime-l1-1-2.dll",
+                                        "api-ms-win-appmodel-runtime-l1-1-0.dll",
+                                        "VERSION.dll",
+                                        "USER32.dll",
+                                        "api-ms-win-core-quirks-l1-1-0.dll",
+                                        "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\mscoree.dll",
+                                        "mscoree.dll",
+                                        "C:\\Windows\\system32\\combase.dll",
+                                        "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\mscorlib\\36eaccfde177c2e7b93b8dbdde4e012a\\mscorlib.ni.dll",
+                                        "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\ole32.dll",
+                                        "ole32.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_32\\mscorlib\\v4.0_4.0.0.0__b77a5c561934e089\\oleaut32.dll",
+                                        "oleaut32.dll",
+                                        "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System\\2c3c912ea8f058f9d04c4650128feb3f\\System.ni.dll",
+                                        "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Core\\31fae3290fad30c31c98651462d22724\\System.Core.ni.dll",
+                                        "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.Pb378ec07#\\b19b228ce002245c66968fa5342f2140\\Microsoft.PowerShell.ConsoleHost.ni.dll",
+                                        "CRYPTSP.dll",
+                                        "CRYPTBASE.dll",
+                                        "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\OLEAUT32.dll",
+                                        "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Manaa57fc8cc#\\fbbfe2c3b2aa1444a692da4d915ab64b\\System.Management.Automation.ni.dll",
+                                        "ntdll.dll",
+                                        "kernel32.dll",
+                                        "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\en-US\\mscorrc.dll",
+                                        "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\en\\mscorrc.dll",
+                                        "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\mscorrc.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\System\\v4.0_4.0.0.0__b77a5c561934e089\\psapi.dll",
+                                        "psapi.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\System.Management.Automation\\v4.0_3.0.0.0__31bf3856ad364e35\\amsi.dll",
+                                        "amsi.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\System\\v4.0_4.0.0.0__b77a5c561934e089\\ntdll.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_32\\mscorlib\\v4.0_4.0.0.0__b77a5c561934e089\\shell32.dll",
+                                        "shell32.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\System.Management.Automation\\v4.0_3.0.0.0__31bf3856ad364e35\\wintrust.dll",
+                                        "wintrust.dll",
+                                        "MSISIP.DLL",
+                                        "C:\\Windows\\syswow64\\CRYPT32.dll",
+                                        "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Management\\e114780fd3ea5727401c06ea4f22ef35\\System.Management.ni.dll",
+                                        "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Dired13b18a9#\\2e76676fbd265f70be92c82bbf76b8e5\\System.DirectoryServices.ni.dll",
+                                        "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Xml\\15af16d373cf0528cb74fc73d365fdbf\\System.Xml.ni.dll",
+                                        "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Configuration\\96f7edb07b12303f0ec2595c7f3778c7\\System.Configuration.ni.dll",
+                                        "C:\\Windows\\system32\\en-US\\tzres.dll.mui",
+                                        "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.CSharp\\f73f48afb5512225dedaee9c88ac5050\\Microsoft.CSharp.ni.dll",
+                                        "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.Mf49f6405#\\e3134541fd9904dc895922f5256ef8f3\\Microsoft.Management.Infrastructure.ni.dll",
+                                        "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Data\\df2dd09ed7c341842a104e1e668f184e\\System.Data.ni.dll",
+                                        "C:\\Windows\\Microsoft.Net\\assembly\\GAC_32\\System.Data\\v4.0_4.0.0.0__b77a5c561934e089\\System.Data.dll",
+                                        "api-ms-win-core-xstate-l2-1-0.dll"
+                                    ],
+                 "registry_keys_set":  [
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{05336a73-3243-11ec-8ce0-167c9a143b06}\\DefaultObjectStore\\LruList\\CurrentLru"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{05336a73-3243-11ec-8ce0-167c9a143b06}\\DefaultObjectStore\\IndexTable\\FileIdIndex-{853201e6-2d75-11ea-a138-806e6f6e6963}\\_IndexName_"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{05336a73-3243-11ec-8ce0-167c9a143b06}\\DefaultObjectStore\\ObjectTable\\661\\_FileId_"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{05336a73-3243-11ec-8ce0-167c9a143b06}\\DefaultObjectStore\\ObjectTable\\661\\_ObjectLru_"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{05336a73-3243-11ec-8ce0-167c9a143b06}\\DefaultObjectStore\\ObjectTable\\661\\_Usn_"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{05336a73-3243-11ec-8ce0-167c9a143b06}\\DefaultObjectStore\\ObjectTable\\661\\_ObjectId_"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{05336a73-3243-11ec-8ce0-167c9a143b06}\\DefaultObjectStore\\ObjectTable\\661\\AeFileID"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{05336a73-3243-11ec-8ce0-167c9a143b06}\\DefaultObjectStore\\ObjectTable\\661\\_UsnJournalId_"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{05336a73-3243-11ec-8ce0-167c9a143b06}\\DefaultObjectStore\\ObjectTable\\661\\AeProgramID"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{05336a73-3243-11ec-8ce0-167c9a143b06}\\DefaultObjectStore\\IndexTable\\FileIdIndex-{853201e6-2d75-11ea-a138-806e6f6e6963}\\400000000E867\\661"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{05336a73-3243-11ec-8ce0-167c9a143b06}\\DefaultObjectStore\\_CurrentObjectId_"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{05336a73-3243-11ec-8ce0-167c9a143b06}\\DefaultObjectStore\\ObjectTable\\661\\Indexes\\FileIdIndex-{853201e6-2d75-11ea-a138-806e6f6e6963}\\400000000E867"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{05336a73-3243-11ec-8ce0-167c9a143b06}\\DefaultObjectStore\\LruList\\0000000000002B69\\ObjectLru"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{05336a73-3243-11ec-8ce0-167c9a143b06}\\DefaultObjectStore\\LruList\\0000000000002B69\\ObjectId"
+                                           }
+                                       ],
+                 "verdicts":  [
+                                  "UNKNOWN_VERDICT",
+                                  "MALWARE"
+                              ],
+                 "calls_highlighted":  [
+                                           "GetTickCount",
+                                           "IsDebuggerPresent",
+                                           "GetSystemMetrics"
+                                       ],
+                 "command_executions":  [
+                                            "%SAMPLEPATH%",
+                                            "\"pwsh.exe\" -windowstyle hidden -executionpolicy bypass -file %ProgramData%\\komar2.ps1",
+                                            "\"${SamplePath}\\9c71b67411b1432931b4b135dc945f6f7f9da3c295a7449f3ab8dcb56681fa70.exe\" ",
+                                            "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe -windowstyle hidden -executionpolicy bypass -file C:\\programdata\\komar2.ps1",
+                                            "\"%SAMPLEPATH%\\cps.exe\" ",
+                                            "\"%SAMPLEPATH%\\9c71b67411b1432931b4b135dc945f6f7f9da3c295a7449f3ab8dcb56681fa70.exe\" ",
+                                            "C:\\Windows\\System32\\wuapihost.exe -Embedding"
+                                        ],
+                 "registry_keys_opened":  [
+                                              "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\.NETFramework\\Policy\\v4.0",
+                                              "\\Registry\\Machine\\System\\CurrentControlSet\\Control\\Lsa\\FipsAlgorithmPolicy",
+                                              "\\Registry\\Machine\\System\\CurrentControlSet\\Control\\Nls\\Locale\\Alternate Sorts",
+                                              "HKLM\\SOFTWARE\\Microsoft\\PowerShell",
+                                              "HKLM\\SOFTWARE\\Microsoft\\PowerShell\\3\\PowerShellEngine",
+                                              "HKLM\\SOFTWARE\\Microsoft\\PowerShell\\3\\PowerShellEngine\\PowerShellVersion",
+                                              "HKLM\\SOFTWARE\\Microsoft\\PowerShell\\3\\PowerShellEngine\\RuntimeVersion",
+                                              "HKLM\\SOFTWARE\\Microsoft\\PowerShell\\3\\PowerShellEngine\\ConsoleHostAssemblyName",
+                                              "HKLM\\SYSTEM\\CurrentControlSet\\Control\\MiniNT",
+                                              "HKLM\\SOFTWARE\\Microsoft\\PowerShell\\3",
+                                              "HKLM\\SOFTWARE\\Microsoft\\PowerShell\\3\\PowerShellEngine\\NetFrameworkV4IsInstalled",
+                                              "HKLM\\Software\\Microsoft\\.NETFramework\\Policy",
+                                              "HKLM\\Software\\Microsoft\\.NETFramework\\Policy\\v4.0",
+                                              "HKLM\\Software\\Microsoft\\.NETFramework",
+                                              "HKLM\\Software\\Microsoft\\.NETFramework\\InstallRoot",
+                                              "HKLM\\Software\\Microsoft\\.NETFramework\\CLRLoadLogDir",
+                                              "HKLM\\Software\\Microsoft\\.NETFramework\\UseLegacyV2RuntimeActivationPolicyDefaultValue",
+                                              "HKLM\\Software\\Microsoft\\.NETFramework\\OnlyUseLatestCLR",
+                                              "HKLM\\SOFTWARE\\Microsoft\\Fusion",
+                                              "HKLM\\SOFTWARE\\Microsoft\\Fusion\\NoClientChecks",
+                                              "HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full",
+                                              "HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\\Release",
+                                              "HKLM\\Software\\Microsoft\\.NETFramework\\DisableConfigCache",
+                                              "HKLM\\Software\\Microsoft\\Fusion",
+                                              "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\powershell.exe",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\CacheLocation",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\DownloadCacheQuotaInKB",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\EnableLog",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\LoggingLevel",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\ForceLog",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\LogFailures",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\LogResourceBinds",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\FileInUseRetryAttempts",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\FileInUseMillisecondsBetweenRetries",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\UseLegacyIdentityFormat",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\DisableMSIPeek",
+                                              "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options",
+                                              "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\DevOverrideEnable",
+                                              "HKLM\\Software\\Microsoft\\.NETFramework\\NGen\\Policy\\v4.0",
+                                              "HKLM\\Software\\Microsoft\\.NETFramework\\NGen\\Policy\\v4.0\\OptimizeUsedBinaries",
+                                              "HKLM\\SOFTWARE\\Microsoft\\.NETFramework\\Policy\\Servicing",
+                                              "HKLM\\Software\\Microsoft\\StrongName",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\Latest",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\index24",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\LegacyPolicyTimeStamp",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.3.0.Microsoft.PowerShell.ConsoleHost__31bf3856ad364e35",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.3.0.Microsoft.PowerShell.ConsoleHost__31bf3856ad364e35",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.Configuration__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.Configuration__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.Xml__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.Xml__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.3.0.System.Management.Automation__31bf3856ad364e35",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.3.0.System.Management.Automation__31bf3856ad364e35",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.Configuration.Install__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.Configuration.Install__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.Core__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.Core__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.Numerics__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.Numerics__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.Security__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.Security__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.1.0.Microsoft.Management.Infrastructure__31bf3856ad364e35",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.1.0.Microsoft.Management.Infrastructure__31bf3856ad364e35",
+                                              "HKLM\\SOFTWARE\\Microsoft\\.NETFramework\\Policy\\APTCA",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.Transactions__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.Transactions__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.DirectoryServices__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.DirectoryServices__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.1.0.Microsoft.Management.Infrastructure.Native__31bf3856ad364e35",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.1.0.Microsoft.Management.Infrastructure.Native__31bf3856ad364e35",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.Runtime.Serialization__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.Runtime.Serialization__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.Management__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.Management__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.Data__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.Data__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.Microsoft.CSharp__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.Microsoft.CSharp__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.SMDiagnostics__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.SMDiagnostics__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.3.0.System.Management.Automation.resources_en-US_31bf3856ad364e35",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.3.0.System.Management.Automation.resources_en-US_31bf3856ad364e35",
+                                              "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\Managed\\S-1-5-21-3711686801-687107597-1149503783-1001\\Installer\\Assemblies\\C:|Windows|SysWOW64|WindowsPowerShell|v1.0|powershell.exe",
+                                              "HKCU\\Software\\Microsoft\\Installer\\Assemblies\\C:|Windows|SysWOW64|WindowsPowerShell|v1.0|powershell.exe",
+                                              "HKLM\\SOFTWARE\\Classes\\Installer\\Assemblies\\C:|Windows|SysWOW64|WindowsPowerShell|v1.0|powershell.exe",
+                                              "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Installer\\Managed\\S-1-5-21-3711686801-687107597-1149503783-1001\\Installer\\Assemblies\\Global",
+                                              "HKCU\\Software\\Microsoft\\Installer\\Assemblies\\Global",
+                                              "HKLM\\SOFTWARE\\Classes\\Installer\\Assemblies\\Global",
+                                              "HKLM\\SOFTWARE\\Microsoft\\.NETFramework\\AppContext",
+                                              "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\WSMAN",
+                                              "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\WSMAN\\ServiceStackVersion",
+                                              "HKLM\\Software\\Microsoft\\PowerShell\\3\\PowerShellEngine",
+                                              "HKLM\\Software\\Microsoft\\PowerShell\\3\\PowerShellEngine\\ApplicationBase",
+                                              "HKLM\\Software\\Policies\\Microsoft\\Windows\\PowerShell\\ModuleLogging",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.3.0.Microsoft.PowerShell.ConsoleHost.resources_en-US_31bf3856ad364e35",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.3.0.Microsoft.PowerShell.ConsoleHost.resources_en-US_31bf3856ad364e35",
+                                              "HKLM\\Software\\Policies\\Microsoft\\Windows\\PowerShell\\Transcription",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.10.0.Microsoft.JScript__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.10.0.Microsoft.JScript__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.Data.SqlXml__b77a5c561934e089",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.Data.SqlXml__b77a5c561934e089",
+                                              "HKCU\\Software\\Policies\\Microsoft\\Windows\\PowerShell\\ConsoleSessionConfiguration",
+                                              "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Time Zones\\Pacific Standard Time",
+                                              "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Time Zones\\Pacific Standard Time\\TZI",
+                                              "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Time Zones\\Pacific Standard Time\\Dynamic DST",
+                                              "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Time Zones\\Pacific Standard Time\\Dynamic DST\\FirstEntry",
+                                              "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Time Zones\\Pacific Standard Time\\Dynamic DST\\LastEntry",
+                                              "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Time Zones\\Pacific Standard Time\\Dynamic DST\\2006",
+                                              "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Time Zones\\Pacific Standard Time\\Dynamic DST\\2007",
+                                              "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Time Zones\\Pacific Standard Time\\MUI_Display",
+                                              "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Time Zones\\Pacific Standard Time\\MUI_Std",
+                                              "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Time Zones\\Pacific Standard Time\\MUI_Dlt",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.Dynamic__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.Dynamic__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.Runtime.Caching__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.Runtime.Caching__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\v4.0_policy.4.0.System.EnterpriseServices__b03f5f7f11d50a3a",
+                                              "HKLM\\Software\\Microsoft\\Fusion\\PublisherPolicy\\Default\\policy.4.0.System.EnterpriseServices__b03f5f7f11d50a3a",
+                                              "HKCU\\Software\\Microsoft\\.NETFramework\\Policy\\Standards",
+                                              "HKLM\\Software\\Microsoft\\.NETFramework\\Policy\\Standards\\v4.0.30319",
+                                              "HKLM\\SOFTWARE\\Microsoft\\BidInterface\\Loader",
+                                              "HKLM\\Software\\Microsoft\\.NETFramework\\FeatureSIMD",
+                                              "HKLM\\Software\\Microsoft\\.NETFramework\\AltJit",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\CA",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\CA\\CRLs",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\CA\\CTLs",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\CA\\Certificates",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\Disallowed",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\Disallowed\\CRLs",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\Disallowed\\CTLs",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\Disallowed\\Certificates",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\Root",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\Root\\CRLs",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\Root\\CTLs",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\Root\\Certificates",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\SmartCardRoot",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\SmartCardRoot\\CRLs",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\SmartCardRoot\\CTLs",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\SmartCardRoot\\Certificates",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\TrustedPeople",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\TrustedPeople\\CRLs",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\TrustedPeople\\CTLs",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\TrustedPeople\\Certificates",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\trust",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\trust\\CRLs",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\trust\\CTLs",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\SystemCertificates\\trust\\Certificates",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows NT\\CurrentVersion",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\WinTrust\\Trust Providers\\Software Publishing",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\CA",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\CA\\CRLs",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\CA\\CTLs",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\CA\\Certificates",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\Disallowed",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\Disallowed\\CRLs",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\Disallowed\\CTLs",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\Disallowed\\Certificates",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\TrustedPeople",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\TrustedPeople\\CRLs",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\TrustedPeople\\CTLs",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\TrustedPeople\\Certificates",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\trust",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\trust\\CRLs",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\trust\\CTLs",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\SystemCertificates\\trust\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\CA\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\CA\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\CA\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\Disallowed\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\Disallowed\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\Disallowed\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\Root\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\Root\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\Root\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\Trust\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\Trust\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\Trust\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\TrustedPeople\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\TrustedPeople\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\EnterpriseCertificates\\TrustedPeople\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\AuthRoot\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\AuthRoot\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\AuthRoot\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\CA\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\CA\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\CA\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\Disallowed\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\Disallowed\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\Disallowed\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\ROOT\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\ROOT\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\ROOT\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\SmartCardRoot\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\SmartCardRoot\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\SmartCardRoot\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\TrustedPeople\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\TrustedPeople\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\TrustedPeople\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\trust\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\trust\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SystemCertificates\\trust\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\powershell.exe",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\CA\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\CA\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\CA\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\Disallowed\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\Disallowed\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\Disallowed\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\Root\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\Root\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\Root\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\TrustedPeople\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\TrustedPeople\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\TrustedPeople\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\trust\\CRLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\trust\\CTLs",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SystemCertificates\\trust\\Certificates",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Segment Heap",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\SideBySide",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Wow64\\x86\\xtajit",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\MUI\\Settings",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\EnterpriseCertificates\\CA",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\EnterpriseCertificates\\Disallowed",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\EnterpriseCertificates\\Root",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\EnterpriseCertificates\\TrustedPeople",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\EnterpriseCertificates\\trust",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\SystemCertificates\\AuthRoot",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\SystemCertificates\\CA",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\SystemCertificates\\Disallowed",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\SystemCertificates\\Root",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\SystemCertificates\\SmartCardRoot",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\SystemCertificates\\TrustedPeople",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\SystemCertificates\\trust",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Policies\\Microsoft\\SystemCertificates\\CA",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Policies\\Microsoft\\SystemCertificates\\Disallowed",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Policies\\Microsoft\\SystemCertificates\\Root",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Policies\\Microsoft\\SystemCertificates\\TrustedPeople",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Policies\\Microsoft\\SystemCertificates\\trust",
+                                              "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\FileSystem\\",
+                                              "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Nls\\Sorting\\Versions",
+                                              "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\SafeBoot\\Option",
+                                              "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Session Manager\\AppCertDlls",
+                                              "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Srp\\GP\\DLL"
+                                          ],
+                 "files_opened":  [
+                                      "C:\\Windows\\system32\\apphelp.dll",
+                                      "\\SystemRoot\\AppPatch\\sysmain.sdb",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe",
+                                      "C:\\Windows\\",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\",
+                                      "C:\\Windows\\system32\\mscoree.dll.local",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\mscoreei.dll",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v1.0.3705\\clr.dll",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v1.0.3705\\mscorwks.dll",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v1.1.4322\\clr.dll",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v1.1.4322\\mscorwks.dll",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\clr.dll",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v2.0.50727\\mscorwks.dll",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\clr.dll",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe.config",
+                                      "C:\\Windows\\system32\\VERSION.dll",
+                                      "C:\\Windows\\system32\\VCRUNTIME140_CLR0400.dll",
+                                      "C:\\Windows\\system32\\ucrtbase_clr0400.dll",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\config\\machine.config",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\fusion.localgac",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\mscorlib\\",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\mscorlib\\36eaccfde177c2e7b93b8dbdde4e012a\\mscorlib.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\mscorlib\\36eaccfde177c2e7b93b8dbdde4e012a\\mscorlib.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\pubpol24.dat",
+                                      "C:\\Windows\\assembly\\GAC\\PublisherPolicy.tme",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.Pb378ec07#\\",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.Pb378ec07#\\b19b228ce002245c66968fa5342f2140\\Microsoft.PowerShell.ConsoleHost.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.Pb378ec07#\\b19b228ce002245c66968fa5342f2140\\Microsoft.PowerShell.ConsoleHost.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System\\",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System\\2c3c912ea8f058f9d04c4650128feb3f\\System.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System\\2c3c912ea8f058f9d04c4650128feb3f\\System.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Core\\",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Core\\31fae3290fad30c31c98651462d22724\\System.Core.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Core\\31fae3290fad30c31c98651462d22724\\System.Core.ni.dll.aux",
+                                      "C:\\Windows\\system32\\CRYPTSP.dll",
+                                      "C:\\Windows\\system32\\rsaenh.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Manaa57fc8cc#\\",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Manaa57fc8cc#\\fbbfe2c3b2aa1444a692da4d915ab64b\\System.Management.Automation.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Manaa57fc8cc#\\fbbfe2c3b2aa1444a692da4d915ab64b\\System.Management.Automation.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\GAC_32\\System.Management.Automation.resources\\3.0.0.0_en-US_31bf3856ad364e35\\System.Management.Automation.resources.dll",
+                                      "C:\\Windows\\assembly\\GAC_MSIL\\System.Management.Automation.resources\\3.0.0.0_en-US_31bf3856ad364e35\\System.Management.Automation.resources.dll",
+                                      "C:\\Windows\\assembly\\GAC\\System.Management.Automation.resources\\3.0.0.0_en-US_31bf3856ad364e35\\System.Management.Automation.resources.dll",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\en-US\\System.Management.Automation.resources.dll",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\en-US\\System.Management.Automation.resources\\System.Management.Automation.resources.dll",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\en-US\\System.Management.Automation.resources.exe",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\en-US\\System.Management.Automation.resources\\System.Management.Automation.resources.exe",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\mscorrc.dll",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\nlssorting.dll",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\SortDefault.nlp",
+                                      "C:\\Windows\\syswow64\\en-US\\KERNELBASE.dll.mui",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\Modules\\Microsoft.PowerShell.Utility\\Microsoft.PowerShell.Utility.psm1",
+                                      "C:\\Windows\\system32",
+                                      "C:\\Windows\\SysWOW64",
+                                      "C:\\Program Files (x86)",
+                                      "C:\\Windows\\system32\\MSISIP.DLL",
+                                      "C:\\Windows\\SysWOW64\\wshext.dll",
+                                      "C:\\Windows\\WinSxS\\x86_microsoft.windows.common-controls_6595b64144ccf1df_5.82.7601.18837_none_ec86b8d6858ec0bc",
+                                      "C:\\Windows\\WinSxS\\x86_microsoft.windows.common-controls_6595b64144ccf1df_5.82.7601.18837_none_ec86b8d6858ec0bc\\COMCTL32.dll",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\pwrshsip.dll",
+                                      "C:\\Windows\\assembly\\GAC_32\\Microsoft.PowerShell.ConsoleHost.resources\\3.0.0.0_en-US_31bf3856ad364e35\\Microsoft.PowerShell.ConsoleHost.resources.dll",
+                                      "C:\\Windows\\assembly\\GAC_MSIL\\Microsoft.PowerShell.ConsoleHost.resources\\3.0.0.0_en-US_31bf3856ad364e35\\Microsoft.PowerShell.ConsoleHost.resources.dll",
+                                      "C:\\Windows\\assembly\\GAC\\Microsoft.PowerShell.ConsoleHost.resources\\3.0.0.0_en-US_31bf3856ad364e35\\Microsoft.PowerShell.ConsoleHost.resources.dll",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\en-US\\Microsoft.PowerShell.ConsoleHost.resources.dll",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\en-US\\Microsoft.PowerShell.ConsoleHost.resources\\Microsoft.PowerShell.ConsoleHost.resources.dll",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\en-US\\Microsoft.PowerShell.ConsoleHost.resources.exe",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\en-US\\Microsoft.PowerShell.ConsoleHost.resources\\Microsoft.PowerShell.ConsoleHost.resources.exe",
+                                      "CONOUT$",
+                                      "C:\\Users\\\u003cUSER\u003e\\AppData\\Local",
+                                      "C:\\Users\\\u003cUSER\u003e\\AppData\\Local\\Microsoft\\Windows\\PowerShell",
+                                      "C:\\Users\\\u003cUSER\u003e\\AppData\\Local\\Microsoft\\Windows",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Management\\",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Management\\e114780fd3ea5727401c06ea4f22ef35\\System.Management.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Management\\e114780fd3ea5727401c06ea4f22ef35\\System.Management.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Dired13b18a9#\\",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Dired13b18a9#\\2e76676fbd265f70be92c82bbf76b8e5\\System.DirectoryServices.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Dired13b18a9#\\2e76676fbd265f70be92c82bbf76b8e5\\System.DirectoryServices.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Xml\\",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Xml\\15af16d373cf0528cb74fc73d365fdbf\\System.Xml.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Xml\\15af16d373cf0528cb74fc73d365fdbf\\System.Xml.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Configuration\\",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Configuration\\96f7edb07b12303f0ec2595c7f3778c7\\System.Configuration.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Configuration\\96f7edb07b12303f0ec2595c7f3778c7\\System.Configuration.ni.dll.aux",
+                                      "C:\\programdata\\komar2.ps1",
+                                      "C:\\Users\\\u003cUSER\u003e\\AppData\\Local\\Microsoft\\Windows\\PowerShell\\StartupProfileData-NonInteractive",
+                                      "C:\\Windows\\system32\\tzres.dll",
+                                      "C:\\Windows\\system32\\en-US\\tzres.dll.mui",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.CSharp\\",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.CSharp\\f73f48afb5512225dedaee9c88ac5050\\Microsoft.CSharp.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.CSharp\\f73f48afb5512225dedaee9c88ac5050\\Microsoft.CSharp.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.Mf49f6405#\\",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.Mf49f6405#\\e3134541fd9904dc895922f5256ef8f3\\Microsoft.Management.Infrastructure.ni.dll",
+                                      "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.2102.4-0\\X86\\MpOav.dll",
+                                      "C:\\Users\\user\\AppData\\Local\\Microsoft\\Windows\\PowerShell\\StartupProfileData-NonInteractive",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\JSAMSIProvider32.dll",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_ng11wjck.sab.ps1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_ng11wjck.sab.ps1\\",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_zb1gnnbv.zxg.psm1",
+                                      "C:\\Users\\user\\Desktop\\cps.exe",
+                                      "C:\\Windows\\AppPatch\\sysmain.sdb",
+                                      "C:\\Windows\\Globalization\\Sorting\\sortdefault.nls",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\Config\\machine.config",
+                                      "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\clrjit.dll",
+                                      "C:\\Windows\\Microsoft.Net\\assembly\\GAC_32\\System.Data\\v4.0_4.0.0.0__b77a5c561934e089\\System.Data.dll",
+                                      "C:\\Windows\\Microsoft.Net\\assembly\\GAC_32\\System.Data\\v4.0_4.0.0.0__b77a5c561934e089\\System.Data.dll.config",
+                                      "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\Microsoft.PowerShell.ConsoleHost\\v4.0_3.0.0.0__31bf3856ad364e35\\Microsoft.PowerShell.ConsoleHost.dll",
+                                      "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\System.DirectoryServices\\v4.0_4.0.0.0__b03f5f7f11d50a3a\\System.DirectoryServices.dll",
+                                      "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\System.Management.Automation\\v4.0_3.0.0.0__31bf3856ad364e35\\System.Management.Automation.dll",
+                                      "C:\\Windows\\Microsoft.Net\\assembly\\GAC_MSIL\\System.Numerics\\v4.0_4.0.0.0__b77a5c561934e089\\System.Numerics.dll",
+                                      "C:\\Windows\\SYSTEM32\\apphelp.dll",
+                                      "C:\\Windows\\SYSTEM32\\ntdll.dll",
+                                      "C:\\Windows\\SYSTEM32\\ntmarta.dll",
+                                      "C:\\Windows\\SYSTEM32\\ole32.dll",
+                                      "C:\\Windows\\SYSTEM32\\wintypes.dll",
+                                      "C:\\Windows\\SysWOW64\\ATL.DLL",
+                                      "C:\\Windows\\SysWOW64\\AppLocker\\MDM",
+                                      "C:\\Windows\\SysWOW64\\AppxSip.dll",
+                                      "C:\\Windows\\SysWOW64\\CRYPTSP.dll",
+                                      "C:\\Windows\\SysWOW64\\IMM32.DLL",
+                                      "C:\\Windows\\SysWOW64\\MSISIP.DLL",
+                                      "C:\\Windows\\SysWOW64\\OpcServices.DLL",
+                                      "C:\\Windows\\SysWOW64\\USERENV.dll",
+                                      "C:\\Windows\\SysWOW64\\VCRUNTIME140_CLR0400.dll",
+                                      "C:\\Windows\\SysWOW64\\VERSION.dll",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\en-US\\powershell.exe.mui",
+                                      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe.Config",
+                                      "C:\\Windows\\SysWOW64\\XmlLite.dll",
+                                      "C:\\Windows\\SysWOW64\\amsi.dll",
+                                      "C:\\Windows\\SysWOW64\\bcrypt.dll",
+                                      "C:\\Windows\\SysWOW64\\en-US\\CRYPT32.dll.mui",
+                                      "C:\\Windows\\SysWOW64\\en-US\\tzres.dll.mui",
+                                      "C:\\Windows\\SysWOW64\\en-US\\winnlsres.dll.mui",
+                                      "C:\\Windows\\SysWOW64\\gpapi.dll",
+                                      "C:\\Windows\\SysWOW64\\iertutil.dll",
+                                      "C:\\Windows\\SysWOW64\\mintdh.dll",
+                                      "C:\\Windows\\SysWOW64\\mscoree.dll",
+                                      "C:\\Windows\\SysWOW64\\rsaenh.dll",
+                                      "C:\\Windows\\SysWOW64\\tdh.dll",
+                                      "C:\\Windows\\SysWOW64\\tzres.dll",
+                                      "C:\\Windows\\SysWOW64\\ucrtbase_clr0400.dll",
+                                      "C:\\Windows\\SysWOW64\\urlmon.dll",
+                                      "C:\\Windows\\SysWOW64\\winnlsres.dll",
+                                      "C:\\Windows\\SysWOW64\\wldp.dll",
+                                      "C:\\Windows\\System32\\CoreMessaging.dll",
+                                      "C:\\Windows\\System32\\CoreUIComponents.dll",
+                                      "C:\\Windows\\System32\\KERNEL32.DLL",
+                                      "C:\\Windows\\System32\\KERNELBASE.dll",
+                                      "C:\\Windows\\System32\\TextInputFramework.dll",
+                                      "C:\\Windows\\System32\\en-US\\user32.dll.mui",
+                                      "C:\\Windows\\WinSxS\\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.17134.1304_none_d3fbe61b7c93d9f0",
+                                      "C:\\Windows\\WinSxS\\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.17134.1304_none_d3fbe61b7c93d9f0\\comctl32.DLL",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.Mf49f6405#\\f6c08a1a3da0a4c2e7e00513715b39b7\\Microsoft.Management.Infrastructure.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.Mf49f6405#\\f6c08a1a3da0a4c2e7e00513715b39b7\\Microsoft.Management.Infrastructure.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Configuration\\8c730c7fbe608461407cf3be279cdeab\\System.Configuration.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Configuration\\8c730c7fbe608461407cf3be279cdeab\\System.Configuration.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Core\\9d04ce1d8a3042f50b54c7f9ccdb4068\\System.Core.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Core\\9d04ce1d8a3042f50b54c7f9ccdb4068\\System.Core.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Data\\",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Management\\fea996c385fbc624826f8e043f6d5329\\System.Management.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Management\\fea996c385fbc624826f8e043f6d5329\\System.Management.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Numerics\\",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Xml\\2e14a1befe55e7d9ad2457ceb5267e36\\System.Xml.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Xml\\2e14a1befe55e7d9ad2457ceb5267e36\\System.Xml.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System\\2bef38851483abae82f1172c1aaa604c\\System.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System\\2bef38851483abae82f1172c1aaa604c\\System.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\mscorlib\\75b341f10c9579cbe1059d18f6f3b27b\\mscorlib.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\mscorlib\\75b341f10c9579cbe1059d18f6f3b27b\\mscorlib.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\pubpol66.dat",
+                                      "C:\\Windows\\system32\\CatRoot\\{F750E6C3-38EE-11D1-85E5-00C04FC295EE}\\Microsoft-Windows-Client-Features-Package00113~31bf3856ad364e35~amd64~~10.0.17134.1.cat",
+                                      "C:\\Windows\\system32\\IMM32.DLL",
+                                      "C:\\Windows\\system32\\catroot",
+                                      "C:\\Windows\\system32\\catroot2",
+                                      "C:\\Windows\\system32\\conhost.exe",
+                                      "C:\\Windows\\system32\\dwmapi.dll",
+                                      "C:\\Windows\\system32\\en-US\\conhost.exe.mui",
+                                      "C:\\Windows\\system32\\rpcss.dll",
+                                      "C:\\Windows\\system32\\uxtheme.dll",
+                                      "C:\\Windows\\system32\\uxtheme.dll.Config",
+                                      "MountPointManager",
+                                      "\\Device\\ConDrv\\Server",
+                                      "\\Device\\ConDrv\\\\Input",
+                                      "\\Device\\ConDrv\\\\Output",
+                                      "\\Device\\ConDrv\\\\Reference",
+                                      "\\Device\\KsecDD",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_dpkm0aeh.jnc.psm1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xgrbpw2m.gke.ps1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xgrbpw2m.gke.ps1\\",
+                                      "C:\\Users\\user\\Desktop\\executable.exe",
+                                      "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.2111.5-0\\X86\\MpOav.dll",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_lwpxvd2n.5vg.psm1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_z5ri1dex.tde.ps1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_z5ri1dex.tde.ps1\\",
+                                      "C:\\Users\\user\\Desktop\\software.exe",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.Mf49f6405#\\8e60287f3ad05ee5e34d1c308fbf7e27\\Microsoft.Management.Infrastructure.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\Microsoft.Mf49f6405#\\8e60287f3ad05ee5e34d1c308fbf7e27\\Microsoft.Management.Infrastructure.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Configuration\\076fae3efb073c01a3a155a96928574b\\System.Configuration.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Configuration\\076fae3efb073c01a3a155a96928574b\\System.Configuration.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Core\\ee717223ade9f8db56b8e1279d794680\\System.Core.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Core\\ee717223ade9f8db56b8e1279d794680\\System.Core.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Management\\a899657d6603194b2b720f606544ac0e\\System.Management.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Management\\a899657d6603194b2b720f606544ac0e\\System.Management.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Xml\\8424b694e88098301691974f4abc2099\\System.Xml.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System.Xml\\8424b694e88098301691974f4abc2099\\System.Xml.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System\\0eeb857977bf8c4a1fcc54528b8f5853\\System.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\System\\0eeb857977bf8c4a1fcc54528b8f5853\\System.ni.dll.aux",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\mscorlib\\92d30f3dd1d092e15dd783b14354d8ea\\mscorlib.ni.dll",
+                                      "C:\\Windows\\assembly\\NativeImages_v4.0.30319_32\\mscorlib\\92d30f3dd1d092e15dd783b14354d8ea\\mscorlib.ni.dll.aux",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_g0fwrrio.tjy.ps1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_g0fwrrio.tjy.ps1\\",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_yza4ayhe.ju0.psm1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_dzajd0lc.3xg.ps1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_dzajd0lc.3xg.ps1\\",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_s34hfdiq.n3e.psm1",
+                                      "C:\\Users\\user\\Desktop\\file.exe",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_dvbhwuhc.z22.ps1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_dvbhwuhc.z22.ps1\\",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xol41ozl.f4h.psm1",
+                                      "C:\\Windows\\SysWOW64\\mintdh.DLL",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_atdtn4yl.02w.ps1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_atdtn4yl.02w.ps1\\",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_v5y0fhx5.kvc.psm1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_ifa5sb5s.va4.ps1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_ifa5sb5s.va4.ps1\\",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xa3ehrfc.llc.psm1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_c41s3rnm.dly.ps1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_c41s3rnm.dly.ps1\\",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_zqmqqunl.xta.psm1",
+                                      "C:\\Users\\user\\Desktop\\program.exe",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_capaldqm.4k5.psm1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xwfckf0x.dly.ps1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_xwfckf0x.dly.ps1\\",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_1ealfr5d.psh.psm1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_1zbsualf.pyp.ps1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_1zbsualf.pyp.ps1\\",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_gegtdqx1.122.psm1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_panwwlal.f0n.ps1",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\__PSScriptPolicyTest_panwwlal.f0n.ps1\\"
+                                  ],
+                 "attack_techniques":  {
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "parse PE header",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "parse PE header"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "link function at runtime on Windows",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "link function at runtime on Windows"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1564.003":  [
+                                                             {
+                                                                 "severity":  "HIGH",
+                                                                 "description":  "powershell hidden exec"
+                                                             }
+                                                         ],
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "MEDIUM",
+                                                             "description":  "query ie security"
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Reads software policies"
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Queries the volume information (name, serial number etc) of a device"
+                                                         }
+                                                     ],
+                                           "T1059.001":  [
+                                                             {
+                                                                 "severity":  "HIGH",
+                                                                 "description":  "run powershell with ExecutionPolicy"
+                                                             },
+                                                             {
+                                                                 "severity":  "LOW",
+                                                                 "description":  "Suspicious powershell command line found"
+                                                             },
+                                                             {
+                                                                 "severity":  "LOW",
+                                                                 "description":  "Bypasses PowerShell execution policy"
+                                                             }
+                                                         ],
+                                           "T1106":  [
+                                                         {
+                                                             "severity":  "MEDIUM",
+                                                             "description":  "create new process"
+                                                         }
+                                                     ],
+                                           "T1622":  [
+                                                         {
+                                                             "severity":  "MEDIUM",
+                                                             "description":  "get time manytimes"
+                                                         }
+                                                     ],
+                                           "T1059":  [
+                                                         {
+                                                             "severity":  "MEDIUM",
+                                                             "description":  "script started by non script file"
+                                                         }
+                                                     ],
+                                           "T1055":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Spawns processes"
+                                                         }
+                                                     ],
+                                           "T1497":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "May sleep (evasive loops) to hinder dynamic analysis"
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Contains long sleeps (\u003e= 3 min)"
+                                                         }
+                                                     ],
+                                           "T1057":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Queries a list of all running processes"
+                                                         }
+                                                     ],
+                                           "T1010":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Sample monitors Window changes (e.g. starting applications), analyze the sample with the simulation cookbook"
+                                                         }
+                                                     ],
+                                           "T1095":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Performs DNS lookups"
+                                                         }
+                                                     ],
+                                           "T1071":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Performs DNS lookups"
+                                                         }
+                                                     ]
+                                       }
+             }
+}

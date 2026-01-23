@@ -1,0 +1,1904 @@
+{
+    "data":  {
+                 "signature_matches":  [
+                                           {
+                                               "id":  "0",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get geographical location",
+                                               "description":  "collection",
+                                               "authors":  [
+                                                               "moritz.raabe",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: GetLocaleInfo"
+                                                              ],
+                                               "rule_src":  "# generated using capa explorer for IDA Pro\nrule:\n  meta:\n    name: get geographical location\n    namespace: collection\n    authors:\n      - moritz.raabe\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::System Location Discovery [T1614]\n    examples:\n      - 9879D201DC5ACA863F357184CD1F170E:0x10001A99\n  features:\n    - or:\n      - api: GetLocaleInfo\n      - api: GetLocaleInfoEx\n      - api: kernel32.GetUserGeoID\n      - api: kernel32.GetGeoInfo\n      # strings part of requests or parsed from response\n      # \"geo\" and \"zip\" are too short\n      # \"region\" results in FPs mostly related to memory\n      - string: /geolocation/i\n      - string: /geo-location/i\n      - string: /^city/i\n      - string: /region_code/i\n      - string: /region_name/i\n      - string: /^country/i\n      - string: /country_code/i\n      - string: /countrycode/i\n      - string: /country_name/i\n      - string: /continent_code/i\n      - string: /continent_name/i\n      - string: /^latitude/i\n      - string: /^longitude/i\n"
+                                           },
+                                           {
+                                               "id":  "1",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contains PDB path",
+                                               "description":  "executable/pe/pdb",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "regex: /:\\\\.*\\.pdb/"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contains PDB path\n    namespace: executable/pe/pdb\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    examples:\n      - 464EF2CA59782CE697BC329713698CCC  # level32.exe\n  features:\n    - string: /:\\\\.*\\.pdb/\n"
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "link function at runtime on Windows",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: GetProcAddress"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: link function at runtime on Windows\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n      - mehunhoff@google.com\n    scopes:\n      static: instruction\n      dynamic: call\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x404130\n      - Practical Malware Analysis Lab 01-04.exe_:0x401350\n  features:\n    - and:\n      - os: windows\n      - or:\n        - api: kernel32.GetProcAddress\n        - api: ntdll.LdrGetProcedureAddress\n        - api: ntdll.LdrGetProcedureAddressEx\n        - api: ntdll.LdrGetProcedureAddressForCaller\n        - api: MmGetSystemRoutineAddress\n"
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "enumerate files on Windows",
+                                               "description":  "host-interaction/file-system/files/list",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "loop",
+                                                                  "tight loop",
+                                                                  "api: FindNextFile"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: enumerate files on Windows\n    namespace: host-interaction/file-system/files/list\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    att\u0026ck:\n      - Discovery::File and Directory Discovery [T1083]\n    mbc:\n      - Discovery::File and Directory Discovery [E1083]\n    references:\n      - https://github.com/hfiref0x/TDL/blob/cc4b46ae1c939b14a22a734a727b163f873a41b5/Source/Furutaka/sup.c#L315\n    examples:\n      - Practical Malware Analysis Lab 01-01.exe_:0x4011E0\n      - Practical Malware Analysis Lab 20-02.exe_:0x401000\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x14000203C\n  features:\n    - or:\n      - and:\n        - or:\n          - api: kernel32.FindFirstFile\n          - api: kernel32.FindFirstFileEx\n          - api: kernel32.FindFirstFileTransacted\n          - api: kernel32.FindFirstFileName\n          - api: kernel32.FindFirstFileNameTransacted\n        - or:\n          - api: kernel32.FindNextFile\n          - api: kernel32.FindNextFileName\n        - optional:\n          - api: kernel32.FindClose\n          - match: contain loop\n      - and:\n        - or:\n          - basic block:\n            - and:\n              - number: 1 = DIRECTORY_QUERY\n              - api: ntdll.NtOpenDirectoryObject\n          - call:\n            - and:\n              - number: 1 = DIRECTORY_QUERY\n              - api: ntdll.NtOpenDirectoryObject\n        - api: ntdll.NtQueryDirectoryObject\n        - optional:\n          - api: RtlAllocateHeap\n          - match: contain loop\n          - characteristic: indirect call\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/hfiref0x/TDL/blob/cc4b46ae1c939b14a22a734a727b163f873a41b5/Source/Furutaka/sup.c#L315"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "5",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse PE header",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "IMAGE_DOS_SIGNATURE (MZ)",
+                                                                  "mnemonic: cmp",
+                                                                  "IMAGE_NT_SIGNATURE (PE)"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse PE header\n    namespace: load-code/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic, operand[1].offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x403DD0\n  features:\n    - and:\n      - os: windows\n      - and:\n        - mnemonic: cmp\n        - or:\n          - number: 0x4550 = IMAGE_NT_SIGNATURE (PE)\n          - and:\n            - number: 0x50\n            - number: 0x45\n        - or:\n          - number: 0x5A4D = IMAGE_DOS_SIGNATURE (MZ)\n          - and:\n            - number: 0x4D\n            - number: 0x5A\n        - optional:\n          - and:\n            - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n            - or:\n              - and:\n                - arch: i386\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n              - and:\n                - arch: amd64\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x30 = IMAGE_NT_HEADERS64.OptionalHeader.ImageBase\n          - basic block:\n            - and:\n              - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n              - 3 or more:\n                - operand[1].offset: 0x4 = IMAGE_NT_HEADERS.FileHeader.Machine\n                - operand[1].offset: 0x6 = IMAGE_NT_HEADERS.FileHeader.NumberOfSections\n                - operand[1].offset: 0x14 = IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader\n                - operand[1].offset: 0x16 = IMAGE_NT_HEADERS.FileHeader.Characteristics\n                - operand[1].offset: 0x28 = IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint  # for 32 and 64 bit\n                - or:\n                  - and:\n                    - arch: i386\n                    - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                  - and:\n                    - arch: amd64\n                    - operand[1].offset: 0x30 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n"
+                                           },
+                                           {
+                                               "id":  "7",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "query environment variable",
+                                               "description":  "host-interaction/environment-variable",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "@_re_fox"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: GetEnvironmentStrings"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: query environment variable\n    namespace: host-interaction/environment-variable\n    authors:\n      - michael.hunhoff@mandiant.com\n      - \"@_re_fox\"\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    mbc:\n      - Discovery::System Information Discovery [E1082]\n    examples:\n      - Practical Malware Analysis Lab 14-02.exe_:0x401880\n      - 0761142efbda6c4b1e801223de723578:0x65483490\n  features:\n    - or:\n      - api: kernel32.GetEnvironmentVariable\n      - api: kernel32.GetEnvironmentStrings\n      - api: kernel32.ExpandEnvironmentStrings\n      - api: msvcr90.getenv\n      - api: msvcrt.getenv\n      - api: System.Environment::GetEnvironmentVariable\n      - api: System.Environment::GetEnvironmentVariables\n      - api: System.Environment::ExpandEnvironmentVariables\n"
+                                           },
+                                           {
+                                               "id":  "8",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write file on Windows",
+                                               "description":  "host-interaction/file-system/write",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "FILE_WRITE_DATA",
+                                                                  "api: WriteFile"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write file on Windows\n    namespace: host-interaction/file-system/write\n    authors:\n      - william.ballenthin@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - File System::Writes File [C0052]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x1400025C4\n  features:\n    - or:\n      - and:\n        - os: windows\n        - optional:\n          - basic block:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n          - call:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n        - or:\n          - api: kernel32.WriteFile\n          - api: kernel32.WriteFileEx\n          - api: NtWriteFile\n          - api: ZwWriteFile\n          - api: _fwrite\n          - api: fwrite\n      - api: System.IO.File::WriteAllBytes\n      - api: System.IO.File::WriteAllBytesAsync\n      - api: System.IO.File::WriteAllLines\n      - api: System.IO.File::WriteAllLinesAsync\n      - api: System.IO.File::WriteAllText\n      - api: System.IO.File::WriteAllTextAsync\n      - api: System.IO.File::AppendAllLines\n      - api: System.IO.File::AppendAllLinesAsync\n      - api: System.IO.File::AppendAllText\n      - api: System.IO.File::AppendAllTextAsync\n      - api: System.IO.File::AppendText\n      - api: System.IO.FileInfo::AppendText\n"
+                                           },
+                                           {
+                                               "id":  "9",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "terminate process",
+                                               "description":  "host-interaction/process/terminate",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: TerminateProcess",
+                                                                  "api: ExitProcess"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: terminate process\n    namespace: host-interaction/process/terminate\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Process::Terminate Process [C0018]\n    examples:\n      - C91887D861D9BD4A5872249B641BC9F9:0x401A77\n      - 9B7CCAA2AE6A5B96E3110EBCBC4311F6:0x10010307\n  features:\n    - or:\n      - api: System.Diagnostics.Process::Kill\n      - api: System.Diagnostics.Process::WaitForExit\n      - api: System.Diagnostics.Process::WaitForExitAsync\n      - api: System.Environment::Exit\n      - api: System.Windows.Forms.Application::Exit\n      - api: exit\n      - api: Exit\n      - and:\n        - os: linux\n        - api: exit_group\n      - and:\n        - optional:\n          - match: open process\n        - or:\n          - api: kernel32.TerminateProcess\n          - api: ntdll.NtTerminateProcess\n          - api: kernel32.ExitProcess\n"
+                                           },
+                                           {
+                                               "id":  "10",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create process on Windows",
+                                               "description":  "host-interaction/process/create",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: CreateProcess"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create process on Windows\n    namespace: host-interaction/process/create\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - Process::Create Process [C0017]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x406DB0\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      - 692f7fd6d198e804d6af98eb9e390d61:0x6000003\n  features:\n    - or:\n      - api: kernel32.WinExec\n      - api: kernel32.CreateProcess\n      - api: shell32.ShellExecute\n      - api: shell32.ShellExecuteEx\n      - api: advapi32.CreateProcessAsUser\n      - api: advapi32.CreateProcessWithLogon\n      - api: advapi32.CreateProcessWithToken\n      - api: kernel32.CreateProcessInternal\n      - api: ntdll.NtCreateUserProcess\n      - api: ntdll.NtCreateProcess\n      - api: ntdll.NtCreateProcessEx\n      - api: ntdll.ZwCreateProcess\n      - api: ZwCreateProcessEx\n      - api: ntdll.ZwCreateUserProcess\n      - api: ntdll.RtlCreateUserProcess\n      - api: System.Diagnostics.Process::Start\n"
+                                           },
+                                           {
+                                               "id":  "antivm_checks_available_memory",
+                                               "name":  "antivm_checks_available_memory",
+                                               "description":  "Checks available memory",
+                                               "match_data":  [
+                                                                  "Process WerFault.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "queries_locale_api",
+                                               "name":  "queries_locale_api",
+                                               "description":  "Queries the computer locale (possible geofencing)",
+                                               "match_data":  [
+                                                                  "Process WerFault.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "antidebug_setunhandledexceptionfilter",
+                                               "name":  "antidebug_setunhandledexceptionfilter",
+                                               "description":  "SetUnhandledExceptionFilter detected (possible anti-debug)",
+                                               "match_data":  [
+                                                                  "Process software.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "language_check_registry",
+                                               "name":  "language_check_registry",
+                                               "description":  "Checks system language via registry key (possible geofencing)",
+                                               "match_data":  [
+                                                                  "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\Nls\\CustomLocale\\en-US",
+                                                                  "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\Nls\\ExtendedLocale\\en-US"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "encrypted_ioc",
+                                               "name":  "encrypted_ioc",
+                                               "description":  "At least one IP Address, Domain, or File Name was found in a crypto call",
+                                               "match_data":  [
+                                                                  "Process WerFault.exe",
+                                                                  "x00.text",
+                                                                  "xc0.pdata"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "reads_memory_remote_process",
+                                               "name":  "reads_memory_remote_process",
+                                               "description":  "Reads from the memory of another process",
+                                               "match_data":  [
+                                                                  "Process werfault.exe with process ID 6932 read from the memory of process handle 0x000002a4",
+                                                                  "Process WerFault.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "createtoolhelp32snapshot_module_enumeration",
+                                               "name":  "createtoolhelp32snapshot_module_enumeration",
+                                               "description":  "Enumerates the modules from a process (may be used to locate base addresses in process injection)",
+                                               "match_data":  [
+                                                                  "Process WerFault.exe",
+                                                                  "pid 5200 module ntdll.dll",
+                                                                  "pid 5200 module KERNEL32.DLL"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "packer_unknown_pe_section_name",
+                                               "name":  "packer_unknown_pe_section_name",
+                                               "description":  "The binary contains an unknown PE section name indicative of packing",
+                                               "match_data":  [
+                                                                  "_RDATA"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "contains_pe_overlay",
+                                               "name":  "contains_pe_overlay",
+                                               "description":  "The PE file contains an overlay",
+                                               "match_data":  [
+                                                                  "Contains overlay at offset 0x00056200 with size: 10328 bytes"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "static_pe_pdbpath",
+                                               "name":  "static_pe_pdbpath",
+                                               "description":  "The PE file contains a suspicious PDB path",
+                                               "match_data":  [
+                                                                  "the pdb path contains a reference to a development path or term that may suggest a non-enterprise environment development/compilation",
+                                                                  "C:\\Users\\circleci\\project\\vendor\\squirrel.windows\\src\\StubExecutable\\bin\\Release\\StubExecutable.pdb"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "antivm_generic_disk",
+                                               "name":  "antivm_generic_disk",
+                                               "description":  "Queries information on disks, possibly for anti-virtualization",
+                                               "match_data":  [
+                                                                  "Process WerFault.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_MEDIUM"
+                                           },
+                                           {
+                                               "id":  "825",
+                                               "description":  "Found graphical window changes (likely an installer)",
+                                               "match_data":  [
+                                                                  "More than 3 window changes detected"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "533",
+                                               "description":  "May use bcdedit to modify the Windows boot settings",
+                                               "match_data":  [
+                                                                  "bcdedit.exe|ac227fd116781fea",
+                                                                  "c:\\windows\\system32\\bcdedit.exe",
+                                                                  "bcdedit.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "415",
+                                               "description":  "PE file has an executable .text section and no other executable section",
+                                               "match_data":  [
+                                                                  "Section: .text IMAGE_SCN_CNT_CODE, IMAGE_SCN_MEM_EXECUTE, IMAGE_SCN_MEM_READ"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "509",
+                                               "description":  "Reads software policies",
+                                               "match_data":  [
+                                                                  "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#registry_keys_opened",
+                                                                "value":  "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "description":  "AV process strings found (often used to terminate AV products)",
+                                               "match_data":  [
+                                                                  "msmpeng.exe",
+                                                                  "c:\\program files\\windows defender\\msmpeng.exe",
+                                                                  "c:\\programdata\\microsoft\\windows defender\\platform\\4.18.25010.11-0\\msmpeng.exe",
+                                                                  "MsMpEng.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "81",
+                                               "description":  "One or more processes crash",
+                                               "match_data":  [
+                                                                  "C:\\Windows\\System32\\WerFault.exe C:\\Windows\\system32\\WerFault.exe -u -p 4764 -s 204"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "620",
+                                               "description":  "Sample may be VM or Sandbox-aware, try analysis on a native machine",
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "229",
+                                               "description":  "Spawns processes",
+                                               "match_data":  [
+                                                                  "C:\\Users\\user\\Desktop\\software.exe \"C:\\Users\\user\\Desktop\\software.exe\"",
+                                                                  "C:\\Windows\\System32\\WerFault.exe C:\\Windows\\system32\\WerFault.exe -u -p 4764 -s 204"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "419",
+                                               "description":  "PE file has a high image base, often used for DLLs",
+                                               "match_data":  [
+                                                                  "Image base 0x140000000 \u003e 0x60000000"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "406",
+                                               "description":  "Contains modern PE file flags such as dynamic base (ASLR) or NX",
+                                               "match_data":  [
+                                                                  "HIGH_ENTROPY_VA, DYNAMIC_BASE, NX_COMPAT, GUARD_CF, TERMINAL_SERVER_AWARE"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "95",
+                                               "description":  "Creates mutexes",
+                                               "match_data":  [
+                                                                  "\\Sessions\\1\\BaseNamedObjects\\Local\\WERReportingForProcess4764"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "416",
+                                               "description":  "PE file contains a valid data directory to section mapping",
+                                               "match_data":  [
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_IMPORT is in: .rdata",
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_RESOURCE is in: .rsrc",
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_BASERELOC is in: .reloc",
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG is in: .rdata",
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_IAT is in: .rdata"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "203",
+                                               "description":  "Binary contains paths to debug symbols",
+                                               "match_data":  [
+                                                                  "C:\\Users\\circleci\\project\\vendor\\squirrel.windows\\src\\StubExecutable\\bin\\Release\\StubExecutable.pdb source: software.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "76",
+                                               "description":  "Checks if the current process is being debugged",
+                                               "match_data":  [
+                                                                  "DebugPort"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "199",
+                                               "description":  "PE file contains sections with non-standard names",
+                                               "match_data":  [
+                                                                  "section name: _RDATA"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "238",
+                                               "description":  "URLs found in memory or binary data",
+                                               "match_data":  [
+                                                                  "http://cacerts.digicert.com/DigiCertAssuredIDRootCA.crt0E",
+                                                                  "http://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt0",
+                                                                  "http://cacerts.digicert.com/DigiCertTrustedG4TimeStampingRSA4096SHA2562025CA1.crt0_",
+                                                                  "http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C",
+                                                                  "http://crl3.digicert.com/DigiCertAssuredIDRootCA.crl0",
+                                                                  "http://crl3.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0S",
+                                                                  "http://crl3.digicert.com/DigiCertTrustedG4TimeStampingRSA4096SHA2562025CA1.crl0",
+                                                                  "http://crl3.digicert.com/DigiCertTrustedRootG4.crl0",
+                                                                  "http://crl4.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0",
+                                                                  "http://ocsp.digicert.com0",
+                                                                  "http://ocsp.digicert.com0A",
+                                                                  "http://ocsp.digicert.com0C",
+                                                                  "http://upx.sf.net",
+                                                                  "http://www.digicert.com/CPS0",
+                                                                  "https://www.openssl.org/"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "236",
+                                               "description":  "Creates temporary files",
+                                               "match_data":  [
+                                                                  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\14bcaeae-1f1e-4a3b-9cbf-563320195aba"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "340",
+                                               "description":  "Tries to detect sandboxes and other dynamic analysis tools (process name or module or function)",
+                                               "match_data":  [
+                                                                  "JOEBOXCONTROL.EXE",
+                                                                  "C:\\PROGRAM FILES (X86)\\JOEBOX\\CONTROL\\JOEBOXCONTROL.EXES-"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "206",
+                                               "description":  "Performs DNS lookups",
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#dns_lookups",
+                                                                "value":  "DNS query: assets.msn.com"
+                                                            },
+                                                            {
+                                                                "ref":  "#dns_lookups",
+                                                                "value":  "DNS query: www.msn.com"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "177",
+                                               "description":  "Launches processes in debugging mode, may be used to hinder debugging",
+                                               "match_data":  [
+                                                                  "C:\\Windows\\System32\\WerFault.exe C:\\Windows\\system32\\WerFault.exe -u -p 4764 -s 204"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "411",
+                                               "description":  "PE file contains a mix of data directories often seen in goodware",
+                                               "match_data":  [
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_IMPORT",
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_RESOURCE",
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_BASERELOC",
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_DEBUG",
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG",
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_IAT"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "715",
+                                               "description":  "Classification label",
+                                               "match_data":  [
+                                                                  "clean17.evad.winEXE@5/4@5/0"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "381",
+                                               "description":  "Disables application error messsages (SetErrorMode)",
+                                               "match_data":  [
+                                                                  "FAILCRITICALERRORS | NOGPFAULTERRORBOX",
+                                                                  "NOOPENFILEERRORBOX"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "263",
+                                               "description":  "May try to detect the virtual machine to hinder analysis (VM artifact strings found in memory)",
+                                               "match_data":  [
+                                                                  "scsi\\diskqemu____________harddisk2.5+,scsi\\diskqemu____________harddisk,scsi\\diskqemu____,scsi\\qemu____________harddisk2,qemu____________harddisk2,gendisk",
+                                                                  "9swd/computer/mfg_qemu\u0026prod_standard_pc_(q35_+_ich9__2009)x",
+                                                                  "acpi\\ven_qemu\u0026dev_0002,acpi\\qemu0002,*qemu0002",
+                                                                  "swd/computer/mfg_qemu\u0026prod_standard_pc_(q35_+_ich9__2009)x",
+                                                                  "VMware, Inc.",
+                                                                  "scsi/disk\u0026ven_qemu\u0026prod_harddisk/4\u002635424867\u00260\u0026000000(e",
+                                                                  "QEMU HARDDISK",
+                                                                  "VirtualMachineID",
+                                                                  "\u003cSystemManufacturer\u003eQEMU\u003c/SystemManufacturer\u003e",
+                                                                  "Microsoft Hyper-V Virtualization Infrastructure Driver",
+                                                                  "QEMU USB Tablet",
+                                                                  "VMware PVSCSI StorPort driver (64-bit)",
+                                                                  "QEMU USB Tabletvk",
+                                                                  "            \u003carg nm=\"sysmfg\" val=\"QEMU\" /\u003e",
+                                                                  "BiosVendor:SeaBIOS,BiosVersion:1.15.0-1,BiosReleaseDate:04/01/2014,BiosMajorRelease:0x0,BiosMinorRelease:0x0,SystemManufacturer:QEMU,SystemProduct:Standard PC (Q35 + ICH9, 2009),SystemFamily:,SystemSK",
+                                                                  "acpi/qemu0002/3\u002611583659\u00260",
+                                                                  "QEMU Standard PC (Q35 + ICH9, 2009)",
+                                                                  "4scsi/disk\u0026ven_qemu\u0026prod_harddisk/4\u002635424867\u00260\u0026000000(e"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "1318",
+                                               "description":  "Creates a process in suspended mode (likely to inject code)",
+                                               "match_data":  [
+                                                                  "C:\\Windows\\System32\\WerFault.exe C:\\Windows\\system32\\WerFault.exe -u -p 4764 -s 204"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "404",
+                                               "description":  "PE / OLE file has a valid certificate",
+                                               "match_data":  [
+                                                                  "certificate valid"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "412",
+                                               "description":  "PE file contains a debug data directory",
+                                               "match_data":  [
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_DEBUG"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "629",
+                                               "description":  "Sample crashes during execution, try analyze it on another analysis machine",
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           }
+                                       ],
+                 "memory_dumps":  [
+                                      {
+                                          "file_name":  "6932.dmp",
+                                          "process":  "C:\\Windows\\System32\\WerFault.exe",
+                                          "size":  "1777664",
+                                          "base_address":  "2147352576"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000002.4217953138.00007FF696EE8000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "147456",
+                                          "base_address":  "140697070895104",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000002.4211689328.00000231487B4000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "86016",
+                                          "base_address":  "2410692689920",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000000.2990804038.00007FF696EE8000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "147456",
+                                          "base_address":  "140697070895104",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000002.4217037318.00007FF696ED4000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "65536",
+                                          "base_address":  "140697070813184",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000002.4211689328.00000231487B0000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "12288",
+                                          "base_address":  "2410692673536",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000002.4209159840.000000DC6F4FF000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "4096",
+                                          "base_address":  "946760314880",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000000.2990664704.00007FF696ED4000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "65536",
+                                          "base_address":  "140697070813184",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000000.2990545892.00007FF696EB1000.00000020.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "143360",
+                                          "base_address":  "140697070669824",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000002.4216022276.00007FF696EB1000.00000020.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "143360",
+                                          "base_address":  "140697070669824",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000002.4217805737.00007FF696EE4000.00000004.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "16384",
+                                          "base_address":  "140697070878720",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000000.2990739685.00007FF696EE4000.00000008.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "8192",
+                                          "base_address":  "140697070878720",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000002.4213725133.00000231488B0000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2410693722112",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000000.2990150610.00007FF696EB0000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "4096",
+                                          "base_address":  "140697070665728",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000002.4214680823.00007FF696EB0000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "4096",
+                                          "base_address":  "140697070665728",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000002.4208393020.000000DC6F2FA000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "24576",
+                                          "base_address":  "946758197248",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000002.4208494279.000000DC6F3FF000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "4096",
+                                          "base_address":  "946759266304",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4764"
+                                      },
+                                      {
+                                          "file_name":  "00000002.00000002.4210639518.00000231486E0000.00000004.00000020.00040000.0000000F.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\software.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2410691821568",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4764"
+                                      }
+                                  ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "5200",
+                                            "name":  "\"C:\\Users\\\u003cUSER\u003e\\Desktop\\software.exe\"",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "6932",
+                                                                 "name":  "C:\\Windows\\system32\\WerFault.exe -u -p 5200 -s 488",
+                                                                 "files_written":  [
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\eb64ec06-fe42-4d37-8897-1917a90083b2",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\272b3ce1-4933-4f06-85be-289189cb476e",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\251a7004-9efd-404f-94b4-b14e397ccdb3",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\1681cd02-e623-4f37-8328-4a30cc2d8e65",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive\\695742ae-55ec-48f5-a530-4e0426898a27",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue\\8a79999f-1fc5-405f-98bd-2c464c7cb1d2",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERDB4C.tmp.dmp",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE63A.tmp.WERInternalMetadata.xml",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE8AC.tmp.xml"
+                                                                                   ],
+                                                                 "files_deleted":  [
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERDB4C.tmp",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE63A.tmp",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE8AC.tmp",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERDB4C.tmp.dmp",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE63A.tmp.WERInternalMetadata.xml",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE8AC.tmp.xml"
+                                                                                   ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "3032",
+                                            "name":  "%WINDIR%\\explorer.exe",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2840",
+                                                                 "name":  "%SAMPLEPATH%\\13de99977285752f1bdd3dc5951cab67372e50aed084bc3215cb857ce7589263.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "2760",
+                                                                                      "name":  "C:\\Windows\\System32\\WerFault.exe"
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "4764",
+                                            "name":  "\"C:\\Users\\user\\Desktop\\software.exe\"",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "5896",
+                                                                 "name":  "C:\\Windows\\System32\\WerFault.exe C:\\Windows\\system32\\WerFault.exe -u -p 4764 -s 204",
+                                                                 "files_opened":  [
+                                                                                      "C:\\ProgramData\\Microsoft\\",
+                                                                                      "C:\\ProgramData\\Microsoft\\Windows\\",
+                                                                                      "C:\\ProgramData\\Microsoft\\Windows\\WER",
+                                                                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\",
+                                                                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive",
+                                                                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue",
+                                                                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp",
+                                                                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.12bc3d63-2da9-4467-9cce-9f2a4a31d98c.tmp.xml",
+                                                                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.1d8efcfc-9940-4826-87eb-b79c49a2e648.tmp.WERInternalMetadata.xml",
+                                                                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.291fe7dd-a277-4b91-844d-c8c14a90e453.tmp.txt",
+                                                                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.41229b4d-3b95-4967-9235-a3b91e8fc763.tmp.dmp",
+                                                                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.447511c9-9f88-41d4-90fd-d1b580b9eb06.tmp.csv",
+                                                                                      "C:\\Users\\user\\AppData\\Roaming\\Microsoft\\SystemCertificates\\My\\AppContainerUserCertRead",
+                                                                                      "C:\\Users\\user\\AppData\\Roaming\\Microsoft\\SystemCertificates\\My\\CRLs\\",
+                                                                                      "C:\\Users\\user\\AppData\\Roaming\\Microsoft\\SystemCertificates\\My\\CTLs\\",
+                                                                                      "C:\\Users\\user\\AppData\\Roaming\\Microsoft\\SystemCertificates\\My\\Certificates\\",
+                                                                                      "C:\\Users\\user\\Desktop\\software.exe",
+                                                                                      "C:\\Users\\user\\SystemResources\\software.exe.mun",
+                                                                                      "C:\\Windows\\SYSTEM32\\",
+                                                                                      "C:\\Windows\\SYSTEM32\\ServicingCommon.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\aepic.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\cfgmgr32.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\coreprivacysettingsstore.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\en-US\\ntdll.dll.mui",
+                                                                                      "C:\\Windows\\SYSTEM32\\en-US\\tzres.dll.mui",
+                                                                                      "C:\\Windows\\SYSTEM32\\kernel.appcore.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\msvcp110_win.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\ntdll.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\ntmarta.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\ole32.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\policymanager.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\powrprof.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\rmclient.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\sfc.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\sfc_os.DLL",
+                                                                                      "C:\\Windows\\SYSTEM32\\tzres.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\windows.storage.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\wintypes.dll",
+                                                                                      "C:\\Windows\\System32\\",
+                                                                                      "C:\\Windows\\System32\\FlightSettings.dll",
+                                                                                      "C:\\Windows\\System32\\GDI32.dll",
+                                                                                      "C:\\Windows\\System32\\IMM32.DLL",
+                                                                                      "C:\\Windows\\System32\\KERNEL32.DLL",
+                                                                                      "C:\\Windows\\System32\\KERNELBASE.dll",
+                                                                                      "C:\\Windows\\System32\\OneCoreUAPCommonProxyStub.dll",
+                                                                                      "C:\\Windows\\System32\\USER32.dll",
+                                                                                      "C:\\Windows\\System32\\Windows.Security.Authentication.OnlineId.dll",
+                                                                                      "C:\\Windows\\System32\\en-US\\KERNEL32.DLL.mui",
+                                                                                      "C:\\Windows\\System32\\en-US\\KERNELBASE.dll.mui",
+                                                                                      "C:\\Windows\\System32\\en-US\\USER32.dll.mui"
+                                                                                  ],
+                                                                 "files_written":  [
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive\\d7d5b3de-7d75-446c-8a94-5dea5ec11038",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue\\dd47bd22-d45f-41a9-bcd2-eaf0b74c318d",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\14bcaeae-1f1e-4a3b-9cbf-563320195aba",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\8aa5b3a4-a1f2-4699-a75b-59c1780700ab",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.12bc3d63-2da9-4467-9cce-9f2a4a31d98c.tmp.xml",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.1d8efcfc-9940-4826-87eb-b79c49a2e648.tmp.WERInternalMetadata.xml",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.41229b4d-3b95-4967-9235-a3b91e8fc763.tmp.dmp",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\c5e11d14-d7c0-4040-8b7b-34a6b3a7b9ea",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\e8bccfc9-a3ea-4b90-94a0-52b7bfb51ab0"
+                                                                                   ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "6176",
+                                                                 "name":  "C:\\Windows\\System32\\WerFault.exe C:\\Windows\\system32\\WerFault.exe -u -p 4764 -s 204",
+                                                                 "files_written":  [
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\300d1e03-36a9-4000-b4b8-a3caf56855c4",
+                                                                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\d45c503d-1f58-4155-97ca-c622c62c6159"
+                                                                                   ]
+                                                             }
+                                                         ],
+                                            "files_opened":  [
+                                                                 "C:\\Windows\\Globalization\\Sorting\\sortdefault.nls",
+                                                                 "C:\\Windows\\system32\\IMM32.DLL"
+                                                             ]
+                                        }
+                                    ],
+                 "mbc":  [
+                             {
+                                 "id":  "E1083",
+                                 "objective":  "Discovery",
+                                 "behavior":  "File and Directory Discovery",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "3"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1082",
+                                 "objective":  "Discovery",
+                                 "behavior":  "System Information Discovery",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "7"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0052",
+                                 "objective":  "File System",
+                                 "behavior":  "Writes File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "8"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0018",
+                                 "objective":  "Process",
+                                 "behavior":  "Terminate Process",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "9"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0017",
+                                 "objective":  "Process",
+                                 "behavior":  "Create Process",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "10"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "OC0006"
+                             },
+                             {
+                                 "id":  "C0002"
+                             },
+                             {
+                                 "id":  "OB0001"
+                             },
+                             {
+                                 "id":  "B0009"
+                             },
+                             {
+                                 "id":  "B0009.005"
+                             },
+                             {
+                                 "id":  "OB0007"
+                             },
+                             {
+                                 "id":  "E1082"
+                             },
+                             {
+                                 "id":  "OC0008"
+                             },
+                             {
+                                 "id":  "C0036"
+                             },
+                             {
+                                 "id":  "C0036.005"
+                             },
+                             {
+                                 "id":  "OB0002"
+                             },
+                             {
+                                 "id":  "OB0006"
+                             },
+                             {
+                                 "id":  "F0001"
+                             }
+                         ],
+                 "processes_terminated":  [
+                                              "C:\\Windows\\System32\\WerFault.exe"
+                                          ],
+                 "registry_keys_opened":  [
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\TraceFlags",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\DataCollection",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\SQMClient",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\Consent",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LiveReportFlushInterval",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\BypassNetworkCostThrottling",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DisableArchive",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\CabArchiveFolder",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\MinQueueSize",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\Windows Error Reporting\\Debug",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection\\DisableTelemetryOptInSettingsUx",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\UploadOnFreeNetworksOnly",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\Disabled",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DeferCabUpload",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\Windows Error Reporting\\Consent",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DontShowUI",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\MaxRetriesForSasRenewal",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SQMClient",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DontSendAdditionalData",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\Lsa\\FipsAlgorithmPolicy\\Enabled",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection\\AllowTelemetry",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\MaxQueueCount",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\Consent",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\ConfigureArchive",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DisableWerUpload",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\Windows Error Reporting",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection\\AllowTelemetry",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\ForceUserModeCabCollection",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\AutoApproveOSDumps",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\Consent\\NewUserDefaultConsent",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\QueueSizeMaxPercentFreeDisk",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\PolicyManager\\default\\System\\ConfigureTelemetryOptInSettingsUx\\grouppolicyismultisz",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\ForceMetadata",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\Lsa\\FipsAlgorithmPolicy\\STE",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\ArchiveFolderCountLimit",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\ForceEtw",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\QueueNoPesterInterval",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\BypassPowerThrottling",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\ForceQueue",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\CorporateWerPortNumber",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\PolicyManager\\default\\System\\ConfigureTelemetryOptInSettingsUx\\ADMXMetadataUser",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\User",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SQMClient\\IsTest",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\Lsa\\FipsAlgorithmPolicy",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\PolicyManager\\default\\System\\ConfigureTelemetryOptInSettingsUx\\ADMXMetadataBoth",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\NoHeapDumpOnQueue",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DontSendAdditionalData",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\CorporateWerServer",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\PolicyManager\\current\\Device\\System",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\BypassPowerThrottling",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\PolicyManager\\default\\System\\ConfigureTelemetryOptInSettingsUx\\ADMXMetadataDevice",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DontShowUI",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\ForceUserModeCabCollection",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\CorporateWerUploadOnFreeNetworksOnly",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DisableEnterpriseAuthProxy",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\BypassDataThrottling",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\CorporateWerUseAuthentication",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\AutoApproveOSDumps",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\ForceHeapDump",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\MinFreeDiskSpace",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LocalCompression",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\Consent\\DefaultConsent",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\QueueNoPesterInterval",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\PolicyManager\\default\\System\\ConfigureTelemetryOptInSettingsUx\\grouppolicypath",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\Source",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\Consent\\DefaultOverrideBehavior",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\Windows Error Reporting",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\CabArchiveCreate",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\PolicyManager\\default\\System\\ConfigureTelemetryOptInSettingsUx\\RegKeyPathRedirect",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\PolicyManager\\default\\System\\ConfigureTelemetryOptInSettingsUx\\grouppolicymultiszSeparatorChar",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\CabArchiveSeparate",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LoggingDisabled",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\PolicyManager\\default\\System\\ConfigureTelemetryOptInSettingsUx",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\PolicyManager\\default\\System\\ConfigureTelemetryOptInSettingsUx\\Behavior",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\PolicyManager\\default\\System\\ConfigureTelemetryOptInSettingsUx\\MergeAlgorithm",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LiveReportFlushInterval",
+                                              "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\Windows\\Windows Error Reporting",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\MaxArchiveCount",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\PolicyManager\\default\\System\\ConfigureTelemetryOptInSettingsUx\\RegKeyPathRedirectMapped",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\NoReflection",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\Session Manager\\ResourcePolicies",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\QueuePesterInterval",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\BypassDataThrottling",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\DebugApplications",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\Windows Error Reporting\\Consent",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\PolicyManager\\default\\System\\ConfigureTelemetryOptInSettingsUx\\Value",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\Lsa\\FipsAlgorithmPolicy\\MDMEnabled",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\PolicyManager\\default\\System\\ConfigureTelemetryOptInSettingsUx\\PolicyType",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\CorporateWerUseSSL",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection\\Users",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\BypassNetworkCostThrottling",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\SQMClient\\MSFTInternal",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\QueuePesterInterval",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\AppsUseLightTheme",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LoggingDisabled",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\StorePath",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\PolicyManager\\default\\System\\ConfigureTelemetryOptInSettingsUx\\grouppolicyname",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\Windows Error Reporting",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\DeviceAccess",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CPSS\\NULL",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\WindowsSelfHost\\FIDs\\ByFID",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\GRE_Initialize",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\Display",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\WindowsSelfhost\\FIDs",
+                                              "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\WerFault.exe",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Flighting\\Build",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CPSS\\Edition\\DevicePolicy\\AllowTelemetry",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CPSS\\DevicePolicy\\AllowTelemetry\\NULL",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CPSS",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\IdentityCRL\\ClockData",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows NT\\CurrentVersion",
+                                              "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\MUI\\Settings",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Segment Heap",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CPSS\\DevicePolicy\\AllowTelemetry",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CPSS\\Store\\AllowTelemetry",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Wow64\\x86\\xtajit",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\WindowsSelfHost\\FIDs\\Unknown",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\SideBySide",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\software.exe",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\CPSS\\Store"
+                                          ],
+                 "tags":  [
+                              "OBFUSCATED",
+                              "DETECT_DEBUG_ENVIRONMENT"
+                          ],
+                 "command_executions":  [
+                                            "C:\\Windows\\system32\\WerFault.exe -u -p 5200 -s 488",
+                                            "\"%SAMPLEPATH%\\13de99977285752f1bdd3dc5951cab67372e50aed084bc3215cb857ce7589263.exe\" ",
+                                            "C:\\Windows\\system32\\WerFault.exe -u -p 2840 -s 148",
+                                            "C:\\Windows\\system32\\WerFault.exe -u -p 4064 -s 148"
+                                        ],
+                 "text_highlighted":  [
+                                          "Postman",
+                                          "Check online for a solution and close the program"
+                                      ],
+                 "calls_highlighted":  [
+                                           "NtSuspendProcess",
+                                           "NtResumeProcess"
+                                       ],
+                 "files_opened":  [
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\eb64ec06-fe42-4d37-8897-1917a90083b2",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\272b3ce1-4933-4f06-85be-289189cb476e",
+                                      "C:\\Users\\\u003cUSER\u003e\\Desktop\\software.exe",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\251a7004-9efd-404f-94b4-b14e397ccdb3",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\1681cd02-e623-4f37-8328-4a30cc2d8e65",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive\\695742ae-55ec-48f5-a530-4e0426898a27",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue\\8a79999f-1fc5-405f-98bd-2c464c7cb1d2",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERDB4C.tmp",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERDB4C.tmp.dmp",
+                                      "C:\\ProgramData\\Microsoft\\Windows",
+                                      "C:\\Users\\\u003cUSER\u003e\\Desktop",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE63A.tmp",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE63A.tmp.WERInternalMetadata.xml",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE8AC.tmp",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE8AC.tmp.xml",
+                                      "C:\\ProgramData\\Microsoft\\",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.12bc3d63-2da9-4467-9cce-9f2a4a31d98c.tmp.xml",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.1d8efcfc-9940-4826-87eb-b79c49a2e648.tmp.WERInternalMetadata.xml",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.291fe7dd-a277-4b91-844d-c8c14a90e453.tmp.txt",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.41229b4d-3b95-4967-9235-a3b91e8fc763.tmp.dmp",
+                                      "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.447511c9-9f88-41d4-90fd-d1b580b9eb06.tmp.csv",
+                                      "C:\\Users\\user\\AppData\\Roaming\\Microsoft\\SystemCertificates\\My\\AppContainerUserCertRead",
+                                      "C:\\Users\\user\\AppData\\Roaming\\Microsoft\\SystemCertificates\\My\\CRLs\\",
+                                      "C:\\Users\\user\\AppData\\Roaming\\Microsoft\\SystemCertificates\\My\\CTLs\\",
+                                      "C:\\Users\\user\\AppData\\Roaming\\Microsoft\\SystemCertificates\\My\\Certificates\\",
+                                      "C:\\Users\\user\\Desktop\\software.exe",
+                                      "C:\\Users\\user\\SystemResources\\software.exe.mun",
+                                      "C:\\Windows\\Globalization\\Sorting\\sortdefault.nls",
+                                      "C:\\Windows\\SYSTEM32\\",
+                                      "C:\\Windows\\SYSTEM32\\ServicingCommon.dll",
+                                      "C:\\Windows\\SYSTEM32\\aepic.dll",
+                                      "C:\\Windows\\SYSTEM32\\cfgmgr32.dll",
+                                      "C:\\Windows\\SYSTEM32\\coreprivacysettingsstore.dll",
+                                      "C:\\Windows\\SYSTEM32\\en-US\\ntdll.dll.mui",
+                                      "C:\\Windows\\SYSTEM32\\en-US\\tzres.dll.mui",
+                                      "C:\\Windows\\SYSTEM32\\kernel.appcore.dll",
+                                      "C:\\Windows\\SYSTEM32\\msvcp110_win.dll",
+                                      "C:\\Windows\\SYSTEM32\\ntdll.dll",
+                                      "C:\\Windows\\SYSTEM32\\ntmarta.dll",
+                                      "C:\\Windows\\SYSTEM32\\ole32.dll",
+                                      "C:\\Windows\\SYSTEM32\\policymanager.dll",
+                                      "C:\\Windows\\SYSTEM32\\powrprof.dll",
+                                      "C:\\Windows\\SYSTEM32\\rmclient.dll",
+                                      "C:\\Windows\\SYSTEM32\\sfc.dll",
+                                      "C:\\Windows\\SYSTEM32\\sfc_os.DLL",
+                                      "C:\\Windows\\SYSTEM32\\tzres.dll",
+                                      "C:\\Windows\\SYSTEM32\\windows.storage.dll",
+                                      "C:\\Windows\\SYSTEM32\\wintypes.dll",
+                                      "C:\\Windows\\System32\\",
+                                      "C:\\Windows\\System32\\FlightSettings.dll",
+                                      "C:\\Windows\\System32\\GDI32.dll",
+                                      "C:\\Windows\\System32\\IMM32.DLL",
+                                      "C:\\Windows\\System32\\KERNEL32.DLL",
+                                      "C:\\Windows\\System32\\KERNELBASE.dll",
+                                      "C:\\Windows\\System32\\OneCoreUAPCommonProxyStub.dll",
+                                      "C:\\Windows\\System32\\USER32.dll",
+                                      "C:\\Windows\\System32\\Windows.Security.Authentication.OnlineId.dll",
+                                      "C:\\Windows\\System32\\en-US\\KERNEL32.DLL.mui",
+                                      "C:\\Windows\\System32\\en-US\\KERNELBASE.dll.mui",
+                                      "C:\\Windows\\System32\\en-US\\USER32.dll.mui",
+                                      "C:\\Windows\\System32\\en-US\\sechost.dll.mui",
+                                      "C:\\Windows\\System32\\fcon.dll",
+                                      "C:\\Windows\\System32\\gdi32full.dll",
+                                      "C:\\Windows\\System32\\msvcp110_win.dll",
+                                      "C:\\Windows\\System32\\msvcp_win.dll",
+                                      "C:\\Windows\\System32\\netprofm.dll",
+                                      "C:\\Windows\\System32\\npmproxy.dll",
+                                      "C:\\Windows\\System32\\sechost.dll",
+                                      "C:\\Windows\\System32\\twinapi.appcore.dll",
+                                      "C:\\Windows\\System32\\ucrtbase.dll",
+                                      "C:\\Windows\\System32\\win32u.dll",
+                                      "C:\\Windows\\SystemResources\\GDI32.dll.mun",
+                                      "C:\\Windows\\SystemResources\\IMM32.DLL.mun",
+                                      "C:\\Windows\\SystemResources\\gdi32full.dll.mun",
+                                      "C:\\Windows\\SystemResources\\msvcp_win.dll.mun",
+                                      "C:\\Windows\\SystemResources\\ucrtbase.dll.mun",
+                                      "C:\\Windows\\SystemResources\\win32u.dll.mun",
+                                      "C:\\Windows\\WinSxS\\FileMaps\\users_user_desktop_84957807ad857b18.cdf-ms",
+                                      "C:\\Windows\\WinSxS\\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.22621.2361_none_2712ced57382f843",
+                                      "C:\\Windows\\WinSxS\\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.22621.2361_none_2712ced57382f843\\Comctl32.dll",
+                                      "C:\\Windows\\system32\\",
+                                      "C:\\Windows\\system32\\CRYPTBASE.dll",
+                                      "C:\\Windows\\system32\\CRYPTSP.dll",
+                                      "C:\\Windows\\system32\\DPAPI.DLL",
+                                      "C:\\Windows\\system32\\DSREG.DLL",
+                                      "C:\\Windows\\system32\\DiagnosticDataSettings.dll",
+                                      "C:\\Windows\\system32\\IMM32.DLL",
+                                      "C:\\Windows\\system32\\NETAPI32.dll",
+                                      "C:\\Windows\\system32\\UMPDC.dll",
+                                      "C:\\Windows\\system32\\XmlLite.dll",
+                                      "C:\\Windows\\system32\\bcrypt.dll",
+                                      "C:\\Windows\\system32\\dbgcore.DLL",
+                                      "C:\\Windows\\system32\\dbghelp.dll",
+                                      "C:\\Windows\\system32\\drivers\\",
+                                      "C:\\Windows\\system32\\en-US\\WerFault.exe.mui",
+                                      "C:\\Windows\\system32\\en-US\\faultrep.dll.mui",
+                                      "C:\\Windows\\system32\\en-US\\wer.dll.mui",
+                                      "C:\\Windows\\system32\\faultrep.dll",
+                                      "C:\\Windows\\system32\\profapi.dll",
+                                      "C:\\Windows\\system32\\rpcss.dll",
+                                      "C:\\Windows\\system32\\rsaenh.dll",
+                                      "C:\\Windows\\system32\\uxtheme.dll",
+                                      "C:\\Windows\\system32\\verifier.dll",
+                                      "C:\\Windows\\system32\\version.dll",
+                                      "C:\\Windows\\system32\\wer.dll",
+                                      "C:\\Windows\\system32\\wer.dll.3.Manifest",
+                                      "MountPointManager",
+                                      "c:\\users\\user\\desktop\\",
+                                      "c:\\users\\user\\desktop\\software.exe"
+                                  ],
+                 "memory_pattern_urls":  [
+                                             "http://upx.sf.net",
+                                             "https://www.openssl.org/"
+                                         ],
+                 "verdicts":  [
+                                  "CLEAN"
+                              ],
+                 "files_deleted":  [
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERDB4C.tmp",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE63A.tmp",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE8AC.tmp",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERDB4C.tmp.dmp",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE63A.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE8AC.tmp.xml"
+                                   ],
+                 "modules_loaded":  [
+                                        "NTDLL.DLL",
+                                        "%SAMPLEPATH%\\13de99977285752f1bdd3dc5951cab67372e50aed084bc3215cb857ce7589263.exe",
+                                        "api-ms-win-core-synch-l1-2-0",
+                                        "api-ms-win-core-fibers-l1-1-1",
+                                        "kernel32"
+                                    ],
+                 "files_written":  [
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\eb64ec06-fe42-4d37-8897-1917a90083b2",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\272b3ce1-4933-4f06-85be-289189cb476e",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\251a7004-9efd-404f-94b4-b14e397ccdb3",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\1681cd02-e623-4f37-8328-4a30cc2d8e65",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive\\695742ae-55ec-48f5-a530-4e0426898a27",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue\\8a79999f-1fc5-405f-98bd-2c464c7cb1d2",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERDB4C.tmp.dmp",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE63A.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERE8AC.tmp.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportArchive\\d7d5b3de-7d75-446c-8a94-5dea5ec11038",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\ReportQueue\\dd47bd22-d45f-41a9-bcd2-eaf0b74c318d",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\14bcaeae-1f1e-4a3b-9cbf-563320195aba",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\300d1e03-36a9-4000-b4b8-a3caf56855c4",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\8aa5b3a4-a1f2-4699-a75b-59c1780700ab",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.12bc3d63-2da9-4467-9cce-9f2a4a31d98c.tmp.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.1d8efcfc-9940-4826-87eb-b79c49a2e648.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.41229b4d-3b95-4967-9235-a3b91e8fc763.tmp.dmp",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\c5e11d14-d7c0-4040-8b7b-34a6b3a7b9ea",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\d45c503d-1f58-4155-97ca-c622c62c6159",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\e8bccfc9-a3ea-4b90-94a0-52b7bfb51ab0"
+                                   ],
+                 "processes_created":  [
+                                           "\"C:\\Users\\\u003cUSER\u003e\\Desktop\\software.exe\"",
+                                           "C:\\Windows\\system32\\WerFault.exe -u -p 5200 -s 488",
+                                           "%SAMPLEPATH%\\13de99977285752f1bdd3dc5951cab67372e50aed084bc3215cb857ce7589263.exe",
+                                           "C:\\Windows\\System32\\WerFault.exe",
+                                           "\"C:\\Users\\user\\Desktop\\software.exe\"",
+                                           "C:\\Windows\\System32\\WerFault.exe C:\\Windows\\system32\\WerFault.exe -u -p 4764 -s 204"
+                                       ],
+                 "verdict_confidence":  83,
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "www.microsoft.com",
+                                         "resolved_ips":  [
+                                                              "184.27.218.92"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "assets.msn.com",
+                                         "resolved_ips":  [
+                                                              "23.64.112.181",
+                                                              "23.64.112.141",
+                                                              "23.64.112.191",
+                                                              "23.64.112.160",
+                                                              "23.64.112.135",
+                                                              "23.195.81.59",
+                                                              "23.195.81.72"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "assets.msn.com-ion.edgesuite.net"
+                                     },
+                                     {
+                                         "hostname":  "a1666.dscr.akamai.net",
+                                         "resolved_ips":  [
+                                                              "23.195.81.59",
+                                                              "23.195.81.72",
+                                                              "23.64.112.135",
+                                                              "23.64.112.191",
+                                                              "23.64.112.160",
+                                                              "23.64.112.181",
+                                                              "23.64.112.141"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "ecs-office.s-0005.dual-s-msedge.net"
+                                     },
+                                     {
+                                         "hostname":  "shed.s-0005.dual-s-dc-msedge.net"
+                                     },
+                                     {
+                                         "hostname":  "s-0005.dual-s-dc-msedge.net",
+                                         "resolved_ips":  [
+                                                              "52.123.130.14",
+                                                              "52.123.131.14"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "svc.ha-teams.office.com"
+                                     },
+                                     {
+                                         "hostname":  "teams-mrc-ww-perf.tm-4.office.com",
+                                         "resolved_ips":  [
+                                                              "52.123.250.181",
+                                                              "52.123.250.180",
+                                                              "52.123.250.137",
+                                                              "52.123.250.133",
+                                                              "52.123.250.145",
+                                                              "52.123.250.136",
+                                                              "52.123.250.168",
+                                                              "52.123.250.162"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "www.msn.com",
+                                         "resolved_ips":  [
+                                                              "23.197.16.29"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "www.msn.com.edgekey.net"
+                                     },
+                                     {
+                                         "hostname":  "e592.d.akamaiedge.net",
+                                         "resolved_ips":  [
+                                                              "23.197.16.29"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "nexusrules.officeapps.live.com",
+                                         "resolved_ips":  [
+                                                              "52.111.229.19"
+                                                          ]
+                                     }
+                                 ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1614",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get geographical location",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "0"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "link function at runtime on Windows",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "2"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "enumerate files on Windows",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "3"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "parse PE header",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "5"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "query environment variable",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "7"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "The binary contains an unknown PE section name indicative of packing",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "packer_unknown_pe_section_name"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027.002",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "The binary contains an unknown PE section name indicative of packing",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "packer_unknown_pe_section_name"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Checks available memory",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "antivm_checks_available_memory"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1057",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Enumerates the modules from a process (may be used to locate base addresses in process injection)",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "createtoolhelp32snapshot_module_enumeration"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "The PE file contains an overlay",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "contains_pe_overlay"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "At least one IP Address, Domain, or File Name was found in a crypto call",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encrypted_ioc"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Reads from the memory of another process",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "reads_memory_remote_process"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "The PE file contains a suspicious PDB path",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "static_pe_pdbpath"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1542.003",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "May use bcdedit to modify the Windows boot settings",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "533"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1562.001",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Launches processes in debugging mode, may be used to hinder debugging",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "177"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1497",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Checks if the current process is being debugged",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "76"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1518.001",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Checks if the current process is being debugged",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "76"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "registry_keys_deleted":  [
+                                               "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\PermissionsCheckTestKey"
+                                           ],
+                 "memory_pattern_domains":  [
+                                                "upx.sf.net",
+                                                "www.openssl.org"
+                                            ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "a83f:8110:0:0:b00:b00:2800:1800",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "192.168.0.44",
+                                        "destination_port":  137,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "23.46.228.107",
+                                        "destination_port":  80,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "184.27.218.92",
+                                        "destination_port":  80,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "a83f:8110:4327:dc01:beac:bf78:cce1:d301",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "192.168.0.3",
+                                        "destination_port":  137,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "23.53.122.135",
+                                        "destination_port":  80,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "registry_keys_set":  [
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\WritePermissionsCheck",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\ProgramId",
+                                               "value":  "000657f737b7a676baaac94ccc93f9dd51d100000904"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\FileId",
+                                               "value":  "0000dbab09cc2ec6d3bb6ef0419b37c418d5479fe489"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\LowerCaseLongPath",
+                                               "value":  "c:\\users\\bruno\\desktop\\software.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\LongPathHash",
+                                               "value":  "software.exe|385d14e1dacf47da"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\Name",
+                                               "value":  "software.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\Publisher",
+                                               "value":  "postman"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\Version",
+                                               "value":  "11.61.7"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\BinFileVersion",
+                                               "value":  "11.61.7.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\BinaryType",
+                                               "value":  "pe64_amd64"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\ProductName",
+                                               "value":  "postman"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\ProductVersion",
+                                               "value":  "11.61.7"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\LinkDate",
+                                               "value":  "08/19/2025 11:04:22"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\BinProductVersion",
+                                               "value":  "11.61.7.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\Size",
+                                               "value":  "X\\x8a\\x05\\x00\\x00\\x00\\x00\\x00"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\Language",
+                                               "value":  "1033"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{7427acd5-f63d-3416-734b-4d8de7b354c6}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\Usn",
+                                               "value":  "\\xa0\\x9dR\\x0e\\x00\\x00\\x00\\x00"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\PermissionsCheckTestKey"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\ProgramId",
+                                               "value":  "000657f737b7a676baaac94ccc93f9dd51d100000904"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\FileId",
+                                               "value":  "0000dbab09cc2ec6d3bb6ef0419b37c418d5479fe489"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\LowerCaseLongPath",
+                                               "value":  "c:\\users\\user\\desktop\\software.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\Name",
+                                               "value":  "software.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\Publisher",
+                                               "value":  "postman"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\Version",
+                                               "value":  "11.61.7"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\BinFileVersion",
+                                               "value":  "11.61.7.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\BinaryType",
+                                               "value":  "pe64_amd64"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\ProductName",
+                                               "value":  "postman"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\ProductVersion",
+                                               "value":  "11.61.7"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\LinkDate",
+                                               "value":  "08/19/2025 11:04:22"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\BinProductVersion",
+                                               "value":  "11.61.7.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\Size",
+                                               "value":  "58 8A 05 00 00 00 00 00 "
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\Language",
+                                               "value":  "1033"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{56462c80-443d-6a0e-c587-465ef8299739}\\Root\\InventoryApplicationFile\\software.exe|385d14e1dacf47da\\Usn",
+                                               "value":  "00 2D B6 0F 00 00 00 00 "
+                                           }
+                                       ],
+                 "mutexes_created":  [
+                                         "Local\\WERReportingForProcess5200",
+                                         "Global\\AmiProviderMutex_InventoryApplicationFile",
+                                         "Global\\4ec032ab-d605-44ee-94e9-55b1f031769b",
+                                         "\\Sessions\\1\\BaseNamedObjects\\Local\\WERReportingForProcess4764",
+                                         "\\Sessions\\1\\BaseNamedObjects\\InventorySynchronizationInventoryApplicationFileMutex5896",
+                                         "\\Sessions\\1\\BaseNamedObjects\\Global\\a556852d-f5ea-460e-9189-ba382916a63e"
+                                     ],
+                 "files_dropped":  [
+                                       {
+                                           "path":  "%USERPROFILE%\\AppData\\Local\\DBG"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.12bc3d63-2da9-4467-9cce-9f2a4a31d98c.tmp.xml",
+                                           "sha256":  "64ed819f8b79b706dc735ea36e4b7db50e3960c493671f9773967e6b897d9fc5",
+                                           "type":  "XML",
+                                           "process_name":  "C:\\Windows\\System32\\WerFault.exe",
+                                           "process_id":  "5896"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER.1d8efcfc-9940-4826-87eb-b79c49a2e648.tmp.WERInternalMetadata.xml",
+                                           "sha256":  "42b370249b6b3e31618314f073464267bd4b57fff414bcf92d78140f48dab551",
+                                           "type":  "XML",
+                                           "process_name":  "C:\\Windows\\System32\\WerFault.exe",
+                                           "process_id":  "5896"
+                                       }
+                                   ],
+                 "attack_techniques":  {
+                                           "T1614":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get geographical location",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "0"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "link function at runtime on Windows",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "2"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "parse PE header",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "5"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1083":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "enumerate files on Windows",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "3"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "query environment variable",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "7"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Checks available memory",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "antivm_checks_available_memory"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "The binary contains an unknown PE section name indicative of packing",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "packer_unknown_pe_section_name"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027.002":  [
+                                                             {
+                                                                 "severity":  "LOW",
+                                                                 "description":  "The binary contains an unknown PE section name indicative of packing",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "packer_unknown_pe_section_name"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1057":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "Enumerates the modules from a process (may be used to locate base addresses in process injection)",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "createtoolhelp32snapshot_module_enumeration"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1071":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "The PE file contains an overlay",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "contains_pe_overlay"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "At least one IP Address, Domain, or File Name was found in a crypto call",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encrypted_ioc"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "Reads from the memory of another process",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "reads_memory_remote_process"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "The PE file contains a suspicious PDB path",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "static_pe_pdbpath"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1542.003":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "May use bcdedit to modify the Windows boot settings",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "533"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1562.001":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Launches processes in debugging mode, may be used to hinder debugging",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "177"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1497":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Checks if the current process is being debugged",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "76"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1518.001":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Checks if the current process is being debugged",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "76"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ]
+                                       }
+             }
+}
