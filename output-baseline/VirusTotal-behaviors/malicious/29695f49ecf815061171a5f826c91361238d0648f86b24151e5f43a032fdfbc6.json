@@ -1,0 +1,1207 @@
+{
+    "data":  {
+                 "signature_matches":  [
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain obfuscated stackstrings",
+                                               "description":  "anti-analysis/obfuscation/string/stackstring",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain obfuscated stackstrings\n    namespace: anti-analysis/obfuscation/string/stackstring\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information::Indicator Removal from Tools [T1027.005]\n    mbc:\n      - Anti-Static Analysis::Executable Code Obfuscation::Argument Obfuscation [B0032.020]\n      - Anti-Static Analysis::Executable Code Obfuscation::Stack Strings [B0032.017]\n    examples:\n      - Practical Malware Analysis Lab 16-03.exe_:0x4013D0\n  features:\n    - characteristic: stack string\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using XOR",
+                                               "description":  "data-manipulation/encoding/xor",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using XOR\n    namespace: data-manipulation/encoding/xor\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires characteristic, Not features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::XOR [C0026.002]\n    examples:\n      - 2D3EDC218A90F03089CC01715A9F047F:0x403D7E\n  features:\n    - and:\n      - characteristic: tight loop\n      - characteristic: nzxor\n      - not:\n        - description: filter for potential false positives\n        - or:\n          - or:\n            - description: unsigned bitwise negation operation (~i)\n            - number: 0xFFFFFFFF = bitwise negation for unsigned 32 bits\n            - number: 0xFFFFFFFFFFFFFFFF = bitwise negation for unsigned 64 bits\n          - or:\n            - description: signed bitwise negation operation (~i)\n            - number: 0x0FFFFFFF = bitwise negation for signed 32 bits\n            - number: 0x0FFFFFFFFFFFFFFF = bitwise negation for signed 64 bits\n          - or:\n            - description: Magic constants used in the implementation of strings functions.\n            # such as `strlen` and `strcat` in the Windows standard library:\n            # (((i - 0x81010101) ^ ~i) \u0026 0x81010100)\n            ## 32 bits\n            - number: 0x7EFEFEFF = optimized string constant for 32 bits\n            - number: 0x81010101 = -0x81010101 = 0x7EFEFEFF\n            - number: 0x81010100 = 0x81010100 = ~0x7EFEFEFF\n            ## 64 bits\n            - number: 0x7EFEFEFEFEFEFEFF = optimized string constant for 64 bits\n            - number: 0x8101010101010101 = -0x8101010101010101 = 0x7EFEFEFEFEFEFEFF\n            - number: 0x8101010101010100 = 0x8101010101010100 = ~0x7EFEFEFEFEFEFEFF\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using RC4 PRGA",
+                                               "description":  "data-manipulation/encryption/rc4",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using RC4 PRGA\n    namespace: data-manipulation/encryption/rc4\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic, basicblock features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Cryptography::Encrypt Data::RC4 [C0027.009]\n      - Cryptography::Generate Pseudo-random Sequence::RC4 PRGA [C0021.004]\n    examples:\n      - 34404A3FB9804977C6AB86CB991FB130:0x403DB0\n      - 34404A3FB9804977C6AB86CB991FB130:0x403E50\n      - 9324D1A8AE37A36AE560C37448C9705A:0x4049F0\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x4064C6\n  features:\n    - and:\n      # TODO: maybe add characteristic for nzxor reg size\n      - count(characteristic(nzxor)): 1\n      - or:\n        - match: calculate modulo 256 via x86 assembly\n        # compiler may do this via zero-extended mov from 8-bit register\n        - count(mnemonic(movzx)): 4 or more\n      # should not call (many) functions\n      - count(characteristic(calls from)): (0, 4)\n      # should not be too simple or too complex (50 is picked by intuition)\n      - count(basic blocks): (4, 50)\n      - match: contain loop\n      - optional:\n        - or:\n          - number: 0xFF\n          - number: 0x100\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using Salsa20 or ChaCha",
+                                               "description":  "data-manipulation/encryption/salsa20",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using Salsa20 or ChaCha\n    namespace: data-manipulation/encryption/salsa20\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: thread\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    references:\n      - http://cr.yp.to/snuffle/ecrypt.c\n  features:\n    # The constant words spell \"expand 32-byte k\" in ASCII (i.e. the 4 words are \"expa\", \"nd 3\", \"2-by\", and \"te k\")\n    - or:\n      - description: part of key setup\n      - string: \"expand 32-byte k\"\n        description: sigma\n      - string: \"expand 16-byte k\"\n        description: tau\n      # if sigma and tau are in contiguous memory, may result in concatenated string\n      - string: \"expand 32-byte kexpand 16-byte k\"\n      - bytes: 65 78 70 61 6E 64 20 33 32 2D 62 79 74 65 20 6B = \"expand 32-byte k\"\n      - bytes: 65 78 70 61 6E 64 20 31 36 2D 62 79 74 65 20 6B = \"expand 16-byte k\"\n      - and:\n        - string: \"expa\"\n        - string: \"nd 3\"\n        - string: \"2-by\"\n        - string: \"te k\"\n      - and:\n        - number: 0x61707865 = \"apxe\"\n        - number: 0x3320646E = \"3 dn\"\n        - number: 0x79622D32 = \"yb-2\"\n        - number: 0x6B206574 = \"k et\"\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "http://cr.yp.to/snuffle/ecrypt.c"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using TEA",
+                                               "description":  "data-manipulation/encryption/tea",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "raymond.leong@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using TEA\n    namespace: data-manipulation/encryption/tea\n    authors:\n      - william.ballenthin@mandiant.com\n      - raymond.leong@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires operand[1].number, characteristic, mnemonic, Not features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encryption-Standard Algorithm [E1027.m05]\n    references:\n      - https://en.wikipedia.org/wiki/Tiny_Encryption_Algorithm\n    examples:\n      - 44461306A604D2CD9883C2BB623AF276:0x10004810\n  features:\n    - and:\n      - basic block:\n        - and:\n          - instruction:\n            - mnemonic: shr\n            - operand[1].number: 0x5\n          - instruction:\n            - mnemonic: shl\n            - operand[1].number: 0x4\n          - count(mnemonic(shr)): 0x2\n          - characteristic: nzxor\n      - or:\n        - operand[1].number: 0x9E3779B9 = key schedule constant\n        - operand[1].number: 0x61C88647 = key schedule constant two\u0027s complement\n      - not:\n        - or:\n          - number: 0xC6EF3720 = sum, only used in decryption\n          - basic block:\n            - and:\n              - description: q setup only in XXTEA\n              - instruction:\n                - mnemonic: mov\n                - operand[1].number: 0x34\n              - instruction:\n                - mnemonic: add\n                - operand[1].number: 0x6\n              - instruction:\n                - mnemonic: idiv\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://en.wikipedia.org/wiki/Tiny_Encryption_Algorithm"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "reads_files",
+                                               "name":  "reads_files",
+                                               "description":  "Reads files from disk",
+                                               "match_data":  [
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXft.so.2\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libfontconfig.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libfreetype.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXext.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXaw.so.7\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXmu.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXinerama.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXpm.so.4\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXt.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libX11.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libICE.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libutempter.so.0\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libtinfo.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libc.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXrender.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libexpat.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libuuid.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libpng16.so.16\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libz.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libbrotlidec.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libSM.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libxcb.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libbsd.so.0\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libm.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libbrotlicommon.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXau.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXdmcp.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libmd.so.0\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/X11/locale/locale.alias\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/X11/locale/locale.dir\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/X11/locale/C/XLC_LOCALE\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/X11/locale/en_US.UTF-8/XLC_LOCALE\"}",
+                                                                  "{\"ReadFile\": \"/etc/X11/app-defaults/XTerm\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXcursor.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXfixes.so.3\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/icons/Yaru/cursors/sb_v_double_arrow\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/icons/Yaru/cursors/sb_h_double_arrow\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/icons/Yaru/cursors/sb_up_arrow\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/icons/Yaru/cursors/sb_down_arrow\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/icons/Yaru/cursors/sb_left_arrow\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/icons/Yaru/cursors/sb_right_arrow\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/fonts.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-antialias.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-hinting-slight.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-scale-bitmap-fonts.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/11-lcdfilter-default.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/20-unhint-small-dejavu-lgc-sans-mono.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/20-unhint-small-dejavu-lgc-sans.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/20-unhint-small-dejavu-lgc-serif.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/20-unhint-small-dejavu-sans-mono.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/20-unhint-small-dejavu-sans.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/20-unhint-small-dejavu-serif.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/20-unhint-small-vera.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/30-cjk-aliases.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/30-metric-aliases.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/30-opensymbol.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/40-nonlatin.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/45-generic.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/45-latin.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/49-sansserif.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/50-user.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/51-local.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/56-language-selector-ar.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/57-dejavu-sans-mono.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/57-dejavu-sans.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/57-dejavu-serif.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/58-dejavu-lgc-sans-mono.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/58-dejavu-lgc-sans.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/58-dejavu-lgc-serif.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/59-lohit-devanagari.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/60-generic.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/60-latin.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-bookman.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-c059.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-d050000l.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-fallback-backwards.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-fallback-generics.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-gothic.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-nimbus-mono-ps.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-nimbus-roman.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-nimbus-sans.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-p052.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-standard-symbols-ps.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-z003.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-01-tlwg-kinnari.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-02-tlwg-norasi.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-10-tlwg-loma.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-11-tlwg-waree.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-13-tlwg-garuda.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-14-tlwg-umpush.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-15-laksaman.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-21-tlwg-typo.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-22-tlwg-typist.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-23-tlwg-mono.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/64-language-selector-prefer.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-beng-extra.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-deva-extra.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-gubbi.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-gujr-extra.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-guru-extra.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-orya-extra.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-pagul.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-telu-extra.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-smc-meera.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-smc-rachana.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-droid-sans-fallback.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-fonts-persian.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.d/65-khmer.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-nonlatin.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-assamese.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-bengali.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-devanagari.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-gujarati.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-gurmukhi.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-kannada.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-odia.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-tamil-classical.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-tamil.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-telugu.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-fonts-smc-manjari.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-anjalioldlipi.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-chilanka.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-dyuthi.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-karumbi.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-keraleeyam.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-raghumalayalamsans.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-suruma.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-uroob.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/69-language-selector-ja.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/69-language-selector-zh-cn.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/69-language-selector-zh-hk.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/69-language-selector-zh-mo.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/69-language-selector-zh-sg.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/69-language-selector-zh-tw.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/69-unifont.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/70-fonts-noto-cjk.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/70-no-bitmaps.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/80-delicious.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/89-tlwg-garuda-synthetic.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/89-tlwg-kinnari-synthetic.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/89-tlwg-laksaman-synthetic.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/89-tlwg-umpush-synthetic.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/90-synthetic.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/99-language-selector-zh.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-autohint.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-hinting-full.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-hinting-medium.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-hinting-none.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-no-sub-pixel.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-sub-pixel-bgr.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-sub-pixel-rgb.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-sub-pixel-vbgr.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-sub-pixel-vrgb.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-unhinted.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/11-lcdfilter-legacy.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/11-lcdfilter-light.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/25-unhint-nonlatin.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/30-droid-noto-mono.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/53-monospace-lcd-filter.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-khmer.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-lohit-malayalam.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/70-force-bitmaps.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/70-yes-bitmaps.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/f89a1ccb-4867-4b50-8e6c-afc44c780ed1-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/local/share/fonts/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/7f0cc334-2749-4b91-a01d-b316ffc88d0d-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/X11/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/ba7f2a8a-b5bd-4b8d-915b-ee523651bbb5-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/cMap/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/49d6d701-25a3-4b0d-9b55-98eb8436be39-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/cmap/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/389e9637-25b2-4cd8-903b-15309922b4d5-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/opentype/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/fb8cb590-620d-4de1-aa65-b20d12fd48b2-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/type1/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/2bdd1543-0bc4-4c1a-a925-f6da59d7a428-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/X11/Type1/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/X11/encodings/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/87d4f6ef-4668-4670-af5a-596119fcc0a8-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/X11/misc/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/X11/util/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/1fe01837-99f9-434f-8c08-eef9340c3fbb-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/cmap/adobe-cns1/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/e23ec1be-9352-4dce-9dff-0e1fe28f3ebc-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/cmap/adobe-gb1/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/cc632393-fa09-45dc-98d4-83e367184af7-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/cmap/adobe-japan1/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/a22f3466-e81b-4784-b39d-54a34a04451b-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/cmap/adobe-japan2/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/0f548c19-d83d-4b05-9964-061db7cb9674-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/cmap/adobe-korea1/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/46f65fc6-01cb-4597-b171-59b19ad12a8f-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/opentype/malayalam/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/opentype/noto/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/opentype/urw-base35/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/Gargi/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/Gubbi/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/Nakula/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/Navilu/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/Sahadeva/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/Sarai/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/abyssinica/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/arphic/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/56dd001d-1dd0-4e76-a76b-8867d1762ff8-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/dejavu/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/droid/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-beng-extra/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-deva-extra/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-gujr-extra/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-guru-extra/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-kalapi/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-orya-extra/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-telu-extra/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-yrsa-rasa/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/freefont/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/kacst/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/kacst-one/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lao/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lato/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/liberation/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/liberation2/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/libreoffice/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-assamese/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-bengali/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-devanagari/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-gujarati/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-kannada/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-malayalam/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-oriya/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-punjabi/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-tamil/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-tamil-classical/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-telugu/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/malayalam/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/noto/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/padauk/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/pagul/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/samyak/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/samyak-fonts/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/sinhala/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/teluguvijayam/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/tibetan-machine/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/tlwg/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/ttf-khmeros-core/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/ubuntu/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/type1/urw-base35/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/X11/encodings/large/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/2378dc6c-8711-4d20-810f-6e1598fc10d0-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/icons/Yaru/cursors/xterm\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/X11/locale/compose.dir\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/X11/locale/en_US.UTF-8/Compose\"}",
+                                                                  "{\"ReadFile\": \"/lib/terminfo/x/xterm\"}",
+                                                                  "{\"ReadFile\": \"/etc/nsswitch.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/group\"}",
+                                                                  "{\"ReadFile\": \"/etc/passwd\"}",
+                                                                  "{\"ReadFile\": \"/proc/sys/kernel/ngroups_max\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libnss_systemd.so.2\"}",
+                                                                  "{\"ReadFile\": \"/etc/shells\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "drops_files",
+                                               "name":  "drops_files",
+                                               "description":  "Drops files onto disk",
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "writes_files",
+                                               "name":  "writes_files",
+                                               "description":  "Writes to files on disk",
+                                               "match_data":  [
+                                                                  "{\"WriteFile\": \"/dev/pts/0\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           }
+                                       ],
+                 "files_written":  [
+                                       "/dev/tty",
+                                       "/dev/ptmx",
+                                       "/dev/pts/0"
+                                   ],
+                 "text_highlighted":  [
+                                          "",
+                                          "Segmentation fault"
+                                      ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "1858",
+                                            "name":  "xterm -hold -e sh -c /tmp/sample",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "1860",
+                                                                 "name":  "sh -c /tmp/sample",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "1861",
+                                                                                      "name":  "/tmp/sample",
+                                                                                      "children":  [
+                                                                                                       {
+                                                                                                           "process_id":  "1862",
+                                                                                                           "name":  "fork()"
+                                                                                                       }
+                                                                                                   ]
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "105",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "109",
+                                                                 "name":  "analyzed_bin",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "111",
+                                                                                      "name":  "dnsmasq",
+                                                                                      "children":  [
+                                                                                                       {
+                                                                                                           "process_id":  "112",
+                                                                                                           "name":  "dnsmasq"
+                                                                                                       }
+                                                                                                   ]
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "3298",
+                                            "name":  "/tmp/sample",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "3299",
+                                                                 "name":  "/tmp/sample -",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "3307",
+                                                                                      "name":  "/tmp/sample -",
+                                                                                      "files_opened":  [
+                                                                                                           "/proc",
+                                                                                                           "/proc/1/cmdline",
+                                                                                                           "/proc/1/maps",
+                                                                                                           "/proc/10/maps",
+                                                                                                           "/proc/100/maps",
+                                                                                                           "/proc/101/maps",
+                                                                                                           "/proc/1016/maps",
+                                                                                                           "/proc/102/maps",
+                                                                                                           "/proc/1021/maps",
+                                                                                                           "/proc/1025/maps",
+                                                                                                           "/proc/103/maps",
+                                                                                                           "/proc/1031/maps",
+                                                                                                           "/proc/1035/maps",
+                                                                                                           "/proc/1038/maps",
+                                                                                                           "/proc/104/maps",
+                                                                                                           "/proc/1043/maps",
+                                                                                                           "/proc/105/maps",
+                                                                                                           "/proc/1053/maps",
+                                                                                                           "/proc/1055/maps",
+                                                                                                           "/proc/106/maps",
+                                                                                                           "/proc/1064/maps",
+                                                                                                           "/proc/1068/maps",
+                                                                                                           "/proc/107/maps",
+                                                                                                           "/proc/1077/maps",
+                                                                                                           "/proc/108/maps",
+                                                                                                           "/proc/1081/maps",
+                                                                                                           "/proc/1086/maps",
+                                                                                                           "/proc/109/maps",
+                                                                                                           "/proc/1090/maps",
+                                                                                                           "/proc/1091/maps",
+                                                                                                           "/proc/1092/maps",
+                                                                                                           "/proc/1093/maps",
+                                                                                                           "/proc/1097/maps",
+                                                                                                           "/proc/11/maps",
+                                                                                                           "/proc/110/maps",
+                                                                                                           "/proc/1104/maps",
+                                                                                                           "/proc/1107/maps",
+                                                                                                           "/proc/1108/maps",
+                                                                                                           "/proc/111/maps",
+                                                                                                           "/proc/1119/maps",
+                                                                                                           "/proc/112/maps",
+                                                                                                           "/proc/113/maps",
+                                                                                                           "/proc/1131/maps",
+                                                                                                           "/proc/1134/maps",
+                                                                                                           "/proc/1139/maps",
+                                                                                                           "/proc/114/maps",
+                                                                                                           "/proc/1142/maps",
+                                                                                                           "/proc/1144/maps",
+                                                                                                           "/proc/1148/maps",
+                                                                                                           "/proc/115/maps"
+                                                                                                       ]
+                                                                                  }
+                                                                              ],
+                                                                 "files_opened":  [
+                                                                                      "/dev/pts/1"
+                                                                                  ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "3306",
+                                            "name":  "/usr/sbin/dumpe2fs dumpe2fs -h /dev/sda2",
+                                            "files_opened":  [
+                                                                 "/dev/sda2",
+                                                                 "/etc/group",
+                                                                 "/usr/share/zoneinfo/Etc/UTC"
+                                                             ]
+                                        },
+                                        {
+                                            "process_id":  "3314",
+                                            "name":  "/usr/sbin/dumpe2fs dumpe2fs -h /dev/sda2",
+                                            "files_opened":  [
+                                                                 "/dev/sda2",
+                                                                 "/etc/group",
+                                                                 "/usr/share/zoneinfo/Etc/UTC"
+                                                             ]
+                                        }
+                                    ],
+                 "command_executions":  [
+                                            "dumpe2fs -h /dev/sda2"
+                                        ],
+                 "sigma_analysis_results":  [
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "DestinationHostname":  "j.printerconsulting.ru",
+                                                                                             "DestinationPort":  "4444",
+                                                                                             "DestinationIp":  "20.199.79.76",
+                                                                                             "Initiated":  "true"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "high",
+                                                    "rule_id":  "c819b1c2210c6c76f29e7d15825b104bbd98de4d9561a6c86a8b158afd0d2be9",
+                                                    "rule_source":  "Sigma Integrated Rule Set (GitHub)",
+                                                    "rule_title":  "Potentially Suspicious Malware Callback Communication",
+                                                    "rule_description":  "Detects programs that connect to known malware callback ports based on statistical analysis from two different sandbox system databases\n",
+                                                    "rule_author":  "Florian Roth (Nextron Systems)"
+                                                }
+                                            ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "8.8.8.8",
+                                        "destination_port":  53
+                                    },
+                                    {
+                                        "destination_ip":  "20.199.79.76",
+                                        "destination_port":  4444
+                                    },
+                                    {
+                                        "destination_ip":  "1.1.1.1",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "208.67.222.222",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "208.67.220.220",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "9.9.9.9",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "4.2.2.1",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "180.76.76.76",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "185.85.15.34",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "52.232.76.114",
+                                        "destination_port":  38441,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "185.255.178.106",
+                                        "destination_port":  6463,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "94.103.91.233",
+                                        "destination_port":  8932,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "185.236.22.4",
+                                        "destination_port":  2474,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1027.005",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "contain obfuscated stackstrings",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "contain obfuscated stackstrings"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using XOR",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encode data using XOR"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using RC4 PRGA",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encrypt data using RC4 PRGA"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using Salsa20 or ChaCha",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encrypt data using Salsa20 or ChaCha"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using TEA",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encrypt data using TEA"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1003",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Enumerates processes within the \"proc\" file system"
+                                                 },
+                                                 {
+                                                     "id":  "T1571",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Detected TCP or UDP traffic on non-standard ports"
+                                                 },
+                                                 {
+                                                     "id":  "T1095",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Performs DNS lookups"
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Performs DNS lookups"
+                                                 }
+                                             ],
+                 "files_opened":  [
+                                      "/root/.Xdefaults-laptop",
+                                      "/etc/X11/app-defaults/XTerm",
+                                      "/dev/tty",
+                                      "/dev/ptmx",
+                                      "/usr/share/fonts",
+                                      "/usr/local/share/fonts/.uuid",
+                                      "/usr/local/share/fonts",
+                                      "/root/.local/share/fonts/.uuid",
+                                      "/root/.fonts/.uuid",
+                                      "/root/.XCompose",
+                                      "/lib/terminfo/x/xterm",
+                                      "/dev/pts/0",
+                                      "/etc/group",
+                                      "/etc/passwd",
+                                      "/proc/sys/kernel/ngroups_max",
+                                      "/etc/shells",
+                                      "/proc/101/cmdline",
+                                      "/proc/8/maps",
+                                      "/proc/7/maps",
+                                      "/proc/14/maps",
+                                      "/proc/14/cmdline",
+                                      "/proc/16/cmdline",
+                                      "/proc/34/maps",
+                                      "/proc/19/cmdline",
+                                      "/proc/58/maps",
+                                      "/proc/103/maps",
+                                      "/proc/94/cmdline",
+                                      "/proc/36/cmdline",
+                                      "/proc/105/maps",
+                                      "/proc/3/cmdline",
+                                      "/proc/7/cmdline",
+                                      "/proc/20/maps",
+                                      "/proc/31/cmdline",
+                                      "/proc/15/cmdline",
+                                      "/proc/38/cmdline",
+                                      "/proc/10/cmdline",
+                                      "/proc/21/maps",
+                                      "/proc/16/maps",
+                                      "/proc/99/maps",
+                                      "/dev/pts/1",
+                                      "/proc/3/maps",
+                                      "/proc/103/cmdline",
+                                      "/proc/29/maps",
+                                      "/proc/6/cmdline",
+                                      "/proc/58/cmdline",
+                                      "/proc/38/maps",
+                                      "/proc/55/maps",
+                                      "/proc/104/maps",
+                                      "/proc/110/cmdline",
+                                      "/proc/5/cmdline",
+                                      "/proc/111/maps",
+                                      "/proc/19/maps",
+                                      "/proc/9/cmdline",
+                                      "/proc/11/cmdline",
+                                      "/proc/36/maps",
+                                      "/proc/104/cmdline",
+                                      "/proc/110/maps",
+                                      "/proc/13/cmdline",
+                                      "/proc/111/cmdline",
+                                      "/proc/20/cmdline",
+                                      "/proc/2/maps",
+                                      "/proc/13/maps",
+                                      "/proc/1/maps",
+                                      "/proc/28/cmdline",
+                                      "/proc/8/cmdline",
+                                      "/proc/11/maps",
+                                      "/proc/9/maps",
+                                      "/proc/10/maps",
+                                      "/proc/32/maps",
+                                      "/proc/101/maps",
+                                      "/proc/30/maps",
+                                      "/proc/35/maps",
+                                      "/proc/17/maps",
+                                      "/proc/31/maps",
+                                      "/proc/55/cmdline",
+                                      "/proc/30/cmdline",
+                                      "/proc/17/cmdline",
+                                      "/proc/1/cmdline",
+                                      "/proc/12/maps",
+                                      "/proc/35/cmdline",
+                                      "/proc/105/cmdline",
+                                      "/proc/21/cmdline",
+                                      "/proc/4/cmdline",
+                                      "/proc/29/cmdline",
+                                      "/proc/34/cmdline",
+                                      "/proc/18/cmdline",
+                                      "/proc/94/maps",
+                                      "/proc/33/cmdline",
+                                      "/proc/18/maps",
+                                      "/proc/99/cmdline",
+                                      "/proc",
+                                      "/dev/null",
+                                      "/proc/32/cmdline",
+                                      "/proc/15/maps",
+                                      "/proc/37/maps",
+                                      "/proc/4/maps",
+                                      "/proc/12/cmdline",
+                                      "/proc/33/maps",
+                                      "/proc/28/maps",
+                                      "/proc/112/cmdline",
+                                      "/proc/5/maps",
+                                      "/proc/37/cmdline",
+                                      "/proc/39/maps",
+                                      "/proc/2/cmdline",
+                                      "/proc/39/cmdline",
+                                      "/proc/112/maps",
+                                      "/proc/6/maps",
+                                      "/dev/sda2",
+                                      "/proc/100/maps",
+                                      "/proc/1016/maps",
+                                      "/proc/102/maps",
+                                      "/proc/1021/maps",
+                                      "/proc/1025/maps",
+                                      "/proc/1031/maps",
+                                      "/proc/1035/maps",
+                                      "/proc/1038/maps",
+                                      "/proc/1043/maps",
+                                      "/proc/1053/maps",
+                                      "/proc/1055/maps",
+                                      "/proc/106/maps",
+                                      "/proc/1064/maps",
+                                      "/proc/1068/maps",
+                                      "/proc/107/maps",
+                                      "/proc/1077/maps",
+                                      "/proc/108/maps",
+                                      "/proc/1081/maps",
+                                      "/proc/1086/maps",
+                                      "/proc/109/maps",
+                                      "/proc/1090/maps",
+                                      "/proc/1091/maps",
+                                      "/proc/1092/maps",
+                                      "/proc/1093/maps",
+                                      "/proc/1097/maps",
+                                      "/proc/1104/maps",
+                                      "/proc/1107/maps",
+                                      "/proc/1108/maps",
+                                      "/proc/1119/maps",
+                                      "/proc/113/maps",
+                                      "/proc/1131/maps",
+                                      "/proc/1134/maps",
+                                      "/proc/1139/maps",
+                                      "/proc/114/maps",
+                                      "/proc/1142/maps",
+                                      "/proc/1144/maps",
+                                      "/proc/1148/maps",
+                                      "/proc/115/maps",
+                                      "/proc/1155/maps",
+                                      "/proc/1156/maps",
+                                      "/proc/116/maps",
+                                      "/proc/1161/maps",
+                                      "/proc/1165/maps",
+                                      "/proc/117/maps",
+                                      "/proc/1170/maps",
+                                      "/proc/1174/maps",
+                                      "/proc/1177/maps",
+                                      "/proc/118/maps",
+                                      "/proc/1189/maps",
+                                      "/proc/119/maps",
+                                      "/proc/120/maps",
+                                      "/proc/1200/maps",
+                                      "/proc/1202/maps",
+                                      "/proc/121/maps",
+                                      "/proc/122/maps",
+                                      "/proc/123/maps",
+                                      "/proc/1239/maps",
+                                      "/proc/124/maps",
+                                      "/proc/1244/maps",
+                                      "/proc/125/maps",
+                                      "/proc/126/maps",
+                                      "/proc/1261/maps",
+                                      "/proc/127/maps",
+                                      "/proc/128/maps",
+                                      "/proc/1283/maps",
+                                      "/proc/1298/maps",
+                                      "/proc/130/maps",
+                                      "/proc/131/maps",
+                                      "/proc/1331/maps",
+                                      "/proc/1332/maps",
+                                      "/proc/142/maps",
+                                      "/proc/145/maps",
+                                      "/proc/158/maps",
+                                      "/proc/1642/maps",
+                                      "/proc/1643/maps",
+                                      "/proc/1644/maps",
+                                      "/proc/1645/maps",
+                                      "/proc/1646/maps",
+                                      "/proc/1668/maps",
+                                      "/proc/1671/maps",
+                                      "/proc/1862/maps",
+                                      "/proc/202/maps",
+                                      "/proc/203/maps",
+                                      "/proc/204/maps",
+                                      "/proc/205/maps",
+                                      "/proc/206/maps",
+                                      "/proc/207/maps",
+                                      "/proc/208/maps",
+                                      "/proc/209/maps",
+                                      "/proc/210/maps",
+                                      "/proc/211/maps",
+                                      "/proc/212/maps",
+                                      "/proc/213/maps",
+                                      "/proc/214/maps",
+                                      "/proc/215/maps",
+                                      "/proc/216/maps",
+                                      "/proc/217/maps",
+                                      "/proc/218/maps",
+                                      "/proc/22/maps",
+                                      "/proc/220/maps",
+                                      "/proc/221/maps",
+                                      "/proc/222/maps",
+                                      "/proc/223/maps",
+                                      "/proc/224/maps",
+                                      "/proc/225/maps",
+                                      "/proc/226/maps",
+                                      "/proc/227/maps",
+                                      "/proc/228/maps",
+                                      "/proc/229/maps",
+                                      "/proc/23/maps",
+                                      "/proc/230/maps",
+                                      "/proc/231/maps",
+                                      "/proc/232/maps",
+                                      "/proc/233/maps",
+                                      "/proc/234/maps",
+                                      "/proc/235/maps",
+                                      "/proc/236/maps",
+                                      "/proc/237/maps",
+                                      "/proc/238/maps",
+                                      "/proc/239/maps",
+                                      "/proc/24/maps",
+                                      "/proc/241/maps",
+                                      "/proc/243/maps",
+                                      "/proc/246/maps",
+                                      "/proc/25/maps",
+                                      "/proc/255/maps",
+                                      "/proc/259/maps",
+                                      "/proc/26/maps",
+                                      "/proc/265/maps",
+                                      "/proc/266/maps",
+                                      "/proc/268/maps",
+                                      "/proc/27/maps",
+                                      "/proc/271/maps",
+                                      "/proc/274/maps",
+                                      "/proc/275/maps",
+                                      "/proc/277/maps",
+                                      "/proc/282/maps",
+                                      "/proc/283/maps",
+                                      "/proc/284/maps",
+                                      "/proc/285/maps",
+                                      "/proc/286/maps",
+                                      "/proc/287/maps",
+                                      "/proc/288/maps",
+                                      "/proc/289/maps",
+                                      "/proc/290/maps",
+                                      "/proc/291/maps",
+                                      "/proc/292/maps",
+                                      "/proc/293/maps",
+                                      "/proc/294/maps",
+                                      "/proc/295/maps",
+                                      "/proc/2950/maps",
+                                      "/proc/296/maps",
+                                      "/proc/297/maps",
+                                      "/proc/3135/maps",
+                                      "/proc/3225/maps",
+                                      "/proc/323/maps",
+                                      "/proc/3231/maps",
+                                      "/proc/3238/maps",
+                                      "/proc/3239/maps",
+                                      "/proc/324/maps",
+                                      "/proc/3240/maps",
+                                      "/proc/3241/maps",
+                                      "/proc/3242/maps",
+                                      "/proc/3243/maps",
+                                      "/proc/3244/maps",
+                                      "/proc/3245/maps",
+                                      "/proc/3246/maps",
+                                      "/proc/3255/maps",
+                                      "/proc/3256/maps"
+                                  ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "j.printerconsulting.ru",
+                                         "resolved_ips":  [
+                                                              "45.140.188.235",
+                                                              "92.38.160.11",
+                                                              "45.65.9.52",
+                                                              "185.255.178.242",
+                                                              "20.199.79.76",
+                                                              "85.203.42.12",
+                                                              "5.8.33.163",
+                                                              "35.215.60.186",
+                                                              "172.233.172.199",
+                                                              "172.233.107.81",
+                                                              "185.255.179.107",
+                                                              "45.90.12.10",
+                                                              "94.103.91.233",
+                                                              "193.32.178.106",
+                                                              "92.38.135.253"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "e.francoanddosbot.fun",
+                                         "resolved_ips":  [
+                                                              "92.223.30.25",
+                                                              "5.8.33.156",
+                                                              "52.232.76.114",
+                                                              "35.217.11.179",
+                                                              "195.2.81.97",
+                                                              "35.219.254.219",
+                                                              "92.223.30.117",
+                                                              "35.213.227.193",
+                                                              "95.85.78.19",
+                                                              "34.35.69.212"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "d.dvrinside.digital. [malformed]"
+                                     },
+                                     {
+                                         "hostname":  "k.parasjha.one. [malformed]"
+                                     },
+                                     {
+                                         "hostname":  "g.yellowchinks.lat",
+                                         "resolved_ips":  [
+                                                              "95.85.78.24",
+                                                              "5.188.34.252",
+                                                              "34.97.142.97",
+                                                              "194.190.152.176",
+                                                              "92.38.135.245",
+                                                              "172.233.107.81",
+                                                              "92.38.135.253",
+                                                              "5.8.33.165",
+                                                              "185.255.178.106",
+                                                              "94.103.84.230"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "d.foxnointel.ru. [malformed]"
+                                     },
+                                     {
+                                         "hostname":  "c.cookiedough.lol",
+                                         "resolved_ips":  [
+                                                              "5.8.33.156",
+                                                              "92.38.160.14",
+                                                              "94.103.91.233",
+                                                              "51.120.241.156",
+                                                              "51.13.59.242",
+                                                              "95.85.78.18",
+                                                              "34.35.69.212",
+                                                              "35.213.227.193",
+                                                              "92.38.160.10",
+                                                              "5.8.33.161"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "j.cookiedough.lol",
+                                         "resolved_ips":  [
+                                                              "193.32.179.248",
+                                                              "92.38.160.10",
+                                                              "5.8.33.163",
+                                                              "172.232.237.29",
+                                                              "193.32.179.252",
+                                                              "92.38.135.249",
+                                                              "5.8.33.156",
+                                                              "5.8.33.165",
+                                                              "185.236.22.4",
+                                                              "172.104.165.127"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "k.dvrinside.digital. [malformed]"
+                                     },
+                                     {
+                                         "hostname":  "b.dosbotbig.mom. [malformed]"
+                                     }
+                                 ],
+                 "processes_created":  [
+                                           "xterm -hold -e sh -c /tmp/sample",
+                                           "sh -c /tmp/sample",
+                                           "/tmp/sample",
+                                           "fork()",
+                                           "/tmp/sample -",
+                                           "/usr/sbin/dumpe2fs dumpe2fs -h /dev/sda2"
+                                       ],
+                 "tags":  [
+                              "DETECT_DEBUG_ENVIRONMENT",
+                              "SETS_PROCESS_NAME"
+                          ],
+                 "mbc":  [
+                             {
+                                 "id":  "B0032.020",
+                                 "objective":  "Anti-Static Analysis",
+                                 "behavior":  "Executable Code Obfuscation",
+                                 "method":  "Argument Obfuscation",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "contain obfuscated stackstrings"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0032.017",
+                                 "objective":  "Anti-Static Analysis",
+                                 "behavior":  "Executable Code Obfuscation",
+                                 "method":  "Stack Strings",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "contain obfuscated stackstrings"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m02",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encoding-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encode data using XOR"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0026.002",
+                                 "objective":  "Data",
+                                 "behavior":  "Encode Data",
+                                 "method":  "XOR",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encode data using XOR"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0027.009",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encrypt Data",
+                                 "method":  "RC4",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encrypt data using RC4 PRGA"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0021.004",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Generate Pseudo-random Sequence",
+                                 "method":  "RC4 PRGA",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encrypt data using RC4 PRGA"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m05",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encryption-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "encrypt data using TEA"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "attack_techniques":  {
+                                           "T1027.005":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "contain obfuscated stackstrings",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "contain obfuscated stackstrings"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using XOR",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encode data using XOR"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using RC4 PRGA",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encrypt data using RC4 PRGA"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using Salsa20 or ChaCha",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encrypt data using Salsa20 or ChaCha"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using TEA",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encrypt data using TEA"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1003":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Enumerates processes within the \"proc\" file system"
+                                                         }
+                                                     ],
+                                           "T1571":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Detected TCP or UDP traffic on non-standard ports"
+                                                         }
+                                                     ],
+                                           "T1095":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Performs DNS lookups"
+                                                         }
+                                                     ],
+                                           "T1071":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Performs DNS lookups"
+                                                         }
+                                                     ]
+                                       }
+             }
+}

@@ -1,0 +1,211 @@
+{
+    "data":  {
+                 "mbc":  [
+                             {
+                                 "id":  "C0017",
+                                 "objective":  "Process",
+                                 "behavior":  "Create Process",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "5"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1082",
+                                 "objective":  "Discovery",
+                                 "behavior":  "System Information Discovery",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "7"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get kernel version",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "4"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "query environment variable",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "7"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1033",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get current user on Linux",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "8"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "1",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "set current directory",
+                                               "description":  "host-interaction/file-system",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: chdir"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: set current directory\n    namespace: host-interaction/file-system\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n  features:\n    - or:\n      - api: System.IO.Directory::SetCurrentDirectory\n      - api: kernel32.SetCurrentDirectory\n      - api: chdir\n      - api: fchdir\n"
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "set thread name on Linux",
+                                               "description":  "host-interaction/thread",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "PR_SET_NAME",
+                                                                  "api: prctl"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: set thread name on Linux\n    namespace: host-interaction/thread\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: span of calls\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: pthread_setname_np\n        - and:\n          - api: prctl\n          - number: 0xF = PR_SET_NAME\n"
+                                           },
+                                           {
+                                               "id":  "4",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get kernel version",
+                                               "description":  "host-interaction/os/version",
+                                               "authors":  [
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: uname"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get kernel version\n    namespace: host-interaction/os/version\n    authors:\n      - joakim@intezer.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x405438\n  features:\n    - and:\n      - os: linux\n      - or:\n        - api: uname\n        - and:\n          - api: system\n          - string: \"uname\"\n"
+                                           },
+                                           {
+                                               "id":  "5",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create process on Linux",
+                                               "description":  "host-interaction/process/create",
+                                               "authors":  [
+                                                               "joakim@intezer.com",
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: execle",
+                                                                  "api: execv",
+                                                                  "api: execve"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create process on Linux\n    namespace: host-interaction/process/create\n    authors:\n      - joakim@intezer.com\n      - mehunhoff@google.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - Process::Create Process [C0017]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x40236D\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: execve\n        - and:\n          - match: execute syscall\n          - arch: aarch64\n          - number: 0xdd = execve\n        - api: execl\n        - api: execlp\n        - api: execle\n        - api: execv\n        - api: execvp\n        - api: execvpe\n        - api: posix_spawn\n        - api: posix_spawnp\n        - api: popen\n        - api: fork\n"
+                                           },
+                                           {
+                                               "id":  "6",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "execute syscall",
+                                               "description":  "anti-analysis : may be used to evade hooks or hinder analysis",
+                                               "authors":  [
+                                                               "@kulinacs",
+                                                               "@mr-tz",
+                                                               "mehunhoff@google.com",
+                                                               "still@teamt5.org"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: syscall"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: execute syscall\n    namespace: anti-analysis\n    authors:\n      - \"@kulinacs\"\n      - \"@mr-tz\"\n      - mehunhoff@google.com\n      - still@teamt5.org\n    description: may be used to evade hooks or hinder analysis\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires mnemonic features\n    references:\n      - https://github.com/j00ru/windows-syscalls\n      - https://codemachine.com/articles/system_call_instructions.html\n      - https://www.felixcloutier.com/x86/sysenter\n  features:\n    - or:\n      - and:\n        - or:\n          - os: linux\n          - os: android\n        - api: syscall # https://man7.org/linux/man-pages/man2/syscall.2.html\n      - and:\n        - or:\n          - mnemonic: sysenter\n          - mnemonic: syscall\n          - instruction:\n            - mnemonic: int\n            - operand[0].number: 0x2e\n        - or:\n          - mnemonic: ret\n          - mnemonic: retn\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/j00ru/windows-syscalls"
+                                                            },
+                                                            {
+                                                                "ref":  "https://codemachine.com/articles/system_call_instructions.html"
+                                                            },
+                                                            {
+                                                                "ref":  "https://www.felixcloutier.com/x86/sysenter"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "7",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "query environment variable",
+                                               "description":  "host-interaction/environment-variable",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "@_re_fox"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: getenv"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: query environment variable\n    namespace: host-interaction/environment-variable\n    authors:\n      - michael.hunhoff@mandiant.com\n      - \"@_re_fox\"\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    mbc:\n      - Discovery::System Information Discovery [E1082]\n    examples:\n      - Practical Malware Analysis Lab 14-02.exe_:0x401880\n      - 0761142efbda6c4b1e801223de723578:0x65483490\n  features:\n    - or:\n      - api: kernel32.GetEnvironmentVariable\n      - api: kernel32.GetEnvironmentStrings\n      - api: kernel32.ExpandEnvironmentStrings\n      - api: msvcr90.getenv\n      - api: msvcrt.getenv\n      - api: System.Environment::GetEnvironmentVariable\n      - api: System.Environment::GetEnvironmentVariables\n      - api: System.Environment::ExpandEnvironmentVariables\n"
+                                           },
+                                           {
+                                               "id":  "8",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get current user on Linux",
+                                               "description":  "host-interaction/session",
+                                               "authors":  [
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: geteuid"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get current user on Linux\n    namespace: host-interaction/session\n    authors:\n      - joakim@intezer.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    att\u0026ck:\n      - Discovery::System Owner/User Discovery [T1033]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x405438\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: geteuid\n        - api: getpwuid\n        - api: getlogin\n        - api: getlogin_r\n        - api: cuserid\n"
+                                           }
+                                       ],
+                 "attack_techniques":  {
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get kernel version",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "4"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "query environment variable",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "7"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1033":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get current user on Linux",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "8"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

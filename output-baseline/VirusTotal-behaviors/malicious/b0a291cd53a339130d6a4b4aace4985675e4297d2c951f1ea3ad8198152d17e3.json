@@ -1,0 +1,663 @@
+{
+    "data":  {
+                 "registry_keys_opened":  [
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\SdbUpdates",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Disable8And16BitMitigation",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Wow64\\x86",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Segment Heap",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\MUI\\UILanguages\\en-US",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\SdbUpdates\\ManifestedMergeStubSdbs",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Nls\\CustomLocale",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Policies\\Microsoft\\MUI\\Settings",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager",
+                                              "HKEY_LOCAL_MACHINE\\OSDATA\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags"
+                                          ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "bg.microsoft.map.fastly.net",
+                                         "resolved_ips":  [
+                                                              "199.232.210.172",
+                                                              "199.232.214.172"
+                                                          ]
+                                     }
+                                 ],
+                 "memory_pattern_domains":  [
+                                                "www.symauth.com"
+                                            ],
+                 "mbc":  [
+                             {
+                                 "id":  "C0018",
+                                 "objective":  "Process",
+                                 "behavior":  "Terminate Process",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "0"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1059",
+                                 "objective":  "Execution",
+                                 "behavior":  "Command and Scripting Interpreter",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "3"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "OC0006"
+                             },
+                             {
+                                 "id":  "C0002"
+                             },
+                             {
+                                 "id":  "C0005.001"
+                             }
+                         ],
+                 "verdict_labels":  [
+                                        "NetSupportManager"
+                                    ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1059",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "accept command line arguments",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "3"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "The PE file contains an overlay",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "contains_pe_overlay"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "The PE file contains a PDB path",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "static_pe_pdbpath"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "verdicts":  [
+                                  "RAT",
+                                  "CLEAN"
+                              ],
+                 "processes_created":  [
+                                           "\"C:\\Users\\user\\Desktop\\file.exe\""
+                                       ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "0",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "terminate process",
+                                               "description":  "host-interaction/process/terminate",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "mehunhoff@google.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: ExitProcess"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: terminate process\n    namespace: host-interaction/process/terminate\n    authors:\n      - moritz.raabe@mandiant.com\n      - mehunhoff@google.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Process::Terminate Process [C0018]\n    examples:\n      - C91887D861D9BD4A5872249B641BC9F9:0x401A77\n      - 9B7CCAA2AE6A5B96E3110EBCBC4311F6:0x10010307\n  features:\n    - or:\n      - api: System.Diagnostics.Process::Kill\n      - api: System.Diagnostics.Process::WaitForExit\n      - api: System.Diagnostics.Process::WaitForExitAsync\n      - api: System.Environment::Exit\n      - api: System.Windows.Forms.Application::Exit\n      - api: exit\n      - api: Exit\n      - api: RstrtMgr.RmShutdown\n      - and:\n        - os: linux\n        - api: exit_group\n      - and:\n        - optional:\n          - match: open process\n        - or:\n          - api: kernel32.TerminateProcess\n          - api: ntdll.NtTerminateProcess\n          - api: kernel32.ExitProcess\n          - api: ZwTerminateProcess\n"
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contains PDB path",
+                                               "description":  "executable/pe/pdb",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "regex: /:\\\\.*\\.pdb/"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contains PDB path\n    namespace: executable/pe/pdb\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    examples:\n      - 464EF2CA59782CE697BC329713698CCC  # level32.exe\n  features:\n    - string: /:\\\\.*\\.pdb/\n"
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "accept command line arguments",
+                                               "description":  "host-interaction/cli",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: GetCommandLine"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: accept command line arguments\n    namespace: host-interaction/cli\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Execution::Command and Scripting Interpreter [T1059]\n    mbc:\n      - Execution::Command and Scripting Interpreter [E1059]\n    examples:\n      - e5369ac309f1be6d77afeeb3edab0ed8:0x402760\n  features:\n    - or:\n      - api: GetCommandLine\n      - api: CommandLineToArgv\n      - api: System.Environment::GetCommandLineArgs\n"
+                                           },
+                                           {
+                                               "id":  "static_pe_pdbpath",
+                                               "name":  "static_pe_pdbpath",
+                                               "description":  "The PE file contains a PDB path",
+                                               "match_data":  [
+                                                                  "E:\\nsmsrc\\nsm\\1210\\1210\\client32\\Release\\client32.pdb"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "contains_pe_overlay",
+                                               "name":  "contains_pe_overlay",
+                                               "description":  "The PE file contains an overlay",
+                                               "match_data":  [
+                                                                  "Contains overlay at offset 0x00017400 with size: 10616 bytes"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "9028",
+                                               "description":  "Uses 32bit PE files",
+                                               "match_data":  [
+                                                                  "EXECUTABLE_IMAGE, 32BIT_MACHINE"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "415",
+                                               "description":  "PE file has an executable .text section and no other executable section",
+                                               "match_data":  [
+                                                                  "Section: .text IMAGE_SCN_CNT_CODE, IMAGE_SCN_MEM_EXECUTE, IMAGE_SCN_MEM_READ"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "509",
+                                               "description":  "Reads software policies",
+                                               "match_data":  [
+                                                                  "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#registry_keys_opened",
+                                                                "value":  "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "206",
+                                               "description":  "Performs DNS lookups",
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#dns_lookups",
+                                                                "value":  "DNS query: dns.google"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "653",
+                                               "description":  "Sample file is different than original file name gathered from version info",
+                                               "match_data":  [
+                                                                  "OriginalFilenameclient32.exe. vs file.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#memory_dumps",
+                                                                "value":  "file.exe, 00000001.00000000.2803959495.00000000002C2000.00000002.00000001.01000000.00000003.sdmp"
+                                                            },
+                                                            {
+                                                                "ref":  "#memory_dumps",
+                                                                "value":  "file.exe, 00000001.00000002.3828732118.00000000002C3000.00000002.00000001.01000000.00000003.sdmp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "715",
+                                               "description":  "Classification label",
+                                               "match_data":  [
+                                                                  "clean2.winEXE@1/0@6/0"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "626",
+                                               "description":  "Sample tries to load a library which is not present or installed on the analysis machine, adding the library might reveal more behavior",
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "406",
+                                               "description":  "Contains modern PE file flags such as dynamic base (ASLR) or NX",
+                                               "match_data":  [
+                                                                  "DYNAMIC_BASE, NX_COMPAT, NO_SEH, TERMINAL_SERVER_AWARE"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "7021",
+                                               "description":  "Connects to IPs without corresponding DNS lookups",
+                                               "match_data":  [
+                                                                  "162.159.36.2"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "187",
+                                               "description":  "Tries to load missing DLLs",
+                                               "match_data":  [
+                                                                  "apphelp.dll",
+                                                                  "pcicl32.dll"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "404",
+                                               "description":  "PE / OLE file has a valid certificate",
+                                               "match_data":  [
+                                                                  "certificate valid"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "203",
+                                               "description":  "Binary contains paths to debug symbols",
+                                               "match_data":  [
+                                                                  "E:\\nsmsrc\\nsm\\1210\\1210\\client32\\Release\\client32.pdb source: file.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "100235",
+                                               "description":  "Yara detected NetSupport remote tool",
+                                               "match_data":  [
+                                                                  "file.exe, type: SAMPLE",
+                                                                  "00000001.00000002.3828482131.00000000002C2000.00000004.00000001.01000000.00000003.sdmp, type: MEMORY",
+                                                                  "00000001.00000002.3828732118.00000000002C3000.00000002.00000001.01000000.00000003.sdmp, type: MEMORY",
+                                                                  "00000001.00000000.2803959495.00000000002C2000.00000002.00000001.01000000.00000003.sdmp, type: MEMORY",
+                                                                  "Process Memory Space: file.exe PID: 7312, type: MEMORYSTR"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "412",
+                                               "description":  "PE file contains a debug data directory",
+                                               "match_data":  [
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_DEBUG"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "238",
+                                               "description":  "URLs found in memory or binary data",
+                                               "match_data":  [
+                                                                  "http://s1.symcb.com/pca3-g5.crl0",
+                                                                  "http://s2.symcb.com0",
+                                                                  "http://sv.symcb.com/sv.crl0f",
+                                                                  "http://sv.symcb.com/sv.crt0",
+                                                                  "http://sv.symcd.com0\u0026",
+                                                                  "http://www.symauth.com/cps0(",
+                                                                  "http://www.symauth.com/rpa00",
+                                                                  "https://d.symcb.com/cps0%",
+                                                                  "https://d.symcb.com/rpa0"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "918",
+                                               "description":  "Detected non-DNS traffic on DNS port",
+                                               "match_data":  [
+                                                                  "192.168.122.103:64220 -\u003e 162.159.36.2:53"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           }
+                                       ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2556",
+                                            "name":  "%TEMP%\\7W3X8PLN4BK3KSS0.exe"
+                                        },
+                                        {
+                                            "process_id":  "2152",
+                                            "name":  "%windir%\\System32\\svchost.exe -k WerSvcGroup"
+                                        },
+                                        {
+                                            "process_id":  "2800",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        },
+                                        {
+                                            "process_id":  "2760",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        },
+                                        {
+                                            "process_id":  "7312",
+                                            "name":  "\"C:\\Users\\user\\Desktop\\file.exe\"",
+                                            "files_opened":  [
+                                                                 "C:\\Users\\user\\Desktop\\file.exe",
+                                                                 "C:\\Windows\\AppPatch\\sysmain.sdb",
+                                                                 "C:\\Windows\\SysWOW64\\KERNEL32.DLL",
+                                                                 "C:\\Windows\\SysWOW64\\KERNELBASE.dll",
+                                                                 "C:\\Windows\\SysWOW64\\apphelp.dll",
+                                                                 "C:\\Windows\\SysWOW64\\ntdll.dll",
+                                                                 "C:\\Windows\\apppatch\\MergeSdbFilesSource\\sysMerge.sdb"
+                                                             ]
+                                        }
+                                    ],
+                 "memory_pattern_urls":  [
+                                             "http://www.symauth.com/cps0(",
+                                             "http://www.symauth.com/rpa00"
+                                         ],
+                 "verdict_confidence":  98,
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "162.159.36.2",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "files_opened":  [
+                                      "C:\\Users\\user\\Desktop\\file.exe",
+                                      "C:\\Windows\\AppPatch\\sysmain.sdb",
+                                      "C:\\Windows\\SysWOW64\\KERNEL32.DLL",
+                                      "C:\\Windows\\SysWOW64\\KERNELBASE.dll",
+                                      "C:\\Windows\\SysWOW64\\apphelp.dll",
+                                      "C:\\Windows\\SysWOW64\\ntdll.dll",
+                                      "C:\\Windows\\apppatch\\MergeSdbFilesSource\\sysMerge.sdb"
+                                  ],
+                 "memory_dumps":  [
+                                      {
+                                          "file_name":  "00000001.00000002.3830527054.0000000000814000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "40960",
+                                          "base_address":  "8470528",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000000.2803863196.00000000002C1000.00000020.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2887680",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000000.2803798683.00000000002C0000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2883584",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3830527054.000000000081F000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "16384",
+                                          "base_address":  "8515584",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3827822174.00000000002C0000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2883584",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3828482131.00000000002C2000.00000004.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2891776",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "refs":  [
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "100235"
+                                                       }
+                                                   ],
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3830296863.0000000000784000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "24576",
+                                          "base_address":  "7880704",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3828057691.00000000002C1000.00000020.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2887680",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3826731064.0000000000230000.00000004.00000020.00040000.00000004.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2293760",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3830527054.0000000000810000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "8192",
+                                          "base_address":  "8454144",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3827553018.000000000029D000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "12288",
+                                          "base_address":  "2740224",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3830296863.0000000000780000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "12288",
+                                          "base_address":  "7864320",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3830062926.0000000000640000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "4096",
+                                          "base_address":  "6553600",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000000.2803959495.00000000002C2000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "98304",
+                                          "base_address":  "2891776",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "refs":  [
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "653"
+                                                       },
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "100235"
+                                                       }
+                                                   ],
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3829969533.00000000003DD000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "12288",
+                                          "base_address":  "4050944",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3830215403.0000000000690000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "4096",
+                                          "base_address":  "6881280",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "7312"
+                                      },
+                                      {
+                                          "file_name":  "00000001.00000002.3828732118.00000000002C3000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\file.exe",
+                                          "size":  "94208",
+                                          "base_address":  "2895872",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "refs":  [
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "653"
+                                                       },
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "100235"
+                                                       }
+                                                   ],
+                                          "process_id":  "7312"
+                                      }
+                                  ],
+                 "sigma_analysis_results":  [
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "Product":  "NetSupport Manager",
+                                                                                             "CurrentDirectory":  "C:\\Users\\Bruno\\Desktop\\",
+                                                                                             "OriginalFileName":  "client32.exe",
+                                                                                             "Hashes":  "SHA1=F7DA07E5FAE071DECC3F668687F1D0FC4A6171A8,MD5=9BF5ECC9CD7A119C69DB324D18151316,SHA256=B0A291CD53A339130D6A4B4AACE4985675E4297D2C951F1EA3AD8198152D17E3,IMPHASH=78ED70EBEB178ED1BAE5921D2ED514BC",
+                                                                                             "Description":  "NetSupport Client Application",
+                                                                                             "FileVersion":  "V12.10",
+                                                                                             "ParentCommandLine":  "C:\\Windows\\Explorer.EXE",
+                                                                                             "CommandLine":  "\"C:\\Users\\Bruno\\Desktop\\file.exe\"",
+                                                                                             "EventID":  "1",
+                                                                                             "ParentImage":  "C:\\Windows\\explorer.exe",
+                                                                                             "IntegrityLevel":  "High",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\file.exe",
+                                                                                             "Company":  "NetSupport Ltd"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "high",
+                                                    "rule_id":  "fede1c0268e88b6a7ec369e9c62c124a24ab5c7f9adc969af706be5000e0e8c1",
+                                                    "rule_source":  "Sigma Integrated Rule Set (GitHub)",
+                                                    "rule_title":  "Renamed NetSupport RAT Execution",
+                                                    "rule_description":  "Detects the execution of a renamed \"client32.exe\" (NetSupport RAT) via Imphash, Product and OriginalFileName strings",
+                                                    "rule_author":  "Nasreddine Bencherchali (Nextron Systems)"
+                                                },
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "Product":  "NetSupport Manager",
+                                                                                             "CurrentDirectory":  "C:\\Users\\Bruno\\Desktop\\",
+                                                                                             "OriginalFileName":  "client32.exe",
+                                                                                             "Hashes":  "SHA1=F7DA07E5FAE071DECC3F668687F1D0FC4A6171A8,MD5=9BF5ECC9CD7A119C69DB324D18151316,SHA256=B0A291CD53A339130D6A4B4AACE4985675E4297D2C951F1EA3AD8198152D17E3,IMPHASH=78ED70EBEB178ED1BAE5921D2ED514BC",
+                                                                                             "Description":  "NetSupport Client Application",
+                                                                                             "FileVersion":  "V12.10",
+                                                                                             "ParentCommandLine":  "C:\\Windows\\Explorer.EXE",
+                                                                                             "CommandLine":  "\"C:\\Users\\Bruno\\Desktop\\file.exe\"",
+                                                                                             "EventID":  "1",
+                                                                                             "ParentImage":  "C:\\Windows\\explorer.exe",
+                                                                                             "IntegrityLevel":  "High",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\file.exe",
+                                                                                             "Company":  "NetSupport Ltd"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "medium",
+                                                    "rule_id":  "0c574c15cc6c9a17edd7b81b15044dd26631d2a7f6c2d428c6d68d9816e6b84d",
+                                                    "rule_source":  "Sigma Integrated Rule Set (GitHub)",
+                                                    "rule_title":  "Remote Access Tool - NetSupport Execution From Unusual Location",
+                                                    "rule_description":  "Detects execution of client32.exe (NetSupport RAT) from an unusual location (outside of \u0027C:\\Program Files\u0027)",
+                                                    "rule_author":  "Nasreddine Bencherchali (Nextron Systems)"
+                                                },
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "Product":  "NetSupport Manager",
+                                                                                             "CurrentDirectory":  "C:\\Users\\Bruno\\Desktop\\",
+                                                                                             "OriginalFileName":  "client32.exe",
+                                                                                             "Hashes":  "SHA1=F7DA07E5FAE071DECC3F668687F1D0FC4A6171A8,MD5=9BF5ECC9CD7A119C69DB324D18151316,SHA256=B0A291CD53A339130D6A4B4AACE4985675E4297D2C951F1EA3AD8198152D17E3,IMPHASH=78ED70EBEB178ED1BAE5921D2ED514BC",
+                                                                                             "Description":  "NetSupport Client Application",
+                                                                                             "EventID":  "1",
+                                                                                             "ParentCommandLine":  "C:\\Windows\\Explorer.EXE",
+                                                                                             "CommandLine":  "\"C:\\Users\\Bruno\\Desktop\\file.exe\"",
+                                                                                             "FileVersion":  "V12.10",
+                                                                                             "ParentImage":  "C:\\Windows\\explorer.exe",
+                                                                                             "IntegrityLevel":  "High",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\file.exe",
+                                                                                             "Company":  "NetSupport Ltd"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "medium",
+                                                    "rule_id":  "65cfc106cf4668ef2ff3c230ac24edd977515d2743358a7e4015e31ea26a4cae",
+                                                    "rule_source":  "Sigma Integrated Rule Set (GitHub)",
+                                                    "rule_title":  "Remote Access Tool - NetSupport Execution",
+                                                    "rule_description":  "An adversary may use legitimate desktop support and remote access software, such as Team Viewer, Go2Assist, LogMein, AmmyyAdmin, etc, to establish an interactive command and control channel to target systems within networks.\nThese services are commonly used as legitimate technical support software, and may be allowed by application control within a target environment.\nRemote access tools like VNC, Ammyy, and Teamviewer are used frequently when compared with other legitimate software commonly used by adversaries. (Citation: Symantec Living off the Land)\n",
+                                                    "rule_author":  "frack113"
+                                                }
+                                            ],
+                 "attack_techniques":  {
+                                           "T1059":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "accept command line arguments",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "3"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1071":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "The PE file contains an overlay",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "contains_pe_overlay"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "The PE file contains a PDB path",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "static_pe_pdbpath"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

@@ -1,0 +1,1614 @@
+{
+    "data":  {
+                 "memory_pattern_ips":  [
+                                            "192.248.185.186"
+                                        ],
+                 "verdicts":  [
+                                  "RAT",
+                                  "STEALER",
+                                  "MALWARE"
+                              ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "1",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "query environment variable",
+                                               "description":  "host-interaction/environment-variable",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "@_re_fox"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: GetEnvironmentStrings"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: query environment variable\n    namespace: host-interaction/environment-variable\n    authors:\n      - michael.hunhoff@mandiant.com\n      - \"@_re_fox\"\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    mbc:\n      - Discovery::System Information Discovery [E1082]\n    examples:\n      - Practical Malware Analysis Lab 14-02.exe_:0x401880\n      - 0761142efbda6c4b1e801223de723578:0x65483490\n  features:\n    - or:\n      - api: kernel32.GetEnvironmentVariable\n      - api: kernel32.GetEnvironmentStrings\n      - api: kernel32.ExpandEnvironmentStrings\n      - api: msvcr90.getenv\n      - api: msvcrt.getenv\n      - api: System.Environment::GetEnvironmentVariable\n      - api: System.Environment::GetEnvironmentVariables\n      - api: System.Environment::ExpandEnvironmentVariables\n"
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get geographical location",
+                                               "description":  "collection",
+                                               "authors":  [
+                                                               "moritz.raabe",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: GetLocaleInfo"
+                                                              ],
+                                               "rule_src":  "# generated using capa explorer for IDA Pro\nrule:\n  meta:\n    name: get geographical location\n    namespace: collection\n    authors:\n      - moritz.raabe\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::System Location Discovery [T1614]\n    examples:\n      - 9879D201DC5ACA863F357184CD1F170E:0x10001A99\n  features:\n    - or:\n      - api: GetLocaleInfo\n      - api: GetLocaleInfoEx\n      - api: kernel32.GetUserGeoID\n      - api: kernel32.GetGeoInfo\n      # strings part of requests or parsed from response\n      # \"geo\" and \"zip\" are too short\n      # \"region\" results in FPs mostly related to memory\n      - string: /geolocation/i\n      - string: /geo-location/i\n      - string: /^city/i\n      - string: /region_code/i\n      - string: /region_name/i\n      - string: /^country/i\n      - string: /country_code/i\n      - string: /countrycode/i\n      - string: /country_name/i\n      - string: /continent_code/i\n      - string: /continent_name/i\n      - string: /^latitude/i\n      - string: /^longitude/i\n"
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "link function at runtime on Windows",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: GetProcAddress"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: link function at runtime on Windows\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n      - mehunhoff@google.com\n    scopes:\n      static: instruction\n      dynamic: call\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x404130\n      - Practical Malware Analysis Lab 01-04.exe_:0x401350\n  features:\n    - and:\n      - os: windows\n      - or:\n        - api: kernel32.GetProcAddress\n        - api: ntdll.LdrGetProcedureAddress\n        - api: ntdll.LdrGetProcedureAddressEx\n        - api: ntdll.LdrGetProcedureAddressForCaller\n        - api: MmGetSystemRoutineAddress\n"
+                                           },
+                                           {
+                                               "id":  "4",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get number of processors",
+                                               "description":  "host-interaction/hardware/cpu",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "PEB-\u003eNumberOfProcessors",
+                                                                  "fs access",
+                                                                  "PEB access"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get number of processors\n    namespace: host-interaction/hardware/cpu\n    authors:\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires property features\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    references:\n      - https://github.com/LordNoteworthy/al-khaser/blob/bed03d2f849d9060c68f8d5905bd204d0cb3f593/al-khaser/AntiVM/Generic.cpp#L361\n    examples:\n      - al-khaser_x86.exe_:0x432CB0\n  features:\n    - or:\n      - and:\n        - match: PEB access\n        - or:\n          - and:\n            - arch: i386\n            - number: 0x64 = PEB-\u003eNumberOfProcessors\n          - and:\n            - arch: amd64\n            - number: 0xB8 = PEB-\u003eNumberOfProcessors\n      - property/read: System.Environment::ProcessorCount\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/bed03d2f849d9060c68f8d5905bd204d0cb3f593/al-khaser/AntiVM/Generic.cpp#L361"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "6",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "resolve function by parsing PE exports",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "sara-rn"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: movzx",
+                                                                  "loop"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: resolve function by parsing PE exports\n    namespace: load-code/pe\n    authors:\n      - sara-rn\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, offset, mnemonic features\n    examples:\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x406BA1\n  features:\n    - and:\n      - os: windows\n      - or:\n        - characteristic: loop\n        - mnemonic: movzx\n      - and:\n        - offset: 0x3C = IMAGE_DOS_HEADER.PE.e_lfanew\n        - or:\n          - and:\n            - arch: i386\n            - offset: 0x78 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n          - and:\n            - arch: amd64\n            - offset: 0x88 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n        - 3 or more:\n          - offset: 0x14 = IMAGE_EXPORT_DIRECTORY.NumberOfFunctions\n          - offset: 0x24 = IMAGE_EXPORT_DIRECTORY.AddressOfNameOrdinals\n          - offset: 0x20 = IMAGE_EXPORT_DIRECTORY.AddressOfNames\n          - offset: 0x18 = IMAGE_EXPORT_DIRECTORY.NumberOfNames\n          - offset: 0x1C = IMAGE_EXPORT_DIRECTORY.AddressOfFunctions\n      - optional:\n        - or:\n          - api: LoadLibrary\n          - api: strcmp\n"
+                                           },
+                                           {
+                                               "id":  "7",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "enumerate files on Windows",
+                                               "description":  "host-interaction/file-system/files/list",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: FindClose",
+                                                                  "contain loop",
+                                                                  "loop"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: enumerate files on Windows\n    namespace: host-interaction/file-system/files/list\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    att\u0026ck:\n      - Discovery::File and Directory Discovery [T1083]\n    mbc:\n      - Discovery::File and Directory Discovery [E1083]\n    references:\n      - https://github.com/hfiref0x/TDL/blob/cc4b46ae1c939b14a22a734a727b163f873a41b5/Source/Furutaka/sup.c#L315\n    examples:\n      - Practical Malware Analysis Lab 01-01.exe_:0x4011E0\n      - Practical Malware Analysis Lab 20-02.exe_:0x401000\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x14000203C\n  features:\n    - or:\n      - and:\n        - or:\n          - api: kernel32.FindFirstFile\n          - api: kernel32.FindFirstFileEx\n          - api: kernel32.FindFirstFileTransacted\n          - api: kernel32.FindFirstFileName\n          - api: kernel32.FindFirstFileNameTransacted\n        - or:\n          - api: kernel32.FindNextFile\n          - api: kernel32.FindNextFileName\n        - optional:\n          - api: kernel32.FindClose\n          - match: contain loop\n      - and:\n        - or:\n          - basic block:\n            - and:\n              - number: 1 = DIRECTORY_QUERY\n              - api: ntdll.NtOpenDirectoryObject\n          - call:\n            - and:\n              - number: 1 = DIRECTORY_QUERY\n              - api: ntdll.NtOpenDirectoryObject\n        - api: ntdll.NtQueryDirectoryObject\n        - optional:\n          - api: RtlAllocateHeap\n          - match: contain loop\n          - characteristic: indirect call\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/hfiref0x/TDL/blob/cc4b46ae1c939b14a22a734a727b163f873a41b5/Source/Furutaka/sup.c#L315"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "11",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "terminate process",
+                                               "description":  "host-interaction/process/terminate",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "mehunhoff@google.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: ExitProcess",
+                                                                  "api: TerminateProcess"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: terminate process\n    namespace: host-interaction/process/terminate\n    authors:\n      - moritz.raabe@mandiant.com\n      - mehunhoff@google.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Process::Terminate Process [C0018]\n    examples:\n      - C91887D861D9BD4A5872249B641BC9F9:0x401A77\n      - 9B7CCAA2AE6A5B96E3110EBCBC4311F6:0x10010307\n  features:\n    - or:\n      - api: System.Diagnostics.Process::Kill\n      - api: System.Diagnostics.Process::WaitForExit\n      - api: System.Diagnostics.Process::WaitForExitAsync\n      - api: System.Environment::Exit\n      - api: System.Windows.Forms.Application::Exit\n      - api: exit\n      - api: Exit\n      - api: RstrtMgr.RmShutdown\n      - and:\n        - os: linux\n        - api: exit_group\n      - and:\n        - optional:\n          - match: open process\n        - or:\n          - api: kernel32.TerminateProcess\n          - api: ntdll.NtTerminateProcess\n          - api: kernel32.ExitProcess\n          - api: ZwTerminateProcess\n"
+                                           },
+                                           {
+                                               "id":  "12",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "read file on Windows",
+                                               "description":  "host-interaction/file-system/read",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: fread",
+                                                                  "api: ReadFile"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: read file on Windows\n    namespace: host-interaction/file-system/read\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - File System::Read File [C0051]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5:0x1314567B\n  features:\n    - or:\n      - and:\n        - os: windows\n        - optional:\n          - and:\n            - number: 0x80000000 = GENERIC_READ\n            - match: create or open file\n        - or:\n          - api: kernel32.ReadFile\n          - api: ReadFileEx\n          - api: NtReadFile\n          - api: ZwReadFile\n          - api: LZRead\n          - api: _read\n          - api: fread\n      - api: System.IO.File::ReadAllBytes\n      - api: System.IO.File::ReadAllBytesAsync\n      - api: System.IO.File::ReadAllLines\n      - api: System.IO.File::ReadAllLinesAsync\n      - api: System.IO.File::ReadAllText\n      - api: System.IO.File::ReadAllTextAsync\n      - api: System.IO.File::ReadLines\n"
+                                           },
+                                           {
+                                               "id":  "13",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse PE header",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: cmp",
+                                                                  "IMAGE_DOS_SIGNATURE (MZ)",
+                                                                  "IMAGE_NT_SIGNATURE (PE)"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse PE header\n    namespace: load-code/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic, operand[1].offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x403DD0\n  features:\n    - and:\n      - os: windows\n      - and:\n        - mnemonic: cmp\n        - or:\n          - number: 0x4550 = IMAGE_NT_SIGNATURE (PE)\n          - and:\n            - number: 0x50\n            - number: 0x45\n        - or:\n          - number: 0x5A4D = IMAGE_DOS_SIGNATURE (MZ)\n          - and:\n            - number: 0x4D\n            - number: 0x5A\n        - optional:\n          - and:\n            - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n            - or:\n              - and:\n                - arch: i386\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n              - and:\n                - arch: amd64\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x30 = IMAGE_NT_HEADERS64.OptionalHeader.ImageBase\n          - basic block:\n            - and:\n              - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n              - 3 or more:\n                - operand[1].offset: 0x4 = IMAGE_NT_HEADERS.FileHeader.Machine\n                - operand[1].offset: 0x6 = IMAGE_NT_HEADERS.FileHeader.NumberOfSections\n                - operand[1].offset: 0x14 = IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader\n                - operand[1].offset: 0x16 = IMAGE_NT_HEADERS.FileHeader.Characteristics\n                - operand[1].offset: 0x28 = IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint  # for 32 and 64 bit\n                - or:\n                  - and:\n                    - arch: i386\n                    - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                  - and:\n                    - arch: amd64\n                    - operand[1].offset: 0x30 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n"
+                                           },
+                                           {
+                                               "id":  "14",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get file size",
+                                               "description":  "host-interaction/file-system/meta",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: GetFileSizeEx"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get file size\n    namespace: host-interaction/file-system/meta\n    authors:\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::File and Directory Discovery [T1083]\n    mbc:\n      - Discovery::File and Directory Discovery [E1083]\n    examples:\n      - mimikatz.exe_:0x40630D\n  features:\n    - or:\n      - api: kernel32.GetFileSize\n      - api: kernel32.GetFileSizeEx\n      - property/read: System.IO.FileInfo::Length\n"
+                                           },
+                                           {
+                                               "id":  "16",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write file on Windows",
+                                               "description":  "host-interaction/file-system/write",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "FILE_WRITE_DATA",
+                                                                  "api: WriteFile"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write file on Windows\n    namespace: host-interaction/file-system/write\n    authors:\n      - william.ballenthin@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - File System::Writes File [C0052]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x1400025C4\n  features:\n    - or:\n      - and:\n        - os: windows\n        - optional:\n          - basic block:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n          - call:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n        - or:\n          - api: kernel32.WriteFile\n          - api: kernel32.WriteFileEx\n          - api: NtWriteFile\n          - api: ZwWriteFile\n          - api: _fwrite\n          - api: fwrite\n      - api: System.IO.File::WriteAllBytes\n      - api: System.IO.File::WriteAllBytesAsync\n      - api: System.IO.File::WriteAllLines\n      - api: System.IO.File::WriteAllLinesAsync\n      - api: System.IO.File::WriteAllText\n      - api: System.IO.File::WriteAllTextAsync\n      - api: System.IO.File::AppendAllLines\n      - api: System.IO.File::AppendAllLinesAsync\n      - api: System.IO.File::AppendAllText\n      - api: System.IO.File::AppendAllTextAsync\n      - api: System.IO.File::AppendText\n      - api: System.IO.FileInfo::AppendText\n"
+                                           },
+                                           {
+                                               "id":  "17",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "access PEB ldr_data",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "fs access",
+                                                                  "PEB access"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: access PEB ldr_data\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    references:\n      - https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm\n      - https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8\n    examples:\n      - 3FDFB2D522E7DEECAAAF2F87420F7E75:0x4117B7\n  features:\n    - or:\n      - and:\n        - arch: i386\n        - description: x32\n\n        - match: PEB access\n\n        # x86 Windows uses fs:0 to access the TIB which contains SEH information at offset 0\n        # checking for fs:0 and a (possibly unrelated) number or offset often results in false positives\n\n        - offset: 0x0C = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x0C = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x14 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x1C = PEB.LDR_DATA.InInitializationOrderModuleList\n\n      - and:\n        - arch: amd64\n        - description: x64\n\n        - match: PEB access\n\n        - offset: 0x18 = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x10 = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x20 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x30 = PEB.LDR_DATA.InInitializationOrderModuleList\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "18",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using RC4 KSA",
+                                               "description":  "data-manipulation/encryption/rc4",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: sub"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using RC4 KSA\n    namespace: data-manipulation/encryption/rc4\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic, Not features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Cryptography::Encrypt Data::RC4 [C0027.009]\n      - Cryptography::Encryption Key::RC4 KSA [C0028.002]\n    examples:\n      - 34404A3FB9804977C6AB86CB991FB130:0x403D40\n      - 9324D1A8AE37A36AE560C37448C9705A:0x404950\n      - 2B8BEC5BCB1777EAA155D832F7AFC797:0x405C42\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x40646E\n  features:\n    - or:\n      - and:\n        - basic block:\n          - and:\n            - description: initialize S\n            # misses if regular loop is used,\n            # however we cannot model that a loop contains a certain number\n            - characteristic: tight loop\n            - or:\n              - number: 0xFF\n              - number: 0x100\n        - or:\n          - description: modulo 256\n          - match: calculate modulo 256 via x86 assembly\n          - basic block:\n            - and:\n              - description: modulo via zero-extended mov from 8-bit register\n              - count(mnemonic(movzx)): 2 or more\n              # avoid false positives; filter out unexpected instructions\n              - not:\n                - or:\n                  - mnemonic: shl\n                  - mnemonic: rol\n                  - characteristic: nzxor\n        - or:\n          - description: modulo key length\n          - mnemonic: div\n          - mnemonic: idiv\n      - and:\n        - description: write DWORDs instead of bytes\n        - or:\n          - number: 0x03020100\n          - number: 0xFFFEFDFC\n        - instruction:\n          - or:\n            - mnemonic: add\n            - mnemonic: sub\n          - number: 0x04040404\n"
+                                           },
+                                           {
+                                               "id":  "queries_user_name",
+                                               "name":  "queries_user_name",
+                                               "description":  "Queries the username",
+                                               "match_data":  [
+                                                                  "Process pipanel.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "dead_connect",
+                                               "name":  "dead_connect",
+                                               "description":  "Attempts to connect to a dead IP:Port",
+                                               "match_data":  [
+                                                                  "Process pipanel.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "antidebug_setunhandledexceptionfilter",
+                                               "name":  "antidebug_setunhandledexceptionfilter",
+                                               "description":  "SetUnhandledExceptionFilter detected (possible anti-debug)",
+                                               "match_data":  [
+                                                                  "Process software.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "stealth_timeout",
+                                               "name":  "stealth_timeout",
+                                               "description":  "Possible date expiration check, exits too soon after checking local time",
+                                               "match_data":  [
+                                                                  "software.exe, PID 6540",
+                                                                  "Process software.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "language_check_registry",
+                                               "name":  "language_check_registry",
+                                               "description":  "Checks system language via registry key (possible geofencing)",
+                                               "match_data":  [
+                                                                  "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\Nls\\CustomLocale\\en-US",
+                                                                  "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\Nls\\ExtendedLocale\\en-US"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "antisandbox_sleep",
+                                               "name":  "antisandbox_sleep",
+                                               "description":  "A process attempted to delay the analysis task.",
+                                               "match_data":  [
+                                                                  "Process software.exe",
+                                                                  "Process pipanel.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "creates_suspended_process",
+                                               "name":  "creates_suspended_process",
+                                               "description":  "Creates a process in a suspended state, likely for injection",
+                                               "match_data":  [
+                                                                  "Process software.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "injection_write_process",
+                                               "name":  "injection_write_process",
+                                               "description":  "Writes to the memory another process",
+                                               "match_data":  [
+                                                                  "{\"write_memory\": \"Process software.exe with process ID 6540 wrote to the memory of process handle 0x000002e8\"}",
+                                                                  "Process software.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "reads_memory_remote_process",
+                                               "name":  "reads_memory_remote_process",
+                                               "description":  "Reads from the memory of another process",
+                                               "match_data":  [
+                                                                  "Process software.exe with process ID 6540 read from the memory of process handle 0x000002e8",
+                                                                  "Process software.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "enumerates_running_processes",
+                                               "name":  "enumerates_running_processes",
+                                               "description":  "Enumerates running processes",
+                                               "match_data":  [
+                                                                  "System with pid 4",
+                                                                  "Process software.exe",
+                                                                  "Registry with pid 100",
+                                                                  "smss.exe with pid 352"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "process_needed",
+                                               "name":  "process_needed",
+                                               "description":  "Repeatedly searches for a not-found process, may want to run with startbrowser=1 option",
+                                               "match_data":  [
+                                                                  "Process software.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "packer_unknown_pe_section_name",
+                                               "name":  "packer_unknown_pe_section_name",
+                                               "description":  "The binary contains an unknown PE section name indicative of packing",
+                                               "match_data":  [
+                                                                  ".00cfg",
+                                                                  ".fptable"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "packer_entropy",
+                                               "name":  "packer_entropy",
+                                               "description":  "The binary likely contains encrypted or compressed data",
+                                               "match_data":  [
+                                                                  ".text"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "contains_pe_overlay",
+                                               "name":  "contains_pe_overlay",
+                                               "description":  "The PE file contains an overlay",
+                                               "match_data":  [
+                                                                  "Contains overlay at offset 0x001f2a00 with size: 10592 bytes"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "injection_rwx",
+                                               "name":  "injection_rwx",
+                                               "description":  "Creates RWX memory",
+                                               "match_data":  [
+                                                                  "Process software.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "injection_write_exe_process",
+                                               "name":  "injection_write_exe_process",
+                                               "description":  "Writes an executable to the memory of another process",
+                                               "match_data":  [
+                                                                  "{\"write_exe_memory\": \"Process software.exe with process ID 6540 wrote an executable to the process handle 0x000002e8\"}",
+                                                                  "Process software.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_MEDIUM"
+                                           },
+                                           {
+                                               "id":  "procmem_yara",
+                                               "name":  "procmem_yara",
+                                               "description":  "Yara detections observed in process dumps, payloads or dropped files",
+                                               "match_data":  [
+                                                                  "Yara rule \u0027INDICATOR_SUSPICIOUS_EXE_UACBypass_CMSTPCOM\u0027 with data \u0027[\u0027{\\x003\\x00E\\x005\\x00F\\x00C\\x007\\x00F\\x009\\x00-\\x009\\x00A\\x005\\x001\\x00-\\x004\\x003\\x006\\x007\\x00-\\x009\\x000\\x006\\x003\\x00-\\x00A\\x001\\x002\\x000\\x002\\x004\\x004\\x00F\\x00B\\x00E\\x00C\\x007\\x00}\\x00\u0027, \u0027CoGetObject\u0027, \u0027E\\x00l\\x00e\\x00v\\x00a\\x00t\\x00i\\x00o\\x00n\\x00:\\x00A\\x00d\\x00m\\x00i\\x00n\\x00i\\x00s\\x00t\\x00r\\x00a\\x00t\\x00o\\x00r\\x00!\\x00n\\x00e\\x00w\\x00:\\x00\u0027]\u0027",
+                                                                  "Yara rule \u0027Remcos\u0027 with data \u0027[\u0027Remcos\u0027, \u0027%02i:%02i:%02i:%03i\u0027, \u0027{ 81 E1 FF 00 00 80 79 08 49 81 C9 00 FF FF FF 41 8A 44 8C }\u0027]\u0027",
+                                                                  "Yara rule \u0027shellcode_peb_parsing\u0027 with data \u0027[\u0027{ 64 8B 15 30 00 00 00 8B 52 0C 8B 52 14 8B 72 28 }\u0027]\u0027",
+                                                                  "Yara rule \u0027INDICATOR_SUSPICIOUS_EXE_UACBypass_CMSTPCOM\u0027 with data \u0027[\u0027{\\x003\\x00E\\x005\\x00F\\x00C\\x007\\x00F\\x009\\x00-\\x009\\x00A\\x005\\x001\\x00-\\x004\\x003\\x006\\x007\\x00-\\x009\\x000\\x006\\x003\\x00-\\x00A\\x001\\x002\\x000\\x002\\x004\\x004\\x00F\\x00B\\x00E\\x00C\\x007\\x00}\\x00\u0027, \u0027CoGetObject\u0027, \u0027E\\x00l\\x00e\\x00v\\x00a\\x00t\\x00i\\x00o\\x00n\\x00:\\x00A\\x00d\\x00m\\x00i\\x00n\\x00i\\x00s\\x00t\\x00r\\x00a\\x00t\\x00o\\x00r\\x00!\\x00n\\x00e\\x00w\\x00:\\x00\u0027]\u0027",
+                                                                  "Yara rule \u0027Remcos\u0027 with data \u0027[\u0027Remcos\u0027, \u0027%02i:%02i:%02i:%03i\u0027, \u0027{ 81 E1 FF 00 00 80 79 08 49 81 C9 00 FF FF FF 41 8A 44 8C }\u0027]\u0027"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_MEDIUM"
+                                           },
+                                           {
+                                               "id":  "infostealer_keylog",
+                                               "name":  "infostealer_keylog",
+                                               "description":  "Sniffs keystrokes",
+                                               "match_data":  [
+                                                                  "{\"SetWindowsHookExA\": \"Process: pipanel.exe(6172)\"}",
+                                                                  "Process pipanel.exe"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_MEDIUM"
+                                           },
+                                           {
+                                               "id":  "211",
+                                               "description":  "Queries a list of all running processes",
+                                               "match_data":  [
+                                                                  "ProcessInformation"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "418",
+                                               "description":  "Submission file is bigger than most known malware samples",
+                                               "match_data":  [
+                                                                  "File size 2052960 \u003e 1048576"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "9028",
+                                               "description":  "Uses 32bit PE files",
+                                               "match_data":  [
+                                                                  "EXECUTABLE_IMAGE, 32BIT_MACHINE"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "415",
+                                               "description":  "PE file has an executable .text section and no other executable section",
+                                               "match_data":  [
+                                                                  "Section: .text IMAGE_SCN_CNT_CODE, IMAGE_SCN_MEM_EXECUTE, IMAGE_SCN_MEM_READ"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "509",
+                                               "description":  "Reads software policies",
+                                               "match_data":  [
+                                                                  "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#registry_keys_opened",
+                                                                "value":  "HKEY_CURRENT_USER\\Software\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "14117",
+                                               "description":  "Unusual module load detection (module proxying)",
+                                               "match_data":  [
+                                                                  "DLL load from R(W)X memory: user32.dll",
+                                                                  "DLL load from R(W)X memory: imm32.dll",
+                                                                  "DLL load from R(W)X memory: advapi32.dll",
+                                                                  "DLL load from R(W)X memory: shell32.dll"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "206",
+                                               "description":  "Performs DNS lookups",
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#dns_lookups",
+                                                                "value":  "DNS query: www.google.com"
+                                                            },
+                                                            {
+                                                                "ref":  "#dns_lookups",
+                                                                "value":  "DNS query: dns.google"
+                                                            },
+                                                            {
+                                                                "ref":  "#dns_lookups",
+                                                                "value":  "DNS query: assets.msn.com"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "715",
+                                               "description":  "Classification label",
+                                               "match_data":  [
+                                                                  "mal52.evad.winEXE@1/0@20/0"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "626",
+                                               "description":  "Sample tries to load a library which is not present or installed on the analysis machine, adding the library might reveal more behavior",
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "620",
+                                               "description":  "Sample may be VM or Sandbox-aware, try analysis on a native machine",
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "406",
+                                               "description":  "Contains modern PE file flags such as dynamic base (ASLR) or NX",
+                                               "match_data":  [
+                                                                  "DYNAMIC_BASE, NX_COMPAT, TERMINAL_SERVER_AWARE"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "14057",
+                                               "description":  "Switches to a custom stack to bypass stack traces",
+                                               "match_data":  [
+                                                                  "Address: 9F189A"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "187",
+                                               "description":  "Tries to load missing DLLs",
+                                               "match_data":  [
+                                                                  "apphelp.dll"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "429",
+                                               "description":  "PE file has an executable .text section which is very likely to contain packed code (zlib compression ratio \u003c 0.3)",
+                                               "match_data":  [
+                                                                  "Section: .text IMAGE_SCN_CNT_CODE, IMAGE_SCN_MEM_EXECUTE, IMAGE_SCN_MEM_READ"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "404",
+                                               "description":  "PE / OLE file has a valid certificate",
+                                               "match_data":  [
+                                                                  "certificate valid"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "416",
+                                               "description":  "PE file contains a valid data directory to section mapping",
+                                               "match_data":  [
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_IMPORT is in: .rdata",
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_RESOURCE is in: .rsrc",
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_BASERELOC is in: .reloc",
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG is in: .rdata",
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_IAT is in: .rdata"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "1733",
+                                               "description":  "Tries to detect virtualization through RDTSC time measurements",
+                                               "match_data":  [
+                                                                  "First address: 9F02B1 second address: 9F02B5 instructions: 0x00000000 rdtsc 0x00000002 mov al, bh 0x00000004 rdtsc ",
+                                                                  "First address: 9F02B5 second address: 9F189A instructions: 0x00000000 rdtsc 0x00000002 xchg dword ptr [esp], edx 0x00000005 jmp 0000771B6D375F26h 0x00000007 xchg ax, cx 0x00000009 push eax 0x0000000a ",
+                                                                  "First address: 9F189A second address: 9F18D0 instructions: 0x00000000 rdtsc 0x00000002 lea esp, dword ptr [esp+02h] 0x00000006 xchg dword ptr [esp], ebx 0x00000009 neg dx 0x0000000c jmp 0000771B6D4B35"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "199",
+                                               "description":  "PE file contains sections with non-standard names",
+                                               "match_data":  [
+                                                                  "section name: .00cfg",
+                                                                  "section name: .fptable"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "202",
+                                               "description":  "Binary may include packed or encrypted code",
+                                               "match_data":  [
+                                                                  "section name: .text entropy: 7.8455098222434865"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "238",
+                                               "description":  "URLs found in memory or binary data",
+                                               "match_data":  [
+                                                                  "http://crl.globalsign.com/ca/gstsacasha384g4.crl0",
+                                                                  "http://crl.globalsign.com/codesigningrootr45.crl0U",
+                                                                  "http://crl.globalsign.com/gsgccr45evcodesignca2020.crl0",
+                                                                  "http://crl.globalsign.com/root-r6.crl0G",
+                                                                  "http://ocsp.globalsign.com/ca/gstsacasha384g40C",
+                                                                  "http://ocsp.globalsign.com/codesigningrootr450F",
+                                                                  "http://ocsp.globalsign.com/gsgccr45evcodesignca20200U",
+                                                                  "http://ocsp2.globalsign.com/rootr606",
+                                                                  "http://secure.globalsign.com/cacert/codesigningrootr45.crt0A",
+                                                                  "http://secure.globalsign.com/cacert/gsgccr45evcodesignca2020.crt0?",
+                                                                  "http://secure.globalsign.com/cacert/gstsacasha384g4.crt0",
+                                                                  "https://www.globalsign.com/repository/0"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           }
+                                       ],
+                 "registry_keys_set":  [
+                                           {
+                                               "key":  "HKEY_USERS\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Rmc-9YXIFY\\\\exepath",
+                                               "value":  "D2 14 C5 27 BA 8B 11 5C 4C A2 6D 12 89 99 84 D4 37 83 32 B7 7B 4B D4 93 D7 10 C5 66 B2 6E 11 2A 53 CF FE 50 35 ED 87 09 5F 83 19 0B D7 DA 3E 0F 61 70 20 83 F6 E0 AD DE 55 BD 44 88 FA D1 67 37 45 58 79 8F E3 4F 90 86 E7 43 6E 5B 49 67 79 A6 8B 4F 1D 8A D8 6E FE 26 50 22 66 20 D2 90 CC 50 8A 8A 06 B8 4F E6 A6 78 3C 83 50 B8 A2 EC 7E A9 93 0F D9 83 EA 3E F7 2C FB 7E 9B C2 C4 40 BB 09 14 79 B5 AA 72 AF B3 47 1A 20"
+                                           },
+                                           {
+                                               "key":  "HKEY_USERS\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Rmc-9YXIFY\\\\licence",
+                                               "value":  "2359759D042CE2C23DA158853297E4A9"
+                                           },
+                                           {
+                                               "key":  "HKEY_USERS\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Rmc-9YXIFY\\\\time",
+                                               "value":  "1696419670"
+                                           },
+                                           {
+                                               "key":  "HKEY_CURRENT_USER\\SOFTWARE\\Rmc-9YXIFY\\exepath",
+                                               "value":  "\\xd2\\x14\\xc5\u0027\\xba\\x8b\\x11\\L\\xa2m\\x12\\x89\\x99\\x84\\xd47\\x832\\xb7{K\\xd4\\x93\\xd7\\x10\\xc5f\\xb2n\\x11*S\\xcf\\xfeP5\\xed\\x87\t_\\x83\\x19\\x0b\\xd7\\xda\u003e\\x0fap \\x83\\xf6\\xe0\\xad\\xdeU\\xbdD\\x88\\xfa\\xd1g7EXy\\x8f\\xe3O\\x90\\x86\\xe7Cn[Igy\\xa6\\x8bO\\x1d\\x8a\\xd8n\\xfe\u0026P\"f \\xd2\\x90\\xccP\\x8a\\x8a\\x06\\xb8O\\xe6\\xa6x\u003c\\x83P\\xb8\\xa2\\xec~\\xa9\\x93\\x0f\\xd9\\x83\\xea\u003e\\xf7,\\xfb~\\x9b\\xc2\\xc4@\\xbb\t\\x14y\\xb5\\xaar\\xaf\\xb3G\\x1a "
+                                           },
+                                           {
+                                               "key":  "HKEY_CURRENT_USER\\SOFTWARE\\Rmc-9YXIFY\\licence",
+                                               "value":  "2359759D042CE2C23DA158853297E4A9"
+                                           },
+                                           {
+                                               "key":  "HKEY_CURRENT_USER\\SOFTWARE\\Rmc-9YXIFY\\time",
+                                               "value":  "1769222648"
+                                           }
+                                       ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2928",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        },
+                                        {
+                                            "process_id":  "2524",
+                                            "name":  "%TEMP%\\XW5IKX4ZFGLO6C30.exe",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2612",
+                                                                 "name":  "%TEMP%\\XW5IKX4ZFGLO6C30.exe"
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2880",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        },
+                                        {
+                                            "process_id":  "6540",
+                                            "name":  "\"C:\\Users\\\u003cUSER\u003e\\Desktop\\software.exe\"",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "6172",
+                                                                 "name":  "\"C:\\Users\\\u003cUSER\u003e\\Desktop\\software.exe\"",
+                                                                 "files_written":  [
+                                                                                       "C:\\ProgramData\\remcos\\logs.dat"
+                                                                                   ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2248",
+                                            "name":  "IMG_6152.pif.exe",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2916",
+                                                                 "name":  "IMG_6152.pif.exe",
+                                                                 "time_offset":  18
+                                                             },
+                                                             {
+                                                                 "process_id":  "2452",
+                                                                 "name":  "IMG_6152.pif.exe",
+                                                                 "time_offset":  17
+                                                             },
+                                                             {
+                                                                 "process_id":  "3000",
+                                                                 "name":  "IMG_6152.pif.exe",
+                                                                 "time_offset":  16
+                                                             },
+                                                             {
+                                                                 "process_id":  "1936",
+                                                                 "name":  "IMG_6152.pif.exe",
+                                                                 "time_offset":  15
+                                                             },
+                                                             {
+                                                                 "process_id":  "320",
+                                                                 "name":  "IMG_6152.pif.exe",
+                                                                 "time_offset":  14
+                                                             },
+                                                             {
+                                                                 "process_id":  "1580",
+                                                                 "name":  "IMG_6152.pif.exe",
+                                                                 "time_offset":  13
+                                                             },
+                                                             {
+                                                                 "process_id":  "740",
+                                                                 "name":  "IMG_6152.pif.exe",
+                                                                 "time_offset":  13
+                                                             },
+                                                             {
+                                                                 "process_id":  "2688",
+                                                                 "name":  "IMG_6152.pif.exe",
+                                                                 "time_offset":  12
+                                                             },
+                                                             {
+                                                                 "process_id":  "2496",
+                                                                 "name":  "IMG_6152.pif.exe",
+                                                                 "time_offset":  11
+                                                             },
+                                                             {
+                                                                 "process_id":  "2276",
+                                                                 "name":  "IMG_6152.pif.exe",
+                                                                 "time_offset":  10
+                                                             }
+                                                         ],
+                                            "files_opened":  [
+                                                                 "C:\\Program Files (x86)"
+                                                             ]
+                                        },
+                                        {
+                                            "process_id":  "1524",
+                                            "name":  "\"C:\\Users\\user\\Desktop\\program.exe\"",
+                                            "files_opened":  [
+                                                                 "C:\\Users\\user\\Desktop\\program.exe",
+                                                                 "C:\\Windows\\AppPatch\\sysmain.sdb",
+                                                                 "C:\\Windows\\SysWOW64\\GDI32.dll",
+                                                                 "C:\\Windows\\SysWOW64\\IMM32.DLL",
+                                                                 "C:\\Windows\\SysWOW64\\KERNEL32.DLL",
+                                                                 "C:\\Windows\\SysWOW64\\KERNELBASE.dll",
+                                                                 "C:\\Windows\\SysWOW64\\RPCRT4.dll",
+                                                                 "C:\\Windows\\SysWOW64\\advapi32.dll",
+                                                                 "C:\\Windows\\SysWOW64\\apphelp.dll",
+                                                                 "C:\\Windows\\SysWOW64\\gdi32full.dll",
+                                                                 "C:\\Windows\\SysWOW64\\msvcp_win.dll",
+                                                                 "C:\\Windows\\SysWOW64\\msvcrt.dll",
+                                                                 "C:\\Windows\\SysWOW64\\ntdll.dll",
+                                                                 "C:\\Windows\\SysWOW64\\sechost.dll",
+                                                                 "C:\\Windows\\SysWOW64\\shell32.dll",
+                                                                 "C:\\Windows\\SysWOW64\\ucrtbase.dll",
+                                                                 "C:\\Windows\\SysWOW64\\user32.dll",
+                                                                 "C:\\Windows\\SysWOW64\\win32u.dll",
+                                                                 "C:\\Windows\\apppatch\\MergeSdbFilesSource\\sysMerge.sdb"
+                                                             ]
+                                        }
+                                    ],
+                 "files_dropped":  [
+                                       {
+                                           "path":  "%CommonProgramFiles(x86)%\\microsoft shared\\ink\\pipanel.exe",
+                                           "sha256":  "82ce2f85af76e7b036113cca4c90aed6905a5080fb21a8c976173ada5cf3ea0f"
+                                       },
+                                       {
+                                           "path":  "logs.dat",
+                                           "sha256":  "d17ae1360fad4a3fa6514709e88be395f8582fa6723417bdfe807346196731ac",
+                                           "process_name":  "\"C:\\Users\\\u003cUSER\u003e\\Desktop\\software.exe\"",
+                                           "process_id":  "6172"
+                                       }
+                                   ],
+                 "text_decoded":  [
+                                      "{\u0027Remcos\u0027: {\u0027version\u0027: [\u00275.1.0 Pro\u0027], \u0027CNCs\u0027: [[\u0027tcp://192.248.185.186:2404\u0027]], \u0027raw\u0027: [{\u0027Password\u0027: \u00270\u0027, \u0027Botnet\u0027: \u0027LOVE\u0027, \u0027Connect interval\u0027: \u00271\u0027, \u0027Install flag\u0027: \u0027Disable\u0027, \u0027Setup HKCU\\\\Run\u0027: \u0027Enable\u0027, \u0027Setup HKLM\\\\Run\u0027: \u0027Enable\u0027, \u0027Setup HKLM\\\\Explorer\\\\Run\u0027: \u0027Disable\u0027, \u0027Keylog file max size\u0027: \u0027100000\u0027, \u0027Install parent directory\u0027: \u0027%ProgramData%\u0027, \u0027Install filename\u0027: \u0027remcos.exe\u0027, \u0027Startup value\u0027: \u0027Disable\u0027, \u0027Hide file\u0027: \u0027Disable\u0027, \u0027Process injection flag\u0027: \u00270\u0027, \u0027Mutex\u0027: \u0027Rmc-9YXIFY\u0027, \u0027Keylogger mode\u0027: \u00271\u0027, \u0027Keylogger parent directory\u0027: \u0027%ProgramData%\u0027, \u0027Keylogger filename\u0027: \u0027logs.dat\u0027, \u0027Keylog crypt\u0027: \u0027Disable\u0027, \u0027Hide keylog file\u0027: \u0027Disable\u0027, \u0027Screenshot flag\u0027: \u0027Disable\u0027, \u0027Screenshot time\u0027: \u002710\u0027, \u0027Take Screenshot option\u0027: \u0027Disable\u0027, \u0027Take screenshot title\u0027: \u0027\u0027, \u0027Take screenshot time\u0027: \u00275\u0027, \u0027Screenshot parent directory\u0027: \u0027%AppData%\u0027, \u0027Screenshot folder\u0027: \u0027Screenshots\u0027, \u0027Screenshot crypt flag\u0027: \u0027Disable\u0027, \u0027Mouse option\u0027: \u0027Disable\u0027, \u0027Unknown29\u0027: \u0027Disable\u0027, \u0027Delete file\u0027: \u0027Disable\u0027, \u0027Unknown31\u0027: \u0027Disable\u0027, \u0027Unknown32\u0027: \u0027Disable\u0027, \u0027Unknown33\u0027: \u0027Disable\u0027, \u0027Unknown34\u0027: \u0027Disable\u0027, \u0027Audio recording flag\u0027: \u0027Disable\u0027, \u0027Audio record time\u0027: \u00275\u0027, \u0027Audio parent directory\u0027: \u0027%ProgramFiles%\u0027, \u0027Audio folder\u0027: \u0027MicRecords\u0027, \u0027Disable UAC flage\u0027: \u0027Disable\u0027, \u0027Logging mode\u0027: \u00270\u0027, \u0027Connect delay\u0027: \u00270\u0027, \u0027Keylogger specific window names\u0027: \u0027\u0027, \u0027Browser cleaning on startup flag\u0027: \u0027Disable\u0027, \u0027Browser cleaning only for the first run flag\u0027: \u0027Enable\u0027, \u0027Browser cleaning sleep time in minutes\u0027: \u00270\u0027, \u0027UAC bypass flag\u0027: \u0027Disable\u0027, \u0027Unkown47\u0027: \u00271\u0027, \u0027Install directory\u0027: \u0027Remcos\u0027, \u0027Keylogger root directory\u0027: \u0027remcos\u0027, \u0027Watchdog flag\u0027: \u0027Disable\u0027, \u0027Unknown51\u0027: \u0027Disable\u0027, \u0027License\u0027: \u00272359759D042CE2C23DA158853297E4A9\u0027, \u0027Screenshot mouse drawing flag\u0027: \u0027Disable\u0027, \u0027TLS raw certificate (base64)\u0027: \u0027\u0027, \u0027TLS key (base64)\u0027: \u0027\u0027, \u0027TLS raw peer certificate (base64)\u0027: \u0027\u0027, \u0027TLS client private key (base64)\u0027: \u0027\u0027}]}}"
+                                  ],
+                 "text_highlighted":  [
+                                          "pipanel.exe - Application Error",
+                                          "The instruction at 0x00071000 referenced memory at 0x00071000. The memory could not be written.\r\n\nClick on OK to terminate the program"
+                                      ],
+                 "processes_terminated":  [
+                                              "IMG_6152.pif.exe"
+                                          ],
+                 "tags":  [
+                              "OBFUSCATED",
+                              "LONG_SLEEPS"
+                          ],
+                 "payloads_extracted":  [
+                                            {
+                                                "sha256":  "177aaa9b396b6eac0af4ce788190718fb77881eabef59b56149bf1bae4d18fb5",
+                                                "size":  "150",
+                                                "payload_type":  "Injected Shellcode/Data",
+                                                "process_name":  "C:\\Users\\Bruno\\Desktop\\software.exe",
+                                                "timestamp":  "2026-01-24T02:43:58Z"
+                                            },
+                                            {
+                                                "sha256":  "53bda3022c1dac91063a1cdd1e3e075582c69369811f420dc8a29d7563dbb668",
+                                                "type":  "PE_EXE",
+                                                "size":  "494080",
+                                                "payload_type":  "Remcos Payload: 32-bit executable",
+                                                "process_name":  "C:\\Users\\Bruno\\Desktop\\software.exe",
+                                                "timestamp":  "2026-01-24T02:43:58Z"
+                                            },
+                                            {
+                                                "sha256":  "44c83c2de473211d58b5e7b019c54a9c20167d163717699f232f90263606b4ff",
+                                                "size":  "395",
+                                                "payload_type":  "Unpacked Shellcode",
+                                                "process_name":  "C:\\Users\\Bruno\\Desktop\\software.exe",
+                                                "timestamp":  "2026-01-24T02:43:58Z"
+                                            },
+                                            {
+                                                "sha256":  "0361ad108884a8ef868d805b3f9947de35f88f4e71885064f1d5ae35117e017d",
+                                                "size":  "69",
+                                                "payload_type":  "Injected Shellcode/Data",
+                                                "process_name":  "C:\\Users\\Bruno\\Desktop\\software.exe",
+                                                "timestamp":  "2026-01-24T02:43:58Z"
+                                            },
+                                            {
+                                                "sha256":  "8edd78de8d49254c91cbf587c30a2d2ab1c7a6031b28ca5f0c9d263b1e37482d",
+                                                "size":  "150",
+                                                "payload_type":  "Unpacked Shellcode",
+                                                "process_name":  "C:\\Program Files (x86)\\Common Files\\microsoft shared\\ink\\pipanel.exe",
+                                                "timestamp":  "2026-01-24T02:44:08Z"
+                                            },
+                                            {
+                                                "sha256":  "707c54abc7e7ab3d3c3289e965eb3c6d538d1ba57d7bad9b5204e2070d706d35",
+                                                "size":  "499999",
+                                                "payload_type":  "Decompressed PE Image",
+                                                "process_name":  "C:\\Users\\Bruno\\Desktop\\software.exe",
+                                                "timestamp":  "2026-01-24T02:43:58Z"
+                                            },
+                                            {
+                                                "sha256":  "87fe77e39bcb52802aefe538e1dd9a6ef0ef04a4fe089125b82050e5f7d23cb5",
+                                                "size":  "300",
+                                                "payload_type":  "Unpacked Shellcode",
+                                                "process_name":  "C:\\Program Files (x86)\\Common Files\\microsoft shared\\ink\\pipanel.exe",
+                                                "timestamp":  "2026-01-24T02:44:08Z"
+                                            }
+                                        ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "162.159.36.2",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    }
+                                ],
+                 "memory_pattern_urls":  [
+                                             "tcp://192.248.185.186:2404"
+                                         ],
+                 "files_opened":  [
+                                      "C:\\Users\\\u003cUSER\u003e\\Desktop\\software.exe",
+                                      "C:\\Users\\\u003cUSER\u003e\\Desktop\\Wldp.dll",
+                                      "C:\\ProgramData",
+                                      "C:\\ProgramData\\remcos\\logs.dat",
+                                      "C:\\ProgramData\\remcos",
+                                      "C:\\Windows\\system32\\ntdll.dll",
+                                      "C:\\Windows\\system32\\kernel32.dll",
+                                      "C:\\Users\\\u003cUSER\u003e\\Downloads\\IMG_6152.pif.exe",
+                                      "C:\\Windows\\system32\\version.DLL",
+                                      "C:\\Program Files (x86)",
+                                      "C:\\Windows\\system32\\apphelp.dll",
+                                      "\\SystemRoot\\AppPatch\\sysmain.sdb",
+                                      "C:\\Program Files (x86)\\Common Files\\microsoft shared\\ink\\",
+                                      "C:\\Program Files (x86)\\Common Files\\microsoft shared\\",
+                                      "C:\\Program Files (x86)\\Common Files\\microsoft shared\\ink\\pipanel.exe",
+                                      "C:\\Users\\user\\Desktop\\program.exe",
+                                      "C:\\Windows\\AppPatch\\sysmain.sdb",
+                                      "C:\\Windows\\SysWOW64\\GDI32.dll",
+                                      "C:\\Windows\\SysWOW64\\IMM32.DLL",
+                                      "C:\\Windows\\SysWOW64\\KERNEL32.DLL",
+                                      "C:\\Windows\\SysWOW64\\KERNELBASE.dll",
+                                      "C:\\Windows\\SysWOW64\\RPCRT4.dll",
+                                      "C:\\Windows\\SysWOW64\\advapi32.dll",
+                                      "C:\\Windows\\SysWOW64\\apphelp.dll",
+                                      "C:\\Windows\\SysWOW64\\gdi32full.dll",
+                                      "C:\\Windows\\SysWOW64\\msvcp_win.dll",
+                                      "C:\\Windows\\SysWOW64\\msvcrt.dll",
+                                      "C:\\Windows\\SysWOW64\\ntdll.dll",
+                                      "C:\\Windows\\SysWOW64\\sechost.dll",
+                                      "C:\\Windows\\SysWOW64\\shell32.dll",
+                                      "C:\\Windows\\SysWOW64\\ucrtbase.dll",
+                                      "C:\\Windows\\SysWOW64\\user32.dll",
+                                      "C:\\Windows\\SysWOW64\\win32u.dll",
+                                      "C:\\Windows\\apppatch\\MergeSdbFilesSource\\sysMerge.sdb"
+                                  ],
+                 "registry_keys_opened":  [
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\GRE_Initialize\\DisableMetaFiles",
+                                              "HKEY_CURRENT_USER\\Software\\Classes\\ms-settings\\shell\\open\\command",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\RestartManager",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\GRE_Initialize",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows NT\\CurrentVersion\\ProductName",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Rmc-9YXIFY\\okmode",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Rmc-9YXIFY\\del",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Rmc-9YXIFY\\time",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Rmc-9YXIFY\\exepath",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Rmc-9YXIFY\\override",
+                                              "HKEY_CURRENT_USER\\Software\\Rmc-9YXIFY\\",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\WaitToKillServiceTimeout",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Rmc-9YXIFY\\licence",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows NT\\CurrentVersion\\CurrentBuildNumber",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\GRE_Initialize\\DisableUmpdBufferSizeCheck",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\SdbUpdates\\ManifestedMergeStubSdbs",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager",
+                                              "HKEY_LOCAL_MACHINE\\OSDATA\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Segment Heap",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Wow64\\x86",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Policies\\Microsoft\\MUI\\Settings",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\Windows NT\\CurrentVersion\\GRE_Initialize",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Disable8And16BitMitigation",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\program.exe",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Policies\\Microsoft\\Windows\\Display",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\SdbUpdates",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Nls\\CustomLocale",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\ControlSet001\\Control\\MUI\\UILanguages\\en-US",
+                                              "HKEY_LOCAL_MACHINE\\Software\\WOW6432Node\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers"
+                                          ],
+                 "mbc":  [
+                             {
+                                 "id":  "E1082",
+                                 "objective":  "Discovery",
+                                 "behavior":  "System Information Discovery",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "1"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1083",
+                                 "objective":  "Discovery",
+                                 "behavior":  "File and Directory Discovery",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "7"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0018",
+                                 "objective":  "Process",
+                                 "behavior":  "Terminate Process",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "11"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0051",
+                                 "objective":  "File System",
+                                 "behavior":  "Read File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "12"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1083",
+                                 "objective":  "Discovery",
+                                 "behavior":  "File and Directory Discovery",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "14"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0052",
+                                 "objective":  "File System",
+                                 "behavior":  "Writes File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "16"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0027.009",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encrypt Data",
+                                 "method":  "RC4",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "18"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0028.002",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encryption Key",
+                                 "method":  "RC4 KSA",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "18"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "OC0006"
+                             },
+                             {
+                                 "id":  "C0002"
+                             },
+                             {
+                                 "id":  "OB0007"
+                             },
+                             {
+                                 "id":  "OB0001"
+                             },
+                             {
+                                 "id":  "OB0002"
+                             },
+                             {
+                                 "id":  "OB0006"
+                             },
+                             {
+                                 "id":  "F0001"
+                             }
+                         ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "query environment variable",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "1"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1614",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get geographical location",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "2"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "link function at runtime on Windows",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "3"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get number of processors",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "4"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "enumerate files on Windows",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "7"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "parse PE header",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "13"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get file size",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "14"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "access PEB ldr_data",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "17"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using RC4 KSA",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "18"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "PE file has an executable .text section which is very likely to contain packed code (zlib compression ratio \u003c 0.3)",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "429"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Binary may include packed or crypted data",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "202"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Binary may include packed or crypted data",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "202"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1518.001",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Tries to detect virtualization through RDTSC time measurements",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "1733"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1518.001",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Switches to a customs stack to bypass stack traces",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "14057"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1057",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Queries a list of all running processes",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "211"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Tries to detect virtualization through RDTSC time measurements",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "1733"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Switches to a customs stack to bypass stack traces",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "14057"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "files_written":  [
+                                       "C:\\ProgramData\\remcos\\logs.dat"
+                                   ],
+                 "command_executions":  [
+                                            "\"C:\\Users\\\u003cUSER\u003e\\Desktop\\software.exe\"",
+                                            " "
+                                        ],
+                 "mutexes_created":  [
+                                         "Rmc-9YXIFY"
+                                     ],
+                 "processes_created":  [
+                                           "\"C:\\Users\\\u003cUSER\u003e\\Desktop\\software.exe\"",
+                                           "IMG_6152.pif.exe",
+                                           "\"C:\\Users\\user\\Desktop\\program.exe\""
+                                       ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "assets.msn.com"
+                                     },
+                                     {
+                                         "hostname":  "redirector.gvt1.com",
+                                         "resolved_ips":  [
+                                                              "142.250.152.101",
+                                                              "142.250.152.139",
+                                                              "142.250.152.138",
+                                                              "142.250.152.102",
+                                                              "142.250.152.113",
+                                                              "142.250.152.100"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "optimizationguide-pa.googleapis.com",
+                                         "resolved_ips":  [
+                                                              "216.239.34.223",
+                                                              "216.239.36.223",
+                                                              "216.239.32.223",
+                                                              "216.239.38.223"
+                                                          ]
+                                     }
+                                 ],
+                 "memory_dumps":  [
+                                      {
+                                          "file_name":  "6540.dmp",
+                                          "process":  "C:\\Users\\Bruno\\Desktop\\software.exe",
+                                          "size":  "41414656",
+                                          "base_address":  "1507328"
+                                      },
+                                      {
+                                          "file_name":  "6172.dmp",
+                                          "process":  "C:\\Program Files (x86)\\Common Files\\microsoft shared\\ink\\pipanel.exe",
+                                          "size":  "27611136",
+                                          "base_address":  "4194304"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.3970720211.0000000000BB0000.00000004.00000800.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\program.exe",
+                                          "size":  "155648",
+                                          "base_address":  "12255232",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "1524"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000000.3318983534.0000000000D64000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\program.exe",
+                                          "size":  "45056",
+                                          "base_address":  "14041088",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "process_id":  "1524"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000000.3319314236.0000000000D73000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\program.exe",
+                                          "size":  "372736",
+                                          "base_address":  "14102528",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "process_id":  "1524"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000000.3319141635.0000000000D6F000.00000008.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\program.exe",
+                                          "size":  "4096",
+                                          "base_address":  "14086144",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "process_id":  "1524"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000000.3316821312.0000000000CD0000.00000002.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\program.exe",
+                                          "size":  "4096",
+                                          "base_address":  "13434880",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "process_id":  "1524"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.4205510452.0000000000BB0000.00000004.00000800.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\program.exe",
+                                          "size":  "159744",
+                                          "base_address":  "12255232",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "1524"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.3991344945.0000000000BB0000.00000004.00000800.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\program.exe",
+                                          "size":  "159744",
+                                          "base_address":  "12255232",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "1524"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000000.3318485420.0000000000CD1000.00000020.00000001.01000000.00000003.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\program.exe",
+                                          "size":  "598016",
+                                          "base_address":  "13438976",
+                                          "stage":  "MEM_STAGE_NEW",
+                                          "process_id":  "1524"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.4069848287.0000000000BB0000.00000004.00000800.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\program.exe",
+                                          "size":  "4096",
+                                          "base_address":  "12255232",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "1524"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.4279552867.0000000000BB0000.00000004.00000800.00020000.00000000.sdmp",
+                                          "process":  "C:\\Users\\user\\Desktop\\program.exe",
+                                          "size":  "4096",
+                                          "base_address":  "12255232",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "1524"
+                                      }
+                                  ],
+                 "sigma_analysis_results":  [
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "Hashes":  "SHA1=150F30A5BA7BE3C9ACE61954F0F350B54D0C828D,MD5=8842E4FF94CE0648110D54733AF1672B,SHA256=99CB6A7FD6F10013A4274988CCD90F4D31CCD2FFB7FBD525A08941A626105623,IMPHASH=0EBA2F2180AEEC2BDB827D00C7A99A01",
+                                                                                             "CurrentDirectory":  "C:\\Users\\Bruno\\Desktop\\",
+                                                                                             "Product":  "AnyDesk",
+                                                                                             "Description":  "AnyDesk",
+                                                                                             "FileVersion":  "8.0.10",
+                                                                                             "ParentCommandLine":  "C:\\Windows\\Explorer.EXE",
+                                                                                             "CommandLine":  "\"C:\\Users\\Bruno\\Desktop\\program.exe\"",
+                                                                                             "EventID":  "1",
+                                                                                             "ParentImage":  "C:\\Windows\\explorer.exe",
+                                                                                             "IntegrityLevel":  "High",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\program.exe",
+                                                                                             "Company":  "AnyDesk Software GmbH"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "high",
+                                                    "rule_id":  "e8f71f8fe8e705cebda4bbb0636db89fdd3c7b9c2faebe19bac1e6d0d6db37c5",
+                                                    "rule_source":  "Sigma Integrated Rule Set (GitHub)",
+                                                    "rule_title":  "Remote Access Tool - Anydesk Execution From Suspicious Folder",
+                                                    "rule_description":  "An adversary may use legitimate desktop support and remote access software, such as Team Viewer, Go2Assist, LogMein, AmmyyAdmin, etc, to establish an interactive command and control channel to target systems within networks.\nThese services are commonly used as legitimate technical support software, and may be allowed by application control within a target environment.\nRemote access tools like VNC, Ammyy, and Teamviewer are used frequently when compared with other legitimate software commonly used by adversaries. (Citation: Symantec Living off the Land)\n",
+                                                    "rule_author":  "Florian Roth (Nextron Systems)"
+                                                },
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "Product":  "AnyDesk",
+                                                                                             "CurrentDirectory":  "C:\\Users\\Bruno\\Desktop\\",
+                                                                                             "Hashes":  "SHA1=150F30A5BA7BE3C9ACE61954F0F350B54D0C828D,MD5=8842E4FF94CE0648110D54733AF1672B,SHA256=99CB6A7FD6F10013A4274988CCD90F4D31CCD2FFB7FBD525A08941A626105623,IMPHASH=0EBA2F2180AEEC2BDB827D00C7A99A01",
+                                                                                             "Description":  "AnyDesk",
+                                                                                             "EventID":  "1",
+                                                                                             "ParentCommandLine":  "C:\\Windows\\Explorer.EXE",
+                                                                                             "CommandLine":  "\"C:\\Users\\Bruno\\Desktop\\program.exe\"",
+                                                                                             "FileVersion":  "8.0.10",
+                                                                                             "ParentImage":  "C:\\Windows\\explorer.exe",
+                                                                                             "IntegrityLevel":  "High",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\program.exe",
+                                                                                             "Company":  "AnyDesk Software GmbH"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "medium",
+                                                    "rule_id":  "0c4da16b3166fbd90cadb96254a8be0f74828fc4eb967256ac0483d9d0a10a96",
+                                                    "rule_source":  "Sigma Integrated Rule Set (GitHub)",
+                                                    "rule_title":  "Remote Access Tool - AnyDesk Execution",
+                                                    "rule_description":  "An adversary may use legitimate desktop support and remote access software, such as Team Viewer, Go2Assist, LogMein, AmmyyAdmin, etc, to establish an interactive command and control channel to target systems within networks.\nThese services are commonly used as legitimate technical support software, and may be allowed by application control within a target environment.\nRemote access tools like VNC, Ammyy, and Teamviewer are used frequently when compared with other legitimate software commonly used by adversaries. (Citation: Symantec Living off the Land)\n",
+                                                    "rule_author":  "frack113"
+                                                },
+                                                {
+                                                    "match_context":  [
+                                                                          {
+                                                                              "values":  {
+                                                                                             "Product":  "AnyDesk",
+                                                                                             "CurrentDirectory":  "C:\\Users\\Bruno\\Desktop\\",
+                                                                                             "Hashes":  "SHA1=150F30A5BA7BE3C9ACE61954F0F350B54D0C828D,MD5=8842E4FF94CE0648110D54733AF1672B,SHA256=99CB6A7FD6F10013A4274988CCD90F4D31CCD2FFB7FBD525A08941A626105623,IMPHASH=0EBA2F2180AEEC2BDB827D00C7A99A01",
+                                                                                             "Description":  "AnyDesk",
+                                                                                             "EventID":  "1",
+                                                                                             "ParentCommandLine":  "C:\\Windows\\Explorer.EXE",
+                                                                                             "CommandLine":  "\"C:\\Users\\Bruno\\Desktop\\program.exe\"",
+                                                                                             "FileVersion":  "8.0.10",
+                                                                                             "ParentImage":  "C:\\Windows\\explorer.exe",
+                                                                                             "IntegrityLevel":  "High",
+                                                                                             "Image":  "C:\\Users\\Bruno\\Desktop\\program.exe",
+                                                                                             "Company":  "AnyDesk Software GmbH"
+                                                                                         }
+                                                                          }
+                                                                      ],
+                                                    "rule_level":  "medium",
+                                                    "rule_id":  "149998404377f72bc44b77b90b9339b9992c7ffdfa4ac2f8b9197b502ce28357",
+                                                    "rule_source":  "Sigma Integrated Rule Set (GitHub)",
+                                                    "rule_title":  "Remote Access Tool - AnyDesk Execution With Known Revoked Signing Certificate",
+                                                    "rule_description":  "Detects the execution of an AnyDesk binary with a version prior to 8.0.8.\nPrior to version 8.0.8, the Anydesk application used a signing certificate that got compromised by threat actors.\nUse this rule to detect instances of older versions of Anydesk using the compromised certificate\nThis is recommended in order to avoid attackers leveraging the certificate and signing their binaries to bypass detections.\n",
+                                                    "rule_author":  "Sai Prashanth Pulisetti, Nasreddine Bencherchali (Nextron Systems)"
+                                                }
+                                            ],
+                 "modules_loaded":  [
+                                        "api-ms-win-core-synch-l1-2-0",
+                                        "api-ms-win-core-fibers-l1-1-1",
+                                        "kernel32",
+                                        "api-ms-win-core-fibers-l1-1-2",
+                                        "kernelbase",
+                                        "api-ms-win-core-localization-l1-2-1",
+                                        "api-ms-win-core-string-l1-1-0",
+                                        "api-ms-win-core-datetime-l1-1-1",
+                                        "api-ms-win-core-localization-obsolete-l1-2-0",
+                                        "api-ms-win-downlevel-advapi32-l1-1-0.dll"
+                                    ],
+                 "verdict_labels":  [
+                                        "Remcos",
+                                        "KeyloggerGeneric"
+                                    ],
+                 "verdict_confidence":  70,
+                 "attack_techniques":  {
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "query environment variable",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "1"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get number of processors",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "4"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "Tries to detect virtualization through RDTSC time measurements",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "1733"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "Switches to a customs stack to bypass stack traces",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "14057"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1614":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get geographical location",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "2"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "link function at runtime on Windows",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "3"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "parse PE header",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "13"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "access PEB ldr_data",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "17"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1083":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "enumerate files on Windows",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "7"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get file size",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "14"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using RC4 KSA",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "18"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Binary may include packed or crypted data",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "202"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027.002":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "PE file has an executable .text section which is very likely to contain packed code (zlib compression ratio \u003c 0.3)",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "429"
+                                                                              }
+                                                                          ]
+                                                             },
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Binary may include packed or crypted data",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "202"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1518.001":  [
+                                                             {
+                                                                 "severity":  "LOW",
+                                                                 "description":  "Tries to detect virtualization through RDTSC time measurements",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "1733"
+                                                                              }
+                                                                          ]
+                                                             },
+                                                             {
+                                                                 "severity":  "LOW",
+                                                                 "description":  "Switches to a customs stack to bypass stack traces",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "14057"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1057":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Queries a list of all running processes",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "211"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

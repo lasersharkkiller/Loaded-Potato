@@ -1,0 +1,1729 @@
+{
+    "data":  {
+                 "files_written":  [
+                                       "/dev/tty",
+                                       "/dev/ptmx",
+                                       "/dev/pts/0",
+                                       "/var/log/auth.log.1.gz",
+                                       "/var/log/kern.log.1.gz",
+                                       "/var/log/syslog.1.gz"
+                                   ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "0",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "terminate process",
+                                               "description":  "host-interaction/process/terminate",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: exit"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: terminate process\n    namespace: host-interaction/process/terminate\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Process::Terminate Process [C0018]\n    examples:\n      - C91887D861D9BD4A5872249B641BC9F9:0x401A77\n      - 9B7CCAA2AE6A5B96E3110EBCBC4311F6:0x10010307\n  features:\n    - or:\n      - api: System.Diagnostics.Process::Kill\n      - api: System.Diagnostics.Process::WaitForExit\n      - api: System.Diagnostics.Process::WaitForExitAsync\n      - api: System.Environment::Exit\n      - api: System.Windows.Forms.Application::Exit\n      - api: exit\n      - api: Exit\n      - and:\n        - os: linux\n        - api: exit_group\n      - and:\n        - optional:\n          - match: open process\n        - or:\n          - api: kernel32.TerminateProcess\n          - api: ntdll.NtTerminateProcess\n          - api: kernel32.ExitProcess\n"
+                                           },
+                                           {
+                                               "id":  "1",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "move file",
+                                               "description":  "host-interaction/file-system/move",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: rename"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: move file\n    namespace: host-interaction/file-system/move\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - File System::Move File [C0063]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x401350\n  features:\n    - or:\n      - api: kernel32.MoveFile\n      - api: kernel32.MoveFileEx\n      - api: MoveFileWithProgress\n      - api: MoveFileTransacted\n      - api: rename\n      - api: _wrename\n      - api: System.IO.FileInfo::MoveTo\n      - api: System.IO.File::Move\n      - basic block:\n        - and:\n          - number: 1 = FO_MOVE\n          - or:\n            - api: kernel32.SHFileOperation\n      - call:\n        - and:\n          - number: 1 = FO_MOVE\n          - api: kernel32.SHFileOperation\n"
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using murmur3",
+                                               "description":  "data-manipulation/hashing/murmur",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using murmur3\n    namespace: data-manipulation/hashing/murmur\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic features\n    mbc:\n      - Data::Non-Cryptographic Hash::MurmurHash [C0030.001]\n    references:\n      - https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp\n    examples:\n      - c66172b12971a329f8d5ff01665f204b:0x404A18\n  features:\n    - or:\n      - and:\n        - number: 0x85ebca6b = 32-bit finalization mix constant 1\n        - number: 0xc2b2ae35 = 32-bit finalization mix constant 2\n      - and:\n        - number: 0xff51afd7ed558ccd = 64-bit finalization mix constant 1\n        - number: 0xc4ceb9fe1a85ec53 = 64-bit finalization mix constant 2\n      - and:\n        - number: 0xcc9e2d51 = c1 32-bit hash\n        - number: 0x1b873593 = c2 32-bit hash\n      - and:\n        - number: 0x239b961b = 32-bit c1 for 128-bit hash\n        - number: 0xab0e9789 = 32-bit c2 for 128-bit hash\n        - number: 0x38b34ae5 = 32-bit c3 for 128-bit hash\n        - number: 0xa1e38b93 = 32-bit c4 for 128-bit hash\n      - and:\n        - number: 0x87c37b91114253d5 = 64-bit c1 for 128-bit hash\n        - number: 0x4cf5ad432745937f = 64-bit c2 for 128-bit hash\n      - basic block:\n        - and:\n          - description: \u0027hash \u003e\u003e 16; hash \u003e\u003e 13; hash \u003e\u003e 16\u0027\n          - count(mnemonic(shr)): 3\n          - instruction:\n            - mnemonic: shr\n            - number: 16\n          - instruction:\n            - mnemonic: shr\n            - number: 13\n          - optional:\n            - count(characteristic(nzxor)): 3 or more\n      - and:\n        # Group this two blocks under an `and` as on their own they are not\n        # unique enough and would cause false positives\n        - instruction:\n          - description: k ROL r1\n          - mnemonic: rol\n          - number: 15 = r1\n        - instruction:\n          - description: hash ROL r2\n          - mnemonic: rol\n          - number: 13 = r2\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "execute command",
+                                               "description":  "host-interaction/process/create",
+                                               "authors":  [
+                                                               "@mr-tz"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: _system"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: execute command\n    namespace: host-interaction/process/create\n    authors:\n      - \"@mr-tz\"\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - Process::Create Process [C0017]\n    examples:\n      - e353d3fbfb5c3738a77a622adff9a416:0x401626\n  features:\n    - or:\n      - api: system\n      - api: _system\n      - api: wsystem\n      - api: _wsystem\n"
+                                           },
+                                           {
+                                               "id":  "4",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "send data on socket",
+                                               "description":  "communication/socket/send",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "joakim@intezer.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: sendto",
+                                                                  "api: send"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: send data on socket\n    namespace: communication/socket/send\n    authors:\n      - moritz.raabe@mandiant.com\n      - joakim@intezer.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - Communication::Socket Communication::Send Data [C0001.007]\n    examples:\n      - Practical Malware Analysis Lab 01-01.dll_:0x10001010\n  features:\n    - or:\n      - api: send\n      - api: ws2_32.send\n      - api: ws2_32.#19 = send\n      - api: ws2_32.sendto\n      - api: ws2_32.#20 = sendto\n      - api: ws2_32.WSASend\n      - api: ws2_32.#76 = WSASend\n      - api: ws2_32.WSASendMsg\n      - api: ws2_32.WSASendTo\n      - api: ws2_32.#78 = WSASendTo\n      - api: System.Net.Sockets.Socket::Send\n      - api: System.Net.Sockets.Socket::SendAsync\n      - api: System.Net.Sockets.Socket::SendTo\n      - api: System.Net.Sockets.Socket::SendToAsync\n      - api: System.Net.Sockets.UdpClient::Send\n"
+                                           },
+                                           {
+                                               "id":  "5",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using XOR",
+                                               "description":  "data-manipulation/encoding/xor",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "tight loop",
+                                                                  "nzxor"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using XOR\n    namespace: data-manipulation/encoding/xor\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires characteristic, Not features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::XOR [C0026.002]\n    examples:\n      - 2D3EDC218A90F03089CC01715A9F047F:0x403D7E\n  features:\n    - and:\n      - characteristic: tight loop\n      - characteristic: nzxor\n      - not:\n        - description: filter for potential false positives\n        - or:\n          - or:\n            - description: unsigned bitwise negation operation (~i)\n            - number: 0xFFFFFFFF = bitwise negation for unsigned 32 bits\n            - number: 0xFFFFFFFFFFFFFFFF = bitwise negation for unsigned 64 bits\n          - or:\n            - description: signed bitwise negation operation (~i)\n            - number: 0x0FFFFFFF = bitwise negation for signed 32 bits\n            - number: 0x0FFFFFFFFFFFFFFF = bitwise negation for signed 64 bits\n          - or:\n            - description: Magic constants used in the implementation of strings functions.\n            # such as `strlen` and `strcat` in the Windows standard library:\n            # (((i - 0x81010101) ^ ~i) \u0026 0x81010100)\n            ## 32 bits\n            - number: 0x7EFEFEFF = optimized string constant for 32 bits\n            - number: 0x81010101 = -0x81010101 = 0x7EFEFEFF\n            - number: 0x81010100 = 0x81010100 = ~0x7EFEFEFF\n            ## 64 bits\n            - number: 0x7EFEFEFEFEFEFEFF = optimized string constant for 64 bits\n            - number: 0x8101010101010101 = -0x8101010101010101 = 0x7EFEFEFEFEFEFEFF\n            - number: 0x8101010101010100 = 0x8101010101010100 = ~0x7EFEFEFEFEFEFEFF\n"
+                                           },
+                                           {
+                                               "id":  "6",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "execute anti-debugging instructions",
+                                               "description":  "anti-analysis/anti-debugging/debugger-detection",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: execute anti-debugging instructions\n    namespace: anti-analysis/anti-debugging/debugger-detection\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    mbc:\n      - Anti-Behavioral Analysis::Debugger Detection::Anti-debugging Instructions [B0001.034]\n    examples:\n      - Practical Malware Analysis Lab 16-03.exe_:0x401300\n  features:\n    - or:\n      - count(mnemonic(rdtsc)): 2 or more\n      - mnemonic: icebp\n"
+                                           },
+                                           {
+                                               "id":  "7",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using AES",
+                                               "description":  "data-manipulation/encryption/aes",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "Ivan Kwiatkowski (@JusticeRage)"
+                                                           ],
+                                               "rule_src":  "# generated using capa explorer for IDA Pro\nrule:\n  meta:\n    name: encrypt data using AES\n    namespace: data-manipulation/encryption/aes\n    authors:\n      - william.ballenthin@mandiant.com\n      - Ivan Kwiatkowski (@JusticeRage)\n    scopes:\n      static: function\n      dynamic: unsupported  # requires bytes features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encryption-Standard Algorithm [E1027.m05]\n      - Cryptography::Encrypt Data::AES [C0027.001]\n    references:\n      - https://github.com/JusticeRage/Manalyze/blob/8e77642c911d5d82b5f43b198667ab8c77a88763/bin/yara_rules/findcrypt.yara#L351\n      - https://github.com/creaktive/tsh/blob/53b822b9a07d8cc65f1f31c915cf834a2944e833/aes.c\n  features:\n    - or:\n      - bytes: 63 7c 77 7b f2 6b 6f c5 30 01 67 2b fe d7 ab 76 = AES_SBOX_ENC\n      - bytes: 63 00 00 00 00 00 00 00 7c 00 00 00 00 00 00 00 77 00 00 00 00 00 00 00 7b 00 00 00 00 00 00 00 f2 00 00 00 00 00 00 00 6b 00 00 00 00 00 00 00 6f 00 00 00 00 00 00 00 c5 00 00 00 00 00 00 00 30 00 00 00 00 00 00 00 01 00 00 00 00 00 00 00 67 00 00 00 00 00 00 00 2b 00 00 00 00 00 00 00 fe 00 00 00 00 00 00 00 d7 00 00 00 00 00 00 00 ab 00 00 00 00 00 00 00 76 = AES_SBOX_ENC\n      - bytes: 52 09 6a d5 30 36 a5 38 bf 40 a3 9e 81 f3 d7 fb = AES_SBOX_DEC\n      - bytes: 52 00 00 00 00 00 00 00 09 00 00 00 00 00 00 00 6a 00 00 00 00 00 00 00 d5 00 00 00 00 00 00 00 30 00 00 00 00 00 00 00 36 00 00 00 00 00 00 00 a5 00 00 00 00 00 00 00 38 00 00 00 00 00 00 00 bf 00 00 00 00 00 00 00 40 00 00 00 00 00 00 00 a3 00 00 00 00 00 00 00 9e 00 00 00 00 00 00 00 81 00 00 00 00 00 00 00 f3 00 00 00 00 00 00 00 d7 00 00 00 00 00 00 00 fb = AES_SBOX_DEC\n      - bytes: a5 63 63 c6 84 7c 7c f8 99 77 77 ee 8d 7b 7b f6 = AES_T0_ENC\n      - bytes: a5 63 63 c6 00 00 00 00 84 7c 7c f8 00 00 00 00 99 77 77 ee 00 00 00 00 8d 7b 7b f6 = AES_T0_ENC\n      - bytes: 63 63 c6 a5 7c 7c f8 84 77 77 ee 99 7b 7b f6 8d = AES_T1_ENC\n      - bytes: 63 63 c6 a5 00 00 00 00 7c 7c f8 84 00 00 00 00 77 77 ee 99 00 00 00 00 7b 7b f6 8d = AES_T1_ENC\n      - bytes: 63 c6 a5 63 7c f8 84 7c 77 ee 99 77 7b f6 8d 7b = AES_T2_ENC\n      - bytes: 63 c6 a5 63 00 00 00 00 7c f8 84 7c 00 00 00 00 77 ee 99 77 00 00 00 00 7b f6 8d 7b = AES_T2_ENC\n      - bytes: c6 a5 63 63 f8 84 7c 7c ee 99 77 77 f6 8d 7b 7b = AES_T3_ENC\n      - bytes: c6 a5 63 63 00 00 00 00 f8 84 7c 7c 00 00 00 00 ee 99 77 77 00 00 00 00 f6 8d 7b 7b = AES_T3_ENC\n      - bytes: 63 63 63 63 7c 7c 7c 7c 77 77 77 77 7b 7b 7b 7b = AES_T4_ENC\n      - bytes: 50 a7 f4 51 53 65 41 7e c3 a4 17 1a 96 5e 27 3a = AES_T0_DEC\n      - bytes: 50 a7 f4 51 00 00 00 00 53 65 41 7e 00 00 00 00 c3 a4 17 1a 00 00 00 00 96 5e 27 3a = AES_T0_DEC\n      - bytes: a7 f4 51 50 65 41 7e 53 a4 17 1a c3 5e 27 3a 96 = AES_T1_DEC\n      - bytes: a7 f4 51 50 00 00 00 00 65 41 7e 53 00 00 00 00 a4 17 1a c3 00 00 00 00 5e 27 3a 96 = AES_T1_DEC\n      - bytes: f4 51 50 a7 41 7e 53 65 17 1a c3 a4 27 3a 96 5e = AES_T2_DEC\n      - bytes: f4 51 50 a7 00 00 00 00 41 7e 53 65 00 00 00 00 17 1a c3 a4 00 00 00 00 27 3a 96 5e = AES_T2_DEC\n      - bytes: 51 50 a7 f4 7e 53 65 41 1a c3 a4 17 3a 96 5e 27 = AES_T3_DEC\n      - bytes: 51 50 a7 f4 00 00 00 00 7e 53 65 41 00 00 00 00 1a c3 a4 17 00 00 00 00 3a 96 5e 27 = AES_T3_DEC\n      - bytes: 52 52 52 52 09 09 09 09 6a 6a 6a 6a d5 d5 d5 d5 = AES_T4_DEC\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/JusticeRage/Manalyze/blob/8e77642c911d5d82b5f43b198667ab8c77a88763/bin/yara_rules/findcrypt.yara#L351"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/creaktive/tsh/blob/53b822b9a07d8cc65f1f31c915cf834a2944e833/aes.c"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "9",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using Base64",
+                                               "description":  "data-manipulation/encoding/base64",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "loop",
+                                                                  "contain loop"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using Base64\n    namespace: data-manipulation/encoding/base64\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::Base64 [C0026.001]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5:0x1314889C\n      - 074072B261FC27B65C72671F13510C05:0x100049B2\n      - 5DB2D2BE20D59AA0BE6709A6850F1775:0x18001CC30\n      - 08AC667C65D36D6542917655571E61C8:0x406EAA\n  features:\n    - or:\n      - and:\n        - mnemonic: shl\n        - mnemonic: shr\n        - number: 0x3F = modulo 64\n        - or:\n          - number: 0x3D = \u0027=\u0027\n          - number: 0x3D3D = \u0027==\u0027\n        - match: contain loop\n        - optional:\n          - number: 2\n          - number: 3\n          - number: 4\n          - number: 6\n          - number: 0xF\n          - string: \"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\"\n      - api: System.Convert::ToBase64String\n      - api: System.Convert::ToBase64CharArray\n      - api: System.Convert::TryToBase64Chars\n"
+                                           },
+                                           {
+                                               "id":  "10",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "query environment variable",
+                                               "description":  "host-interaction/environment-variable",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "@_re_fox"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: getenv"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: query environment variable\n    namespace: host-interaction/environment-variable\n    authors:\n      - michael.hunhoff@mandiant.com\n      - \"@_re_fox\"\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    mbc:\n      - Discovery::System Information Discovery [E1082]\n    examples:\n      - Practical Malware Analysis Lab 14-02.exe_:0x401880\n      - 0761142efbda6c4b1e801223de723578:0x65483490\n  features:\n    - or:\n      - api: kernel32.GetEnvironmentVariable\n      - api: kernel32.GetEnvironmentStrings\n      - api: kernel32.ExpandEnvironmentStrings\n      - api: msvcr90.getenv\n      - api: msvcrt.getenv\n      - api: System.Environment::GetEnvironmentVariable\n      - api: System.Environment::GetEnvironmentVariables\n      - api: System.Environment::ExpandEnvironmentVariables\n"
+                                           },
+                                           {
+                                               "id":  "11",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "delete file",
+                                               "description":  "host-interaction/file-system/delete",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: remove"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: delete file\n    namespace: host-interaction/file-system/delete\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - File System::Delete File [C0047]\n    examples:\n      - 946A99F36A46D335DEC080D9A4371940:0x100015F0\n      # MoveFileEx\n      - 31600AD0D1A7EA615690DF111AE36C73:0x401A15\n      # NtDeleteFile\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x140001E04\n  features:\n    - or:\n      - api: kernel32.DeleteFile\n      - api: DeleteFileTransacted\n      - api: NtDeleteFile\n      - api: ZwDeleteFile\n      - api: remove\n      - api: _wremove\n      - api: System.IO.File::Delete\n      - api: System.IO.FileSystemInfo::Delete\n      # static\n      - basic block:\n        - and:\n          - number: 3 = FO_DELETE\n          - or:\n            - api: kernel32.SHFileOperation\n      - basic block:\n        - and:\n          - number: 4 = MOVEFILE_DELAY_UNTIL_REBOOT\n          - number: 0 = NULL\n          - api: MoveFileEx\n      # dynamic\n      - call:\n        - and:\n          - number: 3 = FO_DELETE\n          - or:\n            - api: kernel32.SHFileOperation\n      - call:\n        - and:\n          - number: 4 = MOVEFILE_DELAY_UNTIL_REBOOT\n          - number: 0 = NULL\n          - api: MoveFileEx\n"
+                                           },
+                                           {
+                                               "id":  "14",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get file attributes",
+                                               "description":  "host-interaction/file-system/meta",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: stat",
+                                                                  "api: fstat",
+                                                                  "api: lstat"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get file attributes\n    namespace: host-interaction/file-system/meta\n    authors:\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - File System::Get File Attributes [C0049]\n    examples:\n      - 03B236B23B1EC37C663527C1F53AF3FE:0x180019824\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x4028B6\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x4029E0\n  features:\n    - or:\n      - api: kernel32.GetFileAttributes\n      - api: ZwQueryDirectoryFile\n      - api: ZwQueryInformationFile\n      - api: NtQueryDirectoryFile\n      - api: NtQueryInformationFile\n      - api: System.IO.File::GetAttributes\n      - api: System.IO.File::GetCreationTime\n      - api: System.IO.File::GetCreationTimeUtc\n      - api: System.IO.File::GetLastAccessTime\n      - api: System.IO.File::GetLastAccessTimeUtc\n      - api: System.IO.File::GetLastWriteTime\n      - api: System.IO.File::GetLastWriteTimeUtc\n      - property/read: System.IO.FileSystemInfo::Attributes\n      - api: stat\n      - api: fstat\n      - api: lstat\n      - api: fstatat\n"
+                                           },
+                                           {
+                                               "id":  "15",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "delete directory",
+                                               "description":  "host-interaction/file-system/delete",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: _rmdir",
+                                                                  "api: rmdir"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: delete directory\n    namespace: host-interaction/file-system/delete\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - File System::Delete Directory [C0048]\n    examples:\n      - Practical Malware Analysis Lab 05-01.dll_:0x10009236\n      - AFB6EC3D721A5CB67863487B0E51A34C167F629CF701F8BC7A038C117B4DDA44:0x429AA0\n  features:\n    - or:\n      - api: RemoveDirectory\n      - api: RemoveDirectoryTransacted\n      - api: rmdir\n      - api: _rmdir\n      - api: _wrmdir\n      - api: System.IO.DirectoryInfo::Delete\n      - api: System.IO.Directory::Delete\n"
+                                           },
+                                           {
+                                               "id":  "16",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "reference AES constants",
+                                               "description":  "data-manipulation/encryption/aes",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: reference AES constants\n    namespace: data-manipulation/encryption/aes\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires bytes features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n  features:\n    - or:\n      - bytes: 50 a7 f4 51 53 65 41 7e = d-0\n      - bytes: 63 7c 77 7b f2 6b 6f c5 = s-box\n      - bytes: 52 09 6a d5 30 36 a5 38 = inv-s-box\n"
+                                           },
+                                           {
+                                               "id":  "17",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using Salsa20 or ChaCha",
+                                               "description":  "data-manipulation/encryption/salsa20",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using Salsa20 or ChaCha\n    namespace: data-manipulation/encryption/salsa20\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    references:\n      - http://cr.yp.to/snuffle/ecrypt.c\n  features:\n    # The constant words spell \"expand 32-byte k\" in ASCII (i.e. the 4 words are \"expa\", \"nd 3\", \"2-by\", and \"te k\")\n    - or:\n      - description: part of key setup\n      - string: \"expand 32-byte k\"\n        description: sigma\n      - string: \"expand 16-byte k\"\n        description: tau\n      # if sigma and tau are in contiguous memory, may result in concatenated string\n      - string: \"expand 32-byte kexpand 16-byte k\"\n      - bytes: 65 78 70 61 6E 64 20 33 32 2D 62 79 74 65 20 6B = \"expand 32-byte k\"\n      - bytes: 65 78 70 61 6E 64 20 31 36 2D 62 79 74 65 20 6B = \"expand 16-byte k\"\n      - and:\n        - string: \"expa\"\n        - string: \"nd 3\"\n        - string: \"2-by\"\n        - string: \"te k\"\n      - and:\n        - number: 0x61707865 = \"apxe\"\n        - number: 0x3320646E = \"3 dn\"\n        - number: 0x79622D32 = \"yb-2\"\n        - number: 0x6B206574 = \"k et\"\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "http://cr.yp.to/snuffle/ecrypt.c"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "18",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "execute syscall",
+                                               "description":  "anti-analysis : may be used to evade hooks or hinder analysis",
+                                               "authors":  [
+                                                               "@kulinacs",
+                                                               "@mr-tz",
+                                                               "mehunhoff@google.com",
+                                                               "still@teamt5.org"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: execute syscall\n    namespace: anti-analysis\n    authors:\n      - \"@kulinacs\"\n      - \"@mr-tz\"\n      - mehunhoff@google.com\n      - still@teamt5.org\n    description: may be used to evade hooks or hinder analysis\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires mnemonic features\n    references:\n      - https://github.com/j00ru/windows-syscalls\n      - https://codemachine.com/articles/system_call_instructions.html\n      - https://www.felixcloutier.com/x86/sysenter\n  features:\n    - or:\n      - and:\n        - or:\n          - os: linux\n          - os: android\n        - api: syscall # https://man7.org/linux/man-pages/man2/syscall.2.html\n      - and:\n        - or:\n          - mnemonic: sysenter\n          - mnemonic: syscall\n          - instruction:\n            - mnemonic: int\n            - operand[0].number: 0x2e\n        - or:\n          - mnemonic: ret\n          - mnemonic: retn\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/j00ru/windows-syscalls"
+                                                            },
+                                                            {
+                                                                "ref":  "https://codemachine.com/articles/system_call_instructions.html"
+                                                            },
+                                                            {
+                                                                "ref":  "https://www.felixcloutier.com/x86/sysenter"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "reads_files",
+                                               "name":  "reads_files",
+                                               "description":  "Reads files from disk",
+                                               "match_data":  [
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXft.so.2\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libfontconfig.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libfreetype.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXext.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXaw.so.7\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXmu.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXinerama.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXpm.so.4\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXt.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libX11.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libICE.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libutempter.so.0\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libtinfo.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libc.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXrender.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libexpat.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libuuid.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libpng16.so.16\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libz.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libbrotlidec.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libSM.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libxcb.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libbsd.so.0\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libm.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libbrotlicommon.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXau.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXdmcp.so.6\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libmd.so.0\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/X11/locale/locale.alias\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/X11/locale/locale.dir\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/X11/locale/C/XLC_LOCALE\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/X11/locale/en_US.UTF-8/XLC_LOCALE\"}",
+                                                                  "{\"ReadFile\": \"/etc/X11/app-defaults/XTerm\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXcursor.so.1\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libXfixes.so.3\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/icons/Yaru/cursors/sb_v_double_arrow\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/icons/Yaru/cursors/sb_h_double_arrow\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/icons/Yaru/cursors/sb_up_arrow\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/icons/Yaru/cursors/sb_down_arrow\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/icons/Yaru/cursors/sb_left_arrow\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/icons/Yaru/cursors/sb_right_arrow\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/fonts.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-antialias.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-hinting-slight.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-scale-bitmap-fonts.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/11-lcdfilter-default.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/20-unhint-small-dejavu-lgc-sans-mono.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/20-unhint-small-dejavu-lgc-sans.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/20-unhint-small-dejavu-lgc-serif.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/20-unhint-small-dejavu-sans-mono.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/20-unhint-small-dejavu-sans.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/20-unhint-small-dejavu-serif.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/20-unhint-small-vera.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/30-cjk-aliases.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/30-metric-aliases.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/30-opensymbol.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/40-nonlatin.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/45-generic.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/45-latin.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/49-sansserif.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/50-user.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/51-local.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/56-language-selector-ar.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/57-dejavu-sans-mono.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/57-dejavu-sans.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/57-dejavu-serif.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/58-dejavu-lgc-sans-mono.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/58-dejavu-lgc-sans.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/58-dejavu-lgc-serif.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/59-lohit-devanagari.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/60-generic.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/60-latin.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-bookman.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-c059.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-d050000l.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-fallback-backwards.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-fallback-generics.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-gothic.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-nimbus-mono-ps.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-nimbus-roman.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-nimbus-sans.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-p052.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-standard-symbols-ps.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/urw-z003.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-01-tlwg-kinnari.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-02-tlwg-norasi.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-10-tlwg-loma.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-11-tlwg-waree.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-13-tlwg-garuda.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-14-tlwg-umpush.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-15-laksaman.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-21-tlwg-typo.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-22-tlwg-typist.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/64-23-tlwg-mono.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/64-language-selector-prefer.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-beng-extra.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-deva-extra.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-gubbi.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-gujr-extra.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-guru-extra.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-orya-extra.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-pagul.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-fonts-telu-extra.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-smc-meera.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-0-smc-rachana.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-droid-sans-fallback.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-fonts-persian.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.d/65-khmer.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-nonlatin.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-assamese.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-bengali.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-devanagari.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-gujarati.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-gurmukhi.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-kannada.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-odia.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-tamil-classical.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-tamil.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/66-lohit-telugu.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-fonts-smc-manjari.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-anjalioldlipi.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-chilanka.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-dyuthi.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-karumbi.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-keraleeyam.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-raghumalayalamsans.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-suruma.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-smc-uroob.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/69-language-selector-ja.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/69-language-selector-zh-cn.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/69-language-selector-zh-hk.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/69-language-selector-zh-mo.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/69-language-selector-zh-sg.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/69-language-selector-zh-tw.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/69-unifont.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/70-fonts-noto-cjk.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/70-no-bitmaps.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/80-delicious.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/89-tlwg-garuda-synthetic.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/89-tlwg-kinnari-synthetic.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/89-tlwg-laksaman-synthetic.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fontconfig/conf.avail/89-tlwg-umpush-synthetic.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/90-synthetic.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/99-language-selector-zh.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-autohint.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-hinting-full.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-hinting-medium.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-hinting-none.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-no-sub-pixel.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-sub-pixel-bgr.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-sub-pixel-rgb.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-sub-pixel-vbgr.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-sub-pixel-vrgb.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/10-unhinted.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/11-lcdfilter-legacy.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/11-lcdfilter-light.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/25-unhint-nonlatin.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/30-droid-noto-mono.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/53-monospace-lcd-filter.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/65-khmer.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/67-lohit-malayalam.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/70-force-bitmaps.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/fonts/conf.avail/70-yes-bitmaps.conf\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/f89a1ccb-4867-4b50-8e6c-afc44c780ed1-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/local/share/fonts/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/7f0cc334-2749-4b91-a01d-b316ffc88d0d-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/X11/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/ba7f2a8a-b5bd-4b8d-915b-ee523651bbb5-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/cMap/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/49d6d701-25a3-4b0d-9b55-98eb8436be39-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/cmap/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/389e9637-25b2-4cd8-903b-15309922b4d5-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/opentype/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/fb8cb590-620d-4de1-aa65-b20d12fd48b2-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/type1/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/2bdd1543-0bc4-4c1a-a925-f6da59d7a428-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/X11/Type1/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/X11/encodings/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/87d4f6ef-4668-4670-af5a-596119fcc0a8-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/X11/misc/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/X11/util/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/1fe01837-99f9-434f-8c08-eef9340c3fbb-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/cmap/adobe-cns1/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/e23ec1be-9352-4dce-9dff-0e1fe28f3ebc-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/cmap/adobe-gb1/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/cc632393-fa09-45dc-98d4-83e367184af7-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/cmap/adobe-japan1/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/a22f3466-e81b-4784-b39d-54a34a04451b-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/cmap/adobe-japan2/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/0f548c19-d83d-4b05-9964-061db7cb9674-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/cmap/adobe-korea1/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/46f65fc6-01cb-4597-b171-59b19ad12a8f-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/opentype/malayalam/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/opentype/noto/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/opentype/urw-base35/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/Gargi/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/Gubbi/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/Nakula/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/Navilu/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/Sahadeva/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/Sarai/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/abyssinica/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/arphic/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/56dd001d-1dd0-4e76-a76b-8867d1762ff8-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/dejavu/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/droid/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-beng-extra/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-deva-extra/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-gujr-extra/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-guru-extra/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-kalapi/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-orya-extra/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-telu-extra/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/fonts-yrsa-rasa/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/freefont/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/kacst/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/kacst-one/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lao/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lato/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/liberation/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/liberation2/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/libreoffice/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-assamese/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-bengali/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-devanagari/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-gujarati/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-kannada/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-malayalam/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-oriya/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-punjabi/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-tamil/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-tamil-classical/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/lohit-telugu/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/malayalam/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/noto/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/padauk/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/pagul/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/samyak/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/samyak-fonts/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/sinhala/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/teluguvijayam/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/tibetan-machine/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/tlwg/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/ttf-khmeros-core/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/truetype/ubuntu/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/type1/urw-base35/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/fonts/X11/encodings/large/.uuid\"}",
+                                                                  "{\"ReadFile\": \"/var/cache/fontconfig/2378dc6c-8711-4d20-810f-6e1598fc10d0-le64.cache-7\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/icons/Yaru/cursors/xterm\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/X11/locale/compose.dir\"}",
+                                                                  "{\"ReadFile\": \"/usr/share/X11/locale/en_US.UTF-8/Compose\"}",
+                                                                  "{\"ReadFile\": \"/lib/terminfo/x/xterm\"}",
+                                                                  "{\"ReadFile\": \"/etc/nsswitch.conf\"}",
+                                                                  "{\"ReadFile\": \"/etc/group\"}",
+                                                                  "{\"ReadFile\": \"/etc/passwd\"}",
+                                                                  "{\"ReadFile\": \"/proc/sys/kernel/ngroups_max\"}",
+                                                                  "{\"ReadFile\": \"/lib/x86_64-linux-gnu/libnss_systemd.so.2\"}",
+                                                                  "{\"ReadFile\": \"/etc/shells\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "drops_files",
+                                               "name":  "drops_files",
+                                               "description":  "Drops files onto disk",
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "writes_files",
+                                               "name":  "writes_files",
+                                               "description":  "Writes to files on disk",
+                                               "match_data":  [
+                                                                  "{\"WriteFile\": \"/dev/pts/0\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "2075",
+                                               "description":  "Executes commands using a shell command-line interpreter",
+                                               "match_data":  [
+                                                                  "sh -c \"\\n\\t\\tinvoke-rc.d --quiet cups restart \u003e /dev/null\\n\" logrotate_script \"/var/log/cups/*log \"",
+                                                                  "sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/syslog",
+                                                                  "sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/mail.info/var/log/mail.warn/var/log/mail.err/var/log/mail.log/var/log/daemon.log/var/log/kern.log/var/log/auth.log/var/log/user.log/var/"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "4032",
+                                               "description":  "Executes the \"systemctl\" command used for controlling the systemd system and service manager",
+                                               "match_data":  [
+                                                                  "/usr/bin/systemctl -\u003e systemctl --quiet is-enabled cups.service",
+                                                                  "/usr/bin/systemctl -\u003e systemctl --quiet is-active cups.service",
+                                                                  "/usr/bin/systemctl -\u003e systemctl kill -s HUP rsyslog.service"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "7005",
+                                               "description":  "Found Tor onion address",
+                                               "match_data":  [
+                                                                  "Access Point: http://ebhmkoohccl45qesdbvrjqtyro2hmhkmh6vkyfyjjzfllm3ix72aqaid.onion/support/step.php",
+                                                                  "2. Visit our anonymous contact form at http://ebhmkoohccl45qesdbvrjqtyro2hmhkmh6vkyfyjjzfllm3ix72aqaid.onion/support/step.php"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "4004",
+                                               "description":  "Sample and/or dropped files contains symbols with file path information",
+                                               "match_data":  [
+                                                                  "/usr/src/lib/csu/amd64/crt1.c",
+                                                                  "/usr/src/lib/libc/../../contrib/libc-vis/vis.c",
+                                                                  "/usr/src/lib/libc/../../contrib/tzcode/stdtime/asctime.c",
+                                                                  "/usr/src/lib/libc/../../contrib/tzcode/stdtime/localtime.c",
+                                                                  "/usr/src/lib/libc/amd64/gen/_set_tp.c",
+                                                                  "/usr/src/lib/libc/amd64/gen/flt_rounds.c",
+                                                                  "/usr/src/lib/libc/amd64/gen/getcontextx.c",
+                                                                  "/usr/src/lib/libc/amd64/string/strcpy.c",
+                                                                  "/usr/src/lib/libc/amd64/sys/__vdso_gettc.c",
+                                                                  "/usr/src/lib/libc/amd64/sys/amd64_set_fsbase.c",
+                                                                  "/usr/src/lib/libc/compat-43/creat.c",
+                                                                  "/usr/src/lib/libc/gdtoa/_hdtoa.c",
+                                                                  "/usr/src/lib/libc/gdtoa/_hldtoa.c",
+                                                                  "/usr/src/lib/libc/gdtoa/_ldtoa.c",
+                                                                  "/usr/src/lib/libc/gdtoa/glue.c",
+                                                                  "/usr/src/lib/libc/gdtoa/machdep_ldisx.c",
+                                                                  "/usr/src/lib/libc/gen/__getosreldate.c",
+                                                                  "/usr/src/lib/libc/gen/__pthread_mutex_init_calloc_cb_stub.c",
+                                                                  "/usr/src/lib/libc/gen/_once_stub.c",
+                                                                  "/usr/src/lib/libc/gen/_pthread_stubs.c",
+                                                                  "/usr/src/lib/libc/gen/_spinlock_stub.c",
+                                                                  "/usr/src/lib/libc/gen/assert.c",
+                                                                  "/usr/src/lib/libc/gen/auxv.c",
+                                                                  "/usr/src/lib/libc/gen/clock.c",
+                                                                  "/usr/src/lib/libc/gen/closedir.c",
+                                                                  "/usr/src/lib/libc/gen/dlfcn.c",
+                                                                  "/usr/src/lib/libc/gen/elf_utils.c",
+                                                                  "/usr/src/lib/libc/gen/err.c",
+                                                                  "/usr/src/lib/libc/gen/errlst.c",
+                                                                  "/usr/src/lib/libc/gen/errno.c",
+                                                                  "/usr/src/lib/libc/gen/exec.c",
+                                                                  "/usr/src/lib/libc/gen/fpclassify.c",
+                                                                  "/usr/src/lib/libc/gen/getpagesize.c",
+                                                                  "/usr/src/lib/libc/gen/getprogname.c",
+                                                                  "/usr/src/lib/libc/gen/isatty.c",
+                                                                  "/usr/src/lib/libc/gen/opendir.c",
+                                                                  "/usr/src/lib/libc/gen/raise.c",
+                                                                  "/usr/src/lib/libc/gen/readdir.c",
+                                                                  "/usr/src/lib/libc/gen/sigsetops.c",
+                                                                  "/usr/src/lib/libc/gen/sleep.c",
+                                                                  "/usr/src/lib/libc/gen/sysconf.c",
+                                                                  "/usr/src/lib/libc/gen/sysctl.c",
+                                                                  "/usr/src/lib/libc/gen/sysctlbyname.c",
+                                                                  "/usr/src/lib/libc/gen/sysctlnametomib.c",
+                                                                  "/usr/src/lib/libc/gen/syslog.c",
+                                                                  "/usr/src/lib/libc/gen/telldir.c",
+                                                                  "/usr/src/lib/libc/gen/termios.c",
+                                                                  "/usr/src/lib/libc/gen/time.c",
+                                                                  "/usr/src/lib/libc/gen/tls.c",
+                                                                  "/usr/src/lib/libc/gen/usleep.c",
+                                                                  "/usr/src/lib/libc/locale/ascii.c",
+                                                                  "/usr/src/lib/libc/locale/big5.c",
+                                                                  "/usr/src/lib/libc/locale/collate.c",
+                                                                  "/usr/src/lib/libc/locale/euc.c",
+                                                                  "/usr/src/lib/libc/locale/fix_grouping.c",
+                                                                  "/usr/src/lib/libc/locale/gb18030.c",
+                                                                  "/usr/src/lib/libc/locale/gb2312.c",
+                                                                  "/usr/src/lib/libc/locale/gbk.c",
+                                                                  "/usr/src/lib/libc/locale/ldpart.c",
+                                                                  "/usr/src/lib/libc/locale/lmessages.c",
+                                                                  "/usr/src/lib/libc/locale/lmonetary.c",
+                                                                  "/usr/src/lib/libc/locale/lnumeric.c",
+                                                                  "/usr/src/lib/libc/locale/localeconv.c",
+                                                                  "/usr/src/lib/libc/locale/mbsnrtowcs.c",
+                                                                  "/usr/src/lib/libc/locale/mbstowcs.c",
+                                                                  "/usr/src/lib/libc/locale/mbtowc.c",
+                                                                  "/usr/src/lib/libc/locale/mskanji.c",
+                                                                  "/usr/src/lib/libc/locale/none.c",
+                                                                  "/usr/src/lib/libc/locale/rune.c",
+                                                                  "/usr/src/lib/libc/locale/runetype.c",
+                                                                  "/usr/src/lib/libc/locale/setlocale.c",
+                                                                  "/usr/src/lib/libc/locale/setrunelocale.c",
+                                                                  "/usr/src/lib/libc/locale/table.c",
+                                                                  "/usr/src/lib/libc/locale/utf8.c",
+                                                                  "/usr/src/lib/libc/locale/wcrtomb.c",
+                                                                  "/usr/src/lib/libc/locale/wcsnrtombs.c",
+                                                                  "/usr/src/lib/libc/locale/wcsrtombs.c",
+                                                                  "/usr/src/lib/libc/locale/wctomb.c",
+                                                                  "/usr/src/lib/libc/locale/xlocale.c",
+                                                                  "/usr/src/lib/libc/net/send.c",
+                                                                  "/usr/src/lib/libc/nls/msgcat.c",
+                                                                  "/usr/src/lib/libc/stdio/_flock_stub.c",
+                                                                  "/usr/src/lib/libc/stdio/fclose.c",
+                                                                  "/usr/src/lib/libc/stdio/fflush.c",
+                                                                  "/usr/src/lib/libc/stdio/fileno.c",
+                                                                  "/usr/src/lib/libc/stdio/findfp.c",
+                                                                  "/usr/src/lib/libc/stdio/flags.c",
+                                                                  "/usr/src/lib/libc/stdio/fopen.c",
+                                                                  "/usr/src/lib/libc/stdio/fprintf.c",
+                                                                  "/usr/src/lib/libc/stdio/fputc.c",
+                                                                  "/usr/src/lib/libc/stdio/fputs.c",
+                                                                  "/usr/src/lib/libc/stdio/fread.c",
+                                                                  "/usr/src/lib/libc/stdio/fseek.c",
+                                                                  "/usr/src/lib/libc/stdio/ftell.c",
+                                                                  "/usr/src/lib/libc/stdio/funopen.c",
+                                                                  "/usr/src/lib/libc/stdio/fvwrite.c",
+                                                                  "/usr/src/lib/libc/stdio/fwalk.c",
+                                                                  "/usr/src/lib/libc/stdio/fwrite.c",
+                                                                  "/usr/src/lib/libc/stdio/makebuf.c",
+                                                                  "/usr/src/lib/libc/stdio/perror.c",
+                                                                  "/usr/src/lib/libc/stdio/printf-pos.c",
+                                                                  "/usr/src/lib/libc/stdio/refill.c",
+                                                                  "/usr/src/lib/libc/stdio/remove.c",
+                                                                  "/usr/src/lib/libc/stdio/rewind.c",
+                                                                  "/usr/src/lib/libc/stdio/snprintf.c",
+                                                                  "/usr/src/lib/libc/stdio/sprintf.c",
+                                                                  "/usr/src/lib/libc/stdio/stdio.c",
+                                                                  "/usr/src/lib/libc/stdio/vfprintf.c",
+                                                                  "/usr/src/lib/libc/stdio/vsprintf.c",
+                                                                  "/usr/src/lib/libc/stdio/wbuf.c",
+                                                                  "/usr/src/lib/libc/stdio/wsetup.c",
+                                                                  "/usr/src/lib/libc/stdio/xprintf.c",
+                                                                  "/usr/src/lib/libc/stdio/xprintf_errno.c",
+                                                                  "/usr/src/lib/libc/stdio/xprintf_float.c",
+                                                                  "/usr/src/lib/libc/stdio/xprintf_hexdump.c",
+                                                                  "/usr/src/lib/libc/stdio/xprintf_int.c",
+                                                                  "/usr/src/lib/libc/stdio/xprintf_quote.c",
+                                                                  "/usr/src/lib/libc/stdio/xprintf_str.c",
+                                                                  "/usr/src/lib/libc/stdio/xprintf_time.c",
+                                                                  "/usr/src/lib/libc/stdio/xprintf_vis.c",
+                                                                  "/usr/src/lib/libc/stdlib/abort.c",
+                                                                  "/usr/src/lib/libc/stdlib/atexit.c",
+                                                                  "/usr/src/lib/libc/stdlib/atoi.c",
+                                                                  "/usr/src/lib/libc/stdlib/cxa_thread_atexit_impl.c",
+                                                                  "/usr/src/lib/libc/stdlib/exit.c",
+                                                                  "/usr/src/lib/libc/stdlib/getenv.c",
+                                                                  "/usr/src/lib/libc/stdlib/merge.c",
+                                                                  "/usr/src/lib/libc/stdlib/rand.c",
+                                                                  "/usr/src/lib/libc/stdlib/reallocf.c",
+                                                                  "/usr/src/lib/libc/stdlib/strtol.c",
+                                                                  "/usr/src/lib/libc/stdlib/system.c",
+                                                                  "/usr/src/lib/libc/stdtime/strftime.c",
+                                                                  "/usr/src/lib/libc/stdtime/timelocal.c",
+                                                                  "/usr/src/lib/libc/string/memchr.c",
+                                                                  "/usr/src/lib/libc/string/stpncpy.c",
+                                                                  "/usr/src/lib/libc/string/strchr.c",
+                                                                  "/usr/src/lib/libc/string/strdup.c",
+                                                                  "/usr/src/lib/libc/string/strerror.c",
+                                                                  "/usr/src/lib/libc/string/strlcat.c",
+                                                                  "/usr/src/lib/libc/string/strlcpy.c",
+                                                                  "/usr/src/lib/libc/string/strlen.c",
+                                                                  "/usr/src/lib/libc/string/strncmp.c",
+                                                                  "/usr/src/lib/libc/string/strncpy.c",
+                                                                  "/usr/src/lib/libc/string/strnlen.c",
+                                                                  "/usr/src/lib/libc/string/strsep.c",
+                                                                  "/usr/src/lib/libc/string/strstr.c",
+                                                                  "/usr/src/lib/libc/string/wcschr.c",
+                                                                  "/usr/src/lib/libc/string/wcslen.c",
+                                                                  "/usr/src/lib/libc/sys/__error.c",
+                                                                  "/usr/src/lib/libc/sys/__vdso_gettimeofday.c",
+                                                                  "/usr/src/lib/libc/sys/clock_gettime.c",
+                                                                  "/usr/src/lib/libc/sys/close.c",
+                                                                  "/usr/src/lib/libc/sys/fcntl.c",
+                                                                  "/usr/src/lib/libc/sys/fork.c",
+                                                                  "/usr/src/lib/libc/sys/interposing_table.c",
+                                                                  "/usr/src/lib/libc/sys/lseek.c",
+                                                                  "/usr/src/lib/libc/sys/mmap.c",
+                                                                  "/usr/src/lib/libc/sys/open.c",
+                                                                  "/usr/src/lib/libc/sys/read.c",
+                                                                  "/usr/src/lib/libc/sys/sendto.c",
+                                                                  "/usr/src/lib/libc/sys/sigaction.c",
+                                                                  "/usr/src/lib/libc/sys/sigprocmask.c",
+                                                                  "/usr/src/lib/libc/sys/sigwait.c",
+                                                                  "/usr/src/lib/libc/sys/stack_protector.c",
+                                                                  "/usr/src/lib/libc/sys/write.c",
+                                                                  "/usr/src/lib/libcompiler_rt/../../contrib/compiler-rt/lib/udivmodti4.c",
+                                                                  "/usr/src/lib/libcompiler_rt/../../contrib/compiler-rt/lib/udivti3.c",
+                                                                  "/usr/src/lib/libthr/arch/amd64/amd64/pthread_md.c",
+                                                                  "/usr/src/lib/libthr/sys/thr_error.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_attr.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_cancel.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_clean.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_cond.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_create.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_detach.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_equal.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_event.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_exit.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_fork.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_init.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_join.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_kern.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_kill.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_list.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_main_np.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_mutex.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_mutexattr.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_once.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_printf.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_rtld.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_rwlock.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_self.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_sig.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_sleepq.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_spec.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_spinlock.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_stack.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_symbols.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_syscalls.c",
+                                                                  "/usr/src/lib/libthr/thread/thr_umtx.c"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "4005",
+                                               "description":  "Sample and/or dropped files contains symbols with suspicious names",
+                                               "match_data":  [
+                                                                  "__cxa_thread_atexit_hidden"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "5001",
+                                               "description":  "Exit code information suggests that the sample terminated abnormally, try to lookup the sample\u0027s target architecture.",
+                                               "match_data":  [
+                                                                  "SIGSEGV (11) Segmentation fault invalid memory reference"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "715",
+                                               "description":  "Classification label",
+                                               "match_data":  [
+                                                                  "sus21.evad.linOLD@0/3@0/0"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "5000",
+                                               "description":  "Non-zero exit code suggests an error during the execution. Lookup the error code for hints.",
+                                               "match_data":  [
+                                                                  "SIGSEGV (11) Segmentation fault invalid memory reference"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "238",
+                                               "description":  "URLs found in memory or binary data",
+                                               "match_data":  [
+                                                                  "http://ebhmkoohccl45qesdbvrjqtyro2hmhkmh6vkyfyjjzfllm3ix72aqaid.onion/support/step.php",
+                                                                  "https://torproject.org"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           }
+                                       ],
+                 "memory_pattern_domains":  [
+                                                "ebhmkoohccl45qesdbvrjqtyro2hmhkmh6vkyfyjjzfllm3ix72aqaid.onion",
+                                                "torproject.org"
+                                            ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "1793",
+                                            "name":  "xterm -hold -e sh -c /tmp/start.old",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "1795",
+                                                                 "name":  "sh -c /tmp/start.old",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "1796",
+                                                                                      "name":  "/tmp/start.old"
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "105",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "108",
+                                                                 "name":  "analyzed_bin"
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "4150",
+                                            "name":  "dash",
+                                            "time_offset":  14476,
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "4151",
+                                                                 "name":  "fdb04fa192e15fa241ea633997aa670b.old",
+                                                                 "time_offset":  14476
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "4151",
+                                            "name":  "fdb04fa192e15fa241ea633997aa670b.old",
+                                            "time_offset":  14476
+                                        },
+                                        {
+                                            "process_id":  "2997",
+                                            "name":  "/bin/gzip"
+                                        },
+                                        {
+                                            "process_id":  "2998",
+                                            "name":  "/bin/gzip"
+                                        },
+                                        {
+                                            "process_id":  "2999",
+                                            "name":  "/bin/gzip"
+                                        },
+                                        {
+                                            "process_id":  "3000",
+                                            "name":  "/bin/sh sh -c \"\\n\\t\\tinvoke-rc.d --quiet cups restart \u003e /dev/null\\n\" logrotate_script \"/var/log/cups/*log \"",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "3001",
+                                                                 "name":  "/usr/sbin/invoke-rc.d invoke-rc.d --quiet cups restart",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "3002",
+                                                                                      "name":  "/sbin/runlevel",
+                                                                                      "files_opened":  [
+                                                                                                           "/lib/systemd/tls/avx512_1/libc.so.6",
+                                                                                                           "/lib/systemd/tls/avx512_1/x86_64/libc.so.6",
+                                                                                                           "/lib/systemd/tls/haswell/avx512_1/libc.so.6",
+                                                                                                           "/lib/systemd/tls/haswell/avx512_1/x86_64/libc.so.6",
+                                                                                                           "/lib/systemd/tls/haswell/libc.so.6",
+                                                                                                           "/lib/systemd/tls/haswell/x86_64/libc.so.6",
+                                                                                                           "/proc/1/environ",
+                                                                                                           "/proc/1/sched",
+                                                                                                           "/proc/3002/stat",
+                                                                                                           "/proc/cmdline",
+                                                                                                           "/proc/filesystems",
+                                                                                                           "/proc/self/stat",
+                                                                                                           "/proc/sys/kernel/osrelease",
+                                                                                                           "/run/systemd/container",
+                                                                                                           "/run/utmp",
+                                                                                                           "/sys/firmware/efi/efivars/SystemdOptions-8cf2644b-4b0b-428f-9387-6d876050dc67",
+                                                                                                           "/var/run/utmp"
+                                                                                                       ]
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "3003",
+                                                                                      "name":  "/usr/bin/systemctl systemctl --quiet is-enabled cups.service",
+                                                                                      "files_opened":  [
+                                                                                                           "/etc/systemd/system.attached/cups.service.d",
+                                                                                                           "/etc/systemd/system.control/cups.service.d",
+                                                                                                           "/etc/systemd/system/cups.service.d",
+                                                                                                           "/proc/1/environ",
+                                                                                                           "/proc/1/sched",
+                                                                                                           "/proc/3003/stat",
+                                                                                                           "/proc/cmdline",
+                                                                                                           "/proc/filesystems",
+                                                                                                           "/proc/self/stat",
+                                                                                                           "/proc/sys/kernel/osrelease",
+                                                                                                           "/run/systemd/container",
+                                                                                                           "/run/systemd/system.attached/cups.service.d",
+                                                                                                           "/run/systemd/system.control/cups.service.d",
+                                                                                                           "/run/systemd/system/cups.service.d",
+                                                                                                           "/run/systemd/transient/cups.service.d",
+                                                                                                           "/sys/firmware/efi/efivars/SystemdOptions-8cf2644b-4b0b-428f-9387-6d876050dc67",
+                                                                                                           "/usr/lib/systemd/system/cups.service.d",
+                                                                                                           "/usr/local/lib/systemd/system/cups.service.d",
+                                                                                                           "\u003cinvalid fd (3)\u003e/cups.service.d",
+                                                                                                           "\u003cinvalid fd (3)\u003e/etc",
+                                                                                                           "\u003cinvalid fd (3)\u003e/lib",
+                                                                                                           "\u003cinvalid fd (3)\u003e/run",
+                                                                                                           "\u003cinvalid fd (3)\u003e/system",
+                                                                                                           "\u003cinvalid fd (3)\u003e/system.attached",
+                                                                                                           "\u003cinvalid fd (3)\u003e/system.control",
+                                                                                                           "\u003cinvalid fd (3)\u003e/systemd",
+                                                                                                           "\u003cinvalid fd (3)\u003e/transient",
+                                                                                                           "\u003cinvalid fd (3)\u003e/usr",
+                                                                                                           "\u003cinvalid fd (4)\u003e/cups.service.d",
+                                                                                                           "\u003cinvalid fd (4)\u003e/lib",
+                                                                                                           "\u003cinvalid fd (4)\u003e/local",
+                                                                                                           "\u003cinvalid fd (4)\u003e/system",
+                                                                                                           "\u003cinvalid fd (4)\u003e/systemd"
+                                                                                                       ]
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "3004",
+                                                                                      "name":  "/usr/bin/ls ls /etc/rc[S2345].d/S[0-9][0-9]cups",
+                                                                                      "files_opened":  [
+                                                                                                           "/etc/locale.alias",
+                                                                                                           "/proc/filesystems",
+                                                                                                           "/usr/share/locale/en.UTF-8/LC_MESSAGES/coreutils.mo",
+                                                                                                           "/usr/share/locale/en.utf8/LC_MESSAGES/coreutils.mo",
+                                                                                                           "/usr/share/locale/en_US.UTF-8/LC_MESSAGES/coreutils.mo",
+                                                                                                           "/usr/share/locale/en_US.utf8/LC_MESSAGES/coreutils.mo",
+                                                                                                           "/usr/share/locale/en_US/LC_MESSAGES/coreutils.mo",
+                                                                                                           "/usr/share/locale/locale.alias"
+                                                                                                       ]
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "3005",
+                                                                                      "name":  "/usr/bin/systemctl systemctl --quiet is-active cups.service",
+                                                                                      "files_opened":  [
+                                                                                                           "/proc/1/environ",
+                                                                                                           "/proc/1/sched",
+                                                                                                           "/proc/3005/stat",
+                                                                                                           "/proc/cmdline",
+                                                                                                           "/proc/filesystems",
+                                                                                                           "/proc/self/stat",
+                                                                                                           "/proc/sys/kernel/osrelease",
+                                                                                                           "/run/systemd/container",
+                                                                                                           "/sys/firmware/efi/efivars/SystemdOptions-8cf2644b-4b0b-428f-9387-6d876050dc67"
+                                                                                                       ]
+                                                                                  }
+                                                                              ],
+                                                                 "files_opened":  [
+                                                                                      "/etc/",
+                                                                                      "/etc/rc2.d/",
+                                                                                      "/etc/rc3.d/",
+                                                                                      "/etc/rc4.d/",
+                                                                                      "/etc/rc5.d/",
+                                                                                      "/etc/rcS.d/",
+                                                                                      "/usr/sbin/invoke-rc.d"
+                                                                                  ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "3006",
+                                            "name":  "/bin/gzip",
+                                            "files_opened":  [
+                                                                 "/var/log/syslog.1"
+                                                             ],
+                                            "files_written":  [
+                                                                  "/var/log/syslog.1.gz"
+                                                              ]
+                                        },
+                                        {
+                                            "process_id":  "3007",
+                                            "name":  "/bin/sh sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/syslog",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "3008",
+                                                                 "name":  "/usr/lib/rsyslog/rsyslog-rotate",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "3009",
+                                                                                      "name":  "/usr/bin/systemctl systemctl kill -s HUP rsyslog.service",
+                                                                                      "files_opened":  [
+                                                                                                           "/proc/1/environ",
+                                                                                                           "/proc/1/sched",
+                                                                                                           "/proc/3009/stat",
+                                                                                                           "/proc/cmdline",
+                                                                                                           "/proc/filesystems",
+                                                                                                           "/proc/self/stat",
+                                                                                                           "/proc/sys/kernel/osrelease",
+                                                                                                           "/run/systemd/container",
+                                                                                                           "/sys/firmware/efi/efivars/SystemdOptions-8cf2644b-4b0b-428f-9387-6d876050dc67"
+                                                                                                       ]
+                                                                                  }
+                                                                              ],
+                                                                 "files_opened":  [
+                                                                                      "/usr/lib/rsyslog/rsyslog-rotate"
+                                                                                  ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "3010",
+                                            "name":  "/bin/gzip",
+                                            "files_opened":  [
+                                                                 "/var/log/kern.log.1"
+                                                             ],
+                                            "files_written":  [
+                                                                  "/var/log/kern.log.1.gz"
+                                                              ]
+                                        },
+                                        {
+                                            "process_id":  "3011",
+                                            "name":  "/bin/gzip",
+                                            "files_opened":  [
+                                                                 "/var/log/auth.log.1"
+                                                             ],
+                                            "files_written":  [
+                                                                  "/var/log/auth.log.1.gz"
+                                                              ]
+                                        },
+                                        {
+                                            "process_id":  "3012",
+                                            "name":  "/bin/sh sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/mail.info/var/log/mail.warn/var/log/mail.err/var/log/mail.log/var/log/daemon.log/var/log/kern.log/var/log/auth.log/var/log/user.log/var/log/lpr.log/var/log/cron.log/var/log/debug/var/log/messages",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "3013",
+                                                                 "name":  "/usr/lib/rsyslog/rsyslog-rotate",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "3014",
+                                                                                      "name":  "/usr/bin/systemctl systemctl kill -s HUP rsyslog.service",
+                                                                                      "files_opened":  [
+                                                                                                           "/proc/1/environ",
+                                                                                                           "/proc/1/sched",
+                                                                                                           "/proc/3014/stat",
+                                                                                                           "/proc/cmdline",
+                                                                                                           "/proc/filesystems",
+                                                                                                           "/proc/self/stat",
+                                                                                                           "/proc/sys/kernel/osrelease",
+                                                                                                           "/run/systemd/container",
+                                                                                                           "/sys/firmware/efi/efivars/SystemdOptions-8cf2644b-4b0b-428f-9387-6d876050dc67"
+                                                                                                       ]
+                                                                                  }
+                                                                              ],
+                                                                 "files_opened":  [
+                                                                                      "/usr/lib/rsyslog/rsyslog-rotate"
+                                                                                  ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "3042",
+                                            "name":  "/tmp/start.old"
+                                        }
+                                    ],
+                 "memory_pattern_urls":  [
+                                             "http://ebhmkoohccl45qesdbvrjqtyro2hmhkmh6vkyfyjjzfllm3ix72aqaid.onion/support/step.php",
+                                             "https://torproject.org"
+                                         ],
+                 "mbc":  [
+                             {
+                                 "id":  "C0018",
+                                 "objective":  "Process",
+                                 "behavior":  "Terminate Process",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "0"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0063",
+                                 "objective":  "File System",
+                                 "behavior":  "Move File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "1"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0030.001",
+                                 "objective":  "Data",
+                                 "behavior":  "Non-Cryptographic Hash",
+                                 "method":  "MurmurHash",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "2"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0017",
+                                 "objective":  "Process",
+                                 "behavior":  "Create Process",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "3"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0001.007",
+                                 "objective":  "Communication",
+                                 "behavior":  "Socket Communication",
+                                 "method":  "Send Data",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "4"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m02",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encoding-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "5"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0026.002",
+                                 "objective":  "Data",
+                                 "behavior":  "Encode Data",
+                                 "method":  "XOR",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "5"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0001.034",
+                                 "objective":  "Anti-Behavioral Analysis",
+                                 "behavior":  "Debugger Detection",
+                                 "method":  "Anti-debugging Instructions",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "6"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m05",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encryption-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "7"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0027.001",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encrypt Data",
+                                 "method":  "AES",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "7"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m02",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encoding-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "9"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0026.001",
+                                 "objective":  "Data",
+                                 "behavior":  "Encode Data",
+                                 "method":  "Base64",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "9"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1082",
+                                 "objective":  "Discovery",
+                                 "behavior":  "System Information Discovery",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "10"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0047",
+                                 "objective":  "File System",
+                                 "behavior":  "Delete File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "11"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0049",
+                                 "objective":  "File System",
+                                 "behavior":  "Get File Attributes",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "14"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0048",
+                                 "objective":  "File System",
+                                 "behavior":  "Delete Directory",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "15"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "command_executions":  [
+                                            "sh -c /tmp/fdb04fa192e15fa241ea633997aa670b.old",
+                                            "/bin/gzip",
+                                            "sh -c \"\\n\\t\\tinvoke-rc.d --quiet cups restart \u003e /dev/null\\n\" logrotate_script \"/var/log/cups/*log \"",
+                                            "invoke-rc.d --quiet cups restart",
+                                            "/sbin/runlevel",
+                                            "systemctl --quiet is-enabled cups.service",
+                                            "ls /etc/rc[S2345].d/S[0-9][0-9]cups",
+                                            "systemctl --quiet is-active cups.service",
+                                            "sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/syslog",
+                                            "/usr/lib/rsyslog/rsyslog-rotate",
+                                            "systemctl kill -s HUP rsyslog.service",
+                                            "sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/mail.info/var/log/mail.warn/var/log/mail.err/var/log/mail.log/var/log/daemon.log/var/log/kern.log/var/log/auth.log/var/log/user.log/var/log/lpr.log/var/log/cron.log/var/log/debug/var/log/messages"
+                                        ],
+                 "files_opened":  [
+                                      "/root/.Xdefaults-laptop",
+                                      "/etc/X11/app-defaults/XTerm",
+                                      "/dev/tty",
+                                      "/dev/ptmx",
+                                      "/usr/share/fonts",
+                                      "/usr/local/share/fonts/.uuid",
+                                      "/usr/local/share/fonts",
+                                      "/root/.local/share/fonts/.uuid",
+                                      "/root/.fonts/.uuid",
+                                      "/root/.XCompose",
+                                      "/lib/terminfo/x/xterm",
+                                      "/dev/pts/0",
+                                      "/etc/group",
+                                      "/etc/passwd",
+                                      "/proc/sys/kernel/ngroups_max",
+                                      "/etc/shells",
+                                      "/etc/",
+                                      "/etc/locale.alias",
+                                      "/etc/rc2.d/",
+                                      "/etc/rc3.d/",
+                                      "/etc/rc4.d/",
+                                      "/etc/rc5.d/",
+                                      "/etc/rcS.d/",
+                                      "/etc/systemd/system.attached/cups.service.d",
+                                      "/etc/systemd/system.control/cups.service.d",
+                                      "/etc/systemd/system/cups.service.d",
+                                      "/lib/systemd/tls/avx512_1/libc.so.6",
+                                      "/lib/systemd/tls/avx512_1/x86_64/libc.so.6",
+                                      "/lib/systemd/tls/haswell/avx512_1/libc.so.6",
+                                      "/lib/systemd/tls/haswell/avx512_1/x86_64/libc.so.6",
+                                      "/lib/systemd/tls/haswell/libc.so.6",
+                                      "/lib/systemd/tls/haswell/x86_64/libc.so.6",
+                                      "/proc/1/environ",
+                                      "/proc/1/sched",
+                                      "/proc/3002/stat",
+                                      "/proc/3003/stat",
+                                      "/proc/3005/stat",
+                                      "/proc/3009/stat",
+                                      "/proc/3014/stat",
+                                      "/proc/cmdline",
+                                      "/proc/filesystems",
+                                      "/proc/self/stat",
+                                      "/proc/sys/kernel/osrelease",
+                                      "/run/systemd/container",
+                                      "/run/systemd/system.attached/cups.service.d",
+                                      "/run/systemd/system.control/cups.service.d",
+                                      "/run/systemd/system/cups.service.d",
+                                      "/run/systemd/transient/cups.service.d",
+                                      "/run/utmp",
+                                      "/sys/firmware/efi/efivars/SystemdOptions-8cf2644b-4b0b-428f-9387-6d876050dc67",
+                                      "/usr/lib/rsyslog/rsyslog-rotate",
+                                      "/usr/lib/systemd/system/cups.service.d",
+                                      "/usr/local/lib/systemd/system/cups.service.d",
+                                      "/usr/sbin/invoke-rc.d",
+                                      "/usr/share/locale/en.UTF-8/LC_MESSAGES/coreutils.mo",
+                                      "/usr/share/locale/en.utf8/LC_MESSAGES/coreutils.mo",
+                                      "/usr/share/locale/en_US.UTF-8/LC_MESSAGES/coreutils.mo",
+                                      "/usr/share/locale/en_US.utf8/LC_MESSAGES/coreutils.mo",
+                                      "/usr/share/locale/en_US/LC_MESSAGES/coreutils.mo",
+                                      "/usr/share/locale/locale.alias",
+                                      "/var/log/auth.log.1",
+                                      "/var/log/kern.log.1",
+                                      "/var/log/syslog.1",
+                                      "/var/run/utmp",
+                                      "\u003cinvalid fd (3)\u003e/cups.service.d",
+                                      "\u003cinvalid fd (3)\u003e/etc",
+                                      "\u003cinvalid fd (3)\u003e/lib",
+                                      "\u003cinvalid fd (3)\u003e/run",
+                                      "\u003cinvalid fd (3)\u003e/system",
+                                      "\u003cinvalid fd (3)\u003e/system.attached",
+                                      "\u003cinvalid fd (3)\u003e/system.control",
+                                      "\u003cinvalid fd (3)\u003e/systemd",
+                                      "\u003cinvalid fd (3)\u003e/transient",
+                                      "\u003cinvalid fd (3)\u003e/usr",
+                                      "\u003cinvalid fd (4)\u003e/cups.service.d",
+                                      "\u003cinvalid fd (4)\u003e/lib",
+                                      "\u003cinvalid fd (4)\u003e/local",
+                                      "\u003cinvalid fd (4)\u003e/system",
+                                      "\u003cinvalid fd (4)\u003e/systemd"
+                                  ],
+                 "files_dropped":  [
+                                       {
+                                           "path":  "/var/log/auth.log.1.gz",
+                                           "sha256":  "3011c3dfaa01e8ebaec0466158e482b4b583da30296b36fd73d4c6e933f9fb34",
+                                           "type":  "GZIP",
+                                           "process_name":  "/bin/gzip",
+                                           "process_id":  "3011"
+                                       },
+                                       {
+                                           "path":  "/var/log/kern.log.1.gz",
+                                           "sha256":  "c43122dba100ffd3b4dfdce1f7a353abcfdd364ef2257d6395a2b0bf666e9f7d",
+                                           "type":  "GZIP",
+                                           "process_name":  "/bin/gzip",
+                                           "process_id":  "3010"
+                                       },
+                                       {
+                                           "path":  "/var/log/syslog.1.gz",
+                                           "sha256":  "8e4d92facda0eb1114fb7b55512cf388fb729be7b506e8677a50f540037cccd1",
+                                           "type":  "GZIP",
+                                           "process_name":  "/bin/gzip",
+                                           "process_id":  "3006"
+                                       }
+                                   ],
+                 "memory_dumps":  [
+                                      {
+                                          "file_name":  "3042.1.0000000000401000.000000000047c000.r-x.sdmp",
+                                          "process":  "/tmp/start.old",
+                                          "size":  "503808",
+                                          "base_address":  "4702208",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "3042"
+                                      },
+                                      {
+                                          "file_name":  "3042.1.00007fff837f3000.00007fff83814000.rw-.sdmp",
+                                          "process":  "/tmp/start.old",
+                                          "size":  "135168",
+                                          "base_address":  "140735399673856",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "3042"
+                                      },
+                                      {
+                                          "file_name":  "3042.1.00000000004a0000.00000000004a6000.rw-.sdmp",
+                                          "process":  "/tmp/start.old",
+                                          "size":  "24576",
+                                          "base_address":  "4874240",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "refs":  [
+                                                       {
+                                                           "ref":  "#signature_matches",
+                                                           "value":  "7005"
+                                                       }
+                                                   ],
+                                          "process_id":  "3042"
+                                      },
+                                      {
+                                          "file_name":  "3042.1.00007fff83924000.00007fff83925000.r-x.sdmp",
+                                          "process":  "/tmp/start.old",
+                                          "size":  "4096",
+                                          "base_address":  "140735400792064",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "3042"
+                                      },
+                                      {
+                                          "file_name":  "3042.1.00000000004a6000.00000000004d5000.rw-.sdmp",
+                                          "process":  "/tmp/start.old",
+                                          "size":  "192512",
+                                          "base_address":  "5066752",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "3042"
+                                      }
+                                  ],
+                 "text_highlighted":  [
+                                          ""
+                                      ],
+                 "processes_created":  [
+                                           "xterm -hold -e sh -c /tmp/start.old",
+                                           "sh -c /tmp/start.old",
+                                           "/tmp/start.old",
+                                           "/bin/gzip",
+                                           "/bin/sh sh -c \"\\n\\t\\tinvoke-rc.d --quiet cups restart \u003e /dev/null\\n\" logrotate_script \"/var/log/cups/*log \"",
+                                           "/usr/sbin/invoke-rc.d invoke-rc.d --quiet cups restart",
+                                           "/sbin/runlevel",
+                                           "/usr/bin/systemctl systemctl --quiet is-enabled cups.service",
+                                           "/usr/bin/ls ls /etc/rc[S2345].d/S[0-9][0-9]cups",
+                                           "/usr/bin/systemctl systemctl --quiet is-active cups.service",
+                                           "/bin/sh sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/syslog",
+                                           "/usr/lib/rsyslog/rsyslog-rotate",
+                                           "/usr/bin/systemctl systemctl kill -s HUP rsyslog.service",
+                                           "/bin/sh sh -c /usr/lib/rsyslog/rsyslog-rotate logrotate_script /var/log/mail.info/var/log/mail.warn/var/log/mail.err/var/log/mail.log/var/log/daemon.log/var/log/kern.log/var/log/auth.log/var/log/user.log/var/log/lpr.log/var/log/cron.log/var/log/debug/var/log/messages"
+                                       ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "motd.ubuntu.com",
+                                         "resolved_ips":  [
+                                                              "54.217.10.153",
+                                                              "34.243.160.129",
+                                                              "34.254.182.186",
+                                                              "54.247.62.1",
+                                                              "54.171.230.55"
+                                                          ]
+                                     }
+                                 ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using XOR",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "5"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using AES",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "7"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using Base64",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "9"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "query environment variable",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "10"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "reference AES constants",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "16"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using Salsa20 or ChaCha",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "17"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "signature_description":  "Some process has originated direct HTTPS traffic with one or more hosts."
+                                                 },
+                                                 {
+                                                     "id":  "T1064",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Executes commands using a shell command-line interpreter",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "2075"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1543.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Executes the \"systemctl\" command used for controlling the systemd system and service manager",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "4032"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1036",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Sample and/or dropped files symbols with suspicious names",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "4005"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1090",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Found Tor onion address",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "7005"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "185.125.188.55",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "185.125.188.61",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "185.125.188.62",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "34.254.182.186",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "verdicts":  [
+                                  "CLEAN"
+                              ],
+                 "attack_techniques":  {
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using XOR",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "5"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using AES",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "7"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using Base64",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "9"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "reference AES constants",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "16"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using Salsa20 or ChaCha",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "17"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "query environment variable",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "10"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1071":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Some process has originated direct HTTPS traffic with one or more hosts."
+                                                         }
+                                                     ],
+                                           "T1064":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Executes commands using a shell command-line interpreter",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "2075"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1543.002":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Executes the \"systemctl\" command used for controlling the systemd system and service manager",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "4032"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1036":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Sample and/or dropped files symbols with suspicious names",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "4005"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1090":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "Found Tor onion address",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "7005"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

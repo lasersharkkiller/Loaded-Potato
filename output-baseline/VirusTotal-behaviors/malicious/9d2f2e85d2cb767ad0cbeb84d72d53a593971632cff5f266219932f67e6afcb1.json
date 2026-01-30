@@ -1,0 +1,433 @@
+{
+    "data":  {
+                 "mbc":  [
+                             {
+                                 "id":  "C0052",
+                                 "objective":  "File System",
+                                 "behavior":  "Writes File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "0"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0017",
+                                 "objective":  "Process",
+                                 "behavior":  "Create Process",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "2"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0023",
+                                 "objective":  "Execution",
+                                 "behavior":  "Install Additional Program",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "3"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0060",
+                                 "objective":  "Data",
+                                 "behavior":  "Compression Library",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "4"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "0",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write file on Windows",
+                                               "description":  "host-interaction/file-system/write",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: CreateFile",
+                                                                  "FILE_WRITE_DATA",
+                                                                  "api: WriteFile"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write file on Windows\n    namespace: host-interaction/file-system/write\n    authors:\n      - william.ballenthin@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - File System::Writes File [C0052]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x1400025C4\n  features:\n    - or:\n      - and:\n        - os: windows\n        - optional:\n          - basic block:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n          - call:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n        - or:\n          - api: kernel32.WriteFile\n          - api: kernel32.WriteFileEx\n          - api: NtWriteFile\n          - api: ZwWriteFile\n          - api: _fwrite\n          - api: fwrite\n      - api: System.IO.File::WriteAllBytes\n      - api: System.IO.File::WriteAllBytesAsync\n      - api: System.IO.File::WriteAllLines\n      - api: System.IO.File::WriteAllLinesAsync\n      - api: System.IO.File::WriteAllText\n      - api: System.IO.File::WriteAllTextAsync\n      - api: System.IO.File::AppendAllLines\n      - api: System.IO.File::AppendAllLinesAsync\n      - api: System.IO.File::AppendAllText\n      - api: System.IO.File::AppendAllTextAsync\n      - api: System.IO.File::AppendText\n      - api: System.IO.FileInfo::AppendText\n"
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create process on Windows",
+                                               "description":  "host-interaction/process/create",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: CreateProcess"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create process on Windows\n    namespace: host-interaction/process/create\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - Process::Create Process [C0017]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x406DB0\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      - 692f7fd6d198e804d6af98eb9e390d61:0x6000003\n  features:\n    - or:\n      - api: kernel32.WinExec\n      - api: kernel32.CreateProcess\n      - api: shell32.ShellExecute\n      - api: shell32.ShellExecuteEx\n      - api: advapi32.CreateProcessAsUser\n      - api: advapi32.CreateProcessWithLogon\n      - api: advapi32.CreateProcessWithToken\n      - api: kernel32.CreateProcessInternal\n      - api: ntdll.NtCreateUserProcess\n      - api: ntdll.NtCreateProcess\n      - api: ntdll.NtCreateProcessEx\n      - api: ntdll.ZwCreateProcess\n      - api: ZwCreateProcessEx\n      - api: ntdll.ZwCreateUserProcess\n      - api: ntdll.RtlCreateUserProcess\n      - api: System.Diagnostics.Process::Start\n"
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain an embedded PE file",
+                                               "description":  "executable/subfile/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain an embedded PE file\n    namespace: executable/subfile/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    mbc:\n      - Execution::Install Additional Program [B0023]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x4060\n  features:\n    - or:\n      - count(characteristic(embedded pe)): 1 or more\n      - count(string(This program cannot be run in DOS mode.)): 2 or more\n"
+                                           },
+                                           {
+                                               "id":  "4",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "linked against ZLIB",
+                                               "description":  "linking/static/zlib",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "regex: /inflate .* Copyright/"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: linked against ZLIB\n    namespace: linking/static/zlib\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    mbc:\n      - Data::Compression Library [C0060]\n    examples:\n      - 6cc148363200798a12091b97a17181a1\n  features:\n    - or:\n      - string: /deflate .* Copyright/\n      - string: /inflate .* Copyright/\n"
+                                           },
+                                           {
+                                               "id":  "5",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "extract resource via kernel32 functions",
+                                               "description":  "executable/resource",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: LoadResource",
+                                                                  "api: FindResource",
+                                                                  "api: LockResource"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: extract resource via kernel32 functions\n    namespace: executable/resource\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    examples:\n      - BF88E1BD4A3BDE10B419A622278F1FF7:0x401000\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x140001ABA\n  features:\n    - or:\n      - and:\n        - or:\n          - api: kernel32.LoadResource\n          - api: kernel32.LockResource\n          - api: LdrAccessResource\n        - optional:\n          - api: kernel32.GetModuleHandle\n          # may occur in parent function, see 0664B09A86EC2DF7DFE01A93E184A1FA23DF66EA82CAB39000944E418EC1F7B2\n          - or:\n            - api: kernel32.FindResource\n            - api: kernel32.FindResourceEx\n            - api: LdrFindResource_U\n            - api: LdrFindResourceEx_U\n          - api: kernel32.SizeofResource\n          - api: kernel32.FreeResource\n"
+                                           }
+                                       ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "3340",
+                                            "name":  "C:\\windows\\system32\\rundll32.exe ${SamplePath}\\9d2f2e85d2cb767ad0cbeb84d72d53a593971632cff5f266219932f67e6afcb1.dll ",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "3616",
+                                                                 "name":  "C:\\WINDOWS\\mssecsvc.exe",
+                                                                 "time_offset":  2741
+                                                             },
+                                                             {
+                                                                 "process_id":  "3248",
+                                                                 "name":  "C:\\WINDOWS\\mssecsvc.exe",
+                                                                 "time_offset":  2773
+                                                             },
+                                                             {
+                                                                 "process_id":  "3168",
+                                                                 "name":  "C:\\WINDOWS\\mssecsvc.exe",
+                                                                 "time_offset":  2794
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2924",
+                                            "name":  "13f43b565119f43f7155f96cafa8b05d.exe",
+                                            "time_offset":  28762
+                                        }
+                                    ],
+                 "windows_hidden":  [
+                                        "C:\\windows\\system32\\rundll32.exe",
+                                        "C:\\WINDOWS\\mssecsvc.exe"
+                                    ],
+                 "files_dropped":  [
+                                       {
+                                           "path":  "C:\\WINDOWS\\mssecsvc.exe",
+                                           "sha256":  "cf78a5a55e2cf7fc59566176062f8460a58fc5750a262defb2057e827bda563c"
+                                       }
+                                   ],
+                 "registry_keys_opened":  [
+                                              "\\REGISTRY\\USER\\S-1-5-21-870151485-863566166-2146164720-1000\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings",
+                                              "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\5.0\\Cache\\Content",
+                                              "\\REGISTRY\\USER\\S-1-5-21-870151485-863566166-2146164720-1000\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\5.0\\Cache\\Extensible Cache\\DNTException",
+                                              "\\REGISTRY\\USER\\S-1-5-21-870151485-863566166-2146164720-1000\\SOFTWARE\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\5.0\\Cache"
+                                          ],
+                 "registry_keys_set":  [
+                                           {
+                                               "key":  "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\Tracing\\mssecsvc_RASAPI32",
+                                               "value":  "EnableFileTracing"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\Tracing\\mssecsvc_RASAPI32",
+                                               "value":  "EnableConsoleTracing"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\Tracing\\mssecsvc_RASAPI32",
+                                               "value":  "FileTracingMask"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\Tracing\\mssecsvc_RASAPI32",
+                                               "value":  "ConsoleTracingMask"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\Tracing\\mssecsvc_RASAPI32",
+                                               "value":  "MaxFileSize"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\Tracing\\mssecsvc_RASAPI32",
+                                               "value":  "FileDirectory"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\Tracing\\mssecsvc_RASMANCS",
+                                               "value":  "EnableFileTracing"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\Tracing\\mssecsvc_RASMANCS",
+                                               "value":  "EnableConsoleTracing"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\Tracing\\mssecsvc_RASMANCS",
+                                               "value":  "FileTracingMask"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\Tracing\\mssecsvc_RASMANCS",
+                                               "value":  "ConsoleTracingMask"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\Tracing\\mssecsvc_RASMANCS",
+                                               "value":  "MaxFileSize"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\Tracing\\mssecsvc_RASMANCS",
+                                               "value":  "FileDirectory"
+                                           }
+                                       ],
+                 "services_opened":  [
+                                         "Sens"
+                                     ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "104.16.173.80",
+                                        "destination_port":  80,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "104.17.244.81",
+                                        "destination_port":  80,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "8.8.8.8",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "224.0.0.252",
+                                        "destination_port":  5355,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "tags":  [
+                              "LONG_SLEEPS",
+                              "RUNTIME_MODULES"
+                          ],
+                 "command_executions":  [
+                                            "C:\\windows\\system32\\rundll32.exe ${SamplePath}\\9d2f2e85d2cb767ad0cbeb84d72d53a593971632cff5f266219932f67e6afcb1.dll ",
+                                            "C:\\WINDOWS\\mssecsvc.exe"
+                                        ],
+                 "verdicts":  [
+                                  "MALWARE"
+                              ],
+                 "memory_pattern_domains":  [
+                                                "www.iuqerfsodp"
+                                            ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "www.iuqerfsodp9ifjaposdfjhgosurijfaewrwergwea.com",
+                                         "resolved_ips":  [
+                                                              "104.16.173.80",
+                                                              "104.17.244.81"
+                                                          ]
+                                     }
+                                 ],
+                 "modules_loaded":  [
+                                        "C:\\Windows\\System32\\ntdll.dll",
+                                        "C:\\Windows\\SysWOW64\\ntdll.dll",
+                                        "C:\\Windows\\System32\\wow64.dll",
+                                        "C:\\Windows\\System32\\wow64win.dll",
+                                        "C:\\Windows\\System32\\wow64cpu.dll",
+                                        "C:\\Windows\\System32\\kernel32.dll",
+                                        "C:\\Windows\\SysWOW64\\kernel32.dll",
+                                        "C:\\Windows\\System32\\user32.dll",
+                                        "C:\\Windows\\SysWOW64\\KernelBase.dll",
+                                        "C:\\Windows\\SysWOW64\\shell32.dll",
+                                        "C:\\Windows\\SysWOW64\\msvcrt.dll",
+                                        "C:\\Windows\\SysWOW64\\shlwapi.dll",
+                                        "C:\\Windows\\SysWOW64\\gdi32.dll",
+                                        "C:\\Windows\\SysWOW64\\user32.dll",
+                                        "C:\\Windows\\SysWOW64\\advapi32.dll",
+                                        "C:\\Windows\\SysWOW64\\sechost.dll",
+                                        "C:\\Windows\\SysWOW64\\rpcrt4.dll",
+                                        "C:\\Windows\\SysWOW64\\sspicli.dll",
+                                        "C:\\Windows\\SysWOW64\\cryptbase.dll",
+                                        "C:\\Windows\\SysWOW64\\lpk.dll",
+                                        "C:\\Windows\\SysWOW64\\usp10.dll",
+                                        "C:\\Windows\\SysWOW64\\ole32.dll",
+                                        "C:\\Windows\\SysWOW64\\imagehlp.dll",
+                                        "C:\\Windows\\SysWOW64\\imm32.dll",
+                                        "C:\\Windows\\SysWOW64\\msctf.dll",
+                                        "C:\\Windows\\winsxs\\x86_microsoft.windows.gdiplus_6595b64144ccf1df_1.1.7601.24203_none_5c030043a0118fbf\\GdiPlus.dll",
+                                        "C:\\Windows\\SysWOW64\\dbghelp.dll",
+                                        "C:\\Windows\\SysWOW64\\ws2_32.dll",
+                                        "C:\\Windows\\SysWOW64\\nsi.dll",
+                                        "C:\\Windows\\SysWOW64\\psapi.dll",
+                                        "C:\\Windows\\SysWOW64\\oleaut32.dll",
+                                        "C:\\Windows\\SysWOW64\\setupapi.dll",
+                                        "C:\\Windows\\SysWOW64\\cfgmgr32.dll",
+                                        "C:\\Windows\\SysWOW64\\devobj.dll",
+                                        "C:\\Windows\\SysWOW64\\IPHLPAPI.DLL",
+                                        "C:\\Windows\\SysWOW64\\winnsi.dll",
+                                        "C:\\Windows\\SysWOW64\\api-ms-win-core-synch-l1-2-0.DLL",
+                                        "C:\\Windows\\SysWOW64\\version.dll",
+                                        "${SamplePath}\\9d2f2e85d2cb767ad0cbeb84d72d53a593971632cff5f266219932f67e6afcb1.dll",
+                                        "C:\\Windows\\SysWOW64\\apphelp.dll",
+                                        "C:\\Windows\\SysWOW64\\msvcp60.dll",
+                                        "C:\\Windows\\SysWOW64\\wininet.dll",
+                                        "C:\\Windows\\SysWOW64\\urlmon.dll",
+                                        "C:\\Windows\\SysWOW64\\crypt32.dll",
+                                        "C:\\Windows\\SysWOW64\\msasn1.dll",
+                                        "C:\\Windows\\SysWOW64\\iertutil.dll",
+                                        "C:\\Windows\\winsxs\\x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0.7601.18837_none_41e855142bd5705d\\comctl32.dll",
+                                        "C:\\Windows\\SysWOW64\\profapi.dll",
+                                        "C:\\Windows\\SysWOW64\\dnsapi.dll",
+                                        "C:\\Windows\\SysWOW64\\ntmarta.dll",
+                                        "C:\\Windows\\SysWOW64\\Wldap32.dll",
+                                        "C:\\Windows\\SysWOW64\\rasapi32.dll",
+                                        "C:\\Windows\\SysWOW64\\rasman.dll",
+                                        "C:\\Windows\\SysWOW64\\rtutils.dll",
+                                        "C:\\Windows\\SysWOW64\\SensApi.dll",
+                                        "C:\\Windows\\SysWOW64\\nlaapi.dll",
+                                        "C:\\Windows\\SysWOW64\\rasadhlp.dll",
+                                        "C:\\Windows\\SysWOW64\\NapiNSP.dll",
+                                        "C:\\Windows\\SysWOW64\\mswsock.dll",
+                                        "C:\\Windows\\SysWOW64\\WSHTCPIP.DLL",
+                                        "C:\\Windows\\SysWOW64\\pnrpnsp.dll",
+                                        "C:\\Windows\\SysWOW64\\wship6.dll",
+                                        "C:\\Windows\\SysWOW64\\winrnr.dll",
+                                        "C:\\Windows\\SysWOW64\\dhcpcsvc6.DLL",
+                                        "C:\\Windows\\SysWOW64\\dhcpcsvc.dll",
+                                        "C:\\Windows\\SysWOW64\\FWPUCLNT.DLL",
+                                        "C:\\Windows\\SysWOW64\\clbcatq.dll",
+                                        "C:\\Windows\\SysWOW64\\netprofm.dll",
+                                        "C:\\Windows\\SysWOW64\\cryptsp.dll",
+                                        "C:\\Windows\\SysWOW64\\rsaenh.dll",
+                                        "C:\\Windows\\SysWOW64\\RpcRtRemote.dll",
+                                        "C:\\Windows\\SysWOW64\\npmproxy.dll",
+                                        "kernel32",
+                                        "MSCTF",
+                                        "SspiCli",
+                                        "ADVAPI32",
+                                        "ole32",
+                                        "CLBCatQ",
+                                        "rpcrt4",
+                                        "OLEAUT32",
+                                        "18f52c96bd6dc73346d0f066b17bd8f5.exe",
+                                        "CRYPTBASE"
+                                    ],
+                 "mutexes_created":  [
+                                         "IESQMMUTEX_0_208"
+                                     ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1036.005",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "create files to system directory rare"
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "collect system hardware fingerprint info"
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "load third party dll"
+                                                 },
+                                                 {
+                                                     "id":  "T1497.003",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "sleep bypass"
+                                                 },
+                                                 {
+                                                     "id":  "T1564.003",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "create hidden child process"
+                                                 },
+                                                 {
+                                                     "id":  "T1059",
+                                                     "signature_description":  "Apparent Internal Usage of CMD.EXE"
+                                                 }
+                                             ],
+                 "processes_terminated":  [
+                                              "C:\\windows\\system32\\rundll32.exe",
+                                              "C:\\WINDOWS\\mssecsvc.exe"
+                                          ],
+                 "files_opened":  [
+                                      "C:\\WINDOWS\\mssecsvc.exe",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\18f52c96bd6dc73346d0f066b17bd8f5.exe.dll",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\18f52c96bd6dc73346d0f066b17bd8f5.exe.dll.manifest"
+                                  ],
+                 "files_written":  [
+                                       "C:\\WINDOWS\\mssecsvc.exe"
+                                   ],
+                 "processes_created":  [
+                                           "C:\\windows\\system32\\rundll32.exe",
+                                           "C:\\WINDOWS\\mssecsvc.exe"
+                                       ],
+                 "attack_techniques":  {
+                                           "T1036.005":  [
+                                                             {
+                                                                 "severity":  "MEDIUM",
+                                                                 "description":  "create files to system directory rare"
+                                                             }
+                                                         ],
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "MEDIUM",
+                                                             "description":  "collect system hardware fingerprint info"
+                                                         }
+                                                     ],
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "MEDIUM",
+                                                             "description":  "load third party dll"
+                                                         }
+                                                     ],
+                                           "T1497.003":  [
+                                                             {
+                                                                 "severity":  "LOW",
+                                                                 "description":  "sleep bypass"
+                                                             }
+                                                         ],
+                                           "T1564.003":  [
+                                                             {
+                                                                 "severity":  "MEDIUM",
+                                                                 "description":  "create hidden child process"
+                                                             }
+                                                         ],
+                                           "T1059":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Apparent Internal Usage of CMD.EXE"
+                                                         }
+                                                     ]
+                                       }
+             }
+}

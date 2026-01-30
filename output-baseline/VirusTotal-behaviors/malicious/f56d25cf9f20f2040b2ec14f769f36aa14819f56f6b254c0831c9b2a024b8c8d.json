@@ -1,0 +1,1568 @@
+{
+    "data":  {
+                 "processes_terminated":  [
+                                              "%windir%\\System32\\svchost.exe -k WerSvcGroup",
+                                              "wmiadap.exe /F /T /R",
+                                              "%SANDBOX_DLL_LOADER_X86% %SAMPLEPATH% %WORKDIR% 483",
+                                              "C:\\windows\\system32\\rundll32.exe",
+                                              "c:\\windows\\syswow64\\werfault.exe",
+                                              "c:\\users\\rdhj0cnfevzx\\desktop\\lhewvzl.exe"
+                                          ],
+                 "signature_matches":  [
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "terminate process via fastfail",
+                                               "description":  "host-interaction/process/terminate",
+                                               "authors":  [
+                                                               "@_re_fox"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: terminate process via fastfail\n    namespace: host-interaction/process/terminate\n    authors:\n      - \"@_re_fox\"\n    scope: instruction\n    mbc:\n      - Process::Terminate Process [C0018]\n    references:\n      - https://docs.microsoft.com/en-us/cpp/intrinsics/fastfail?view=vs-2019\n    examples:\n      - b87e9dd18a5533a09d3e48a7a1efbcf6:0x14000747F\n  features:\n    - and:\n      - mnemonic: int\n      - number: 0x29\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://docs.microsoft.com/en-us/cpp/intrinsics/fastfail?view=vs-2019"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "allocate memory",
+                                               "authors":  [
+                                                               "0x534a@mailbox.org"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: allocate memory\n    authors:\n      - 0x534a@mailbox.org\n    lib: true\n    scope: basic block\n    mbc:\n      - Memory::Allocate Memory [C0007]\n    examples:\n      - Practical Malware Analysis Lab 03-03.exe_:0x4010EA\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x140001ABA\n  features:\n    - or:\n      - api: kernel32.VirtualAlloc\n      - api: kernel32.VirtualAllocEx\n      - api: kernel32.VirtualAllocExNuma\n      - api: kernel32.VirtualProtect\n      - api: kernel32.VirtualProtectEx\n      - api: NtAllocateVirtualMemory\n      - api: ZwAllocateVirtualMemory\n      - api: NtMapViewOfSection\n      - api: ZwMapViewOfSection\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "allocate RWX memory",
+                                               "description":  "host-interaction/process/inject",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: allocate RWX memory\n    namespace: host-interaction/process/inject\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: basic block\n    mbc:\n      - Memory::Allocate Memory [C0007]\n    examples:\n      - Practical Malware Analysis Lab 03-03.exe_:0x4010EA\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x140001ABA\n  features:\n    - and:\n      - match: allocate memory\n      - number: 0x40 = PAGE_EXECUTE_READWRITE\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "delay execution",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: delay execution\n    authors:\n      - michael.hunhoff@mandiant.com\n    lib: true\n    scope: basic block\n    mbc:\n      - Anti-Behavioral Analysis::Dynamic Analysis Evasion::Delayed Execution [B0003.003]\n    references:\n      - https://docs.microsoft.com/en-us/windows/win32/sync/wait-functions\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/TimingAttacks/timing.cpp\n    examples:\n      - al-khaser_x86.exe_:0x449770\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x402FA6\n  features:\n    - or:\n      - api: kernel32.Sleep\n      - api: kernel32.SleepEx\n      - api: kernel32.WaitForSingleObject\n      - api: kernel32.SignalObjectAndWait\n      - api: kernel32.WaitForSingleObjectEx\n      - api: kernel32.WaitForMultipleObjects\n      - api: kernel32.WaitForMultipleObjectsEx\n      - api: kernel32.RegisterWaitForSingleObject\n      - api: WaitOnAddress\n      - api: user32.MsgWaitForMultipleObjects\n      - api: user32.MsgWaitForMultipleObjectsEx\n      - api: NtDelayExecution\n      - api: KeWaitForSingleObject\n      - api: KeDelayExecutionThread\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://docs.microsoft.com/en-us/windows/win32/sync/wait-functions"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/TimingAttacks/timing.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "PEB access",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: PEB access\n    authors:\n      - michael.hunhoff@mandiant.com\n    lib: true\n    scope: basic block\n    mbc:\n      - Anti-Behavioral Analysis::Debugger Detection::Process Environment Block [B0001.019]\n    references:\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/NtGlobalFlag.cpp\n    examples:\n      - al-khaser_x86.exe_:0x420D20\n  features:\n    - or:\n      - characteristic: peb access\n      - and:\n        # https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/NtGlobalFlag.cpp#L41\n        - arch: i386\n        - characteristic: fs access\n        - or:\n          # in 0f5d5d07c6533bc6d991836ce79daaa1\n          # then we have:\n          #\n          #     xor edx, edx\n          #     mov edx, fs:[edx+30h]\n          - offset: 0x30\n          - instruction:\n            # in the case of CallObfuscator, gs:[rax]\n            - mnemonic: add\n            - number: 0x30\n      - and:\n        - arch: amd64\n        - characteristic: gs access\n        - or:\n          - offset: 0x60\n          - instruction:\n            - mnemonic: add\n            - number: 0x60\n      - and:\n        # WoW64 PEB address is fetched via the WoW64 Thread Environment Block (TEB) at FS:[0x18]-0x2000\n        # https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/NtGlobalFlag.cpp#L45\n        - characteristic: fs access\n        - instruction:\n          - mnemonic: sub\n          - number: 0x2000\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/NtGlobalFlag.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain obfuscated stackstrings",
+                                               "description":  "anti-analysis/obfuscation/string/stackstring",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain obfuscated stackstrings\n    namespace: anti-analysis/obfuscation/string/stackstring\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: basic block\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information::Indicator Removal from Tools [T1027.005]\n    mbc:\n      - Anti-Static Analysis::Disassembler Evasion::Argument Obfuscation [B0012.001]\n    examples:\n      - Practical Malware Analysis Lab 16-03.exe_:0x4013D0\n  features:\n    - characteristic: stack string\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get file attributes",
+                                               "description":  "host-interaction/file-system/meta",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get file attributes\n    namespace: host-interaction/file-system/meta\n    authors:\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: basic block\n    mbc:\n      - File System::Get File Attributes [C0049]\n    examples:\n      - 03B236B23B1EC37C663527C1F53AF3FE:0x180019824\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x4028B6\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x4029E0\n  features:\n    - or:\n      - api: kernel32.GetFileAttributes\n      - api: ZwQueryDirectoryFile\n      - api: ZwQueryInformationFile\n      - api: NtQueryDirectoryFile\n      - api: NtQueryInformationFile\n      - api: System.IO.File::GetAttributes\n      - api: System.IO.File::GetCreationTime\n      - api: System.IO.File::GetCreationTimeUtc\n      - api: System.IO.File::GetLastAccessTime\n      - api: System.IO.File::GetLastAccessTimeUtc\n      - api: System.IO.File::GetLastWriteTime\n      - api: System.IO.File::GetLastWriteTimeUtc\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create or open file",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create or open file\n    authors:\n      - michael.hunhoff@mandiant.com\n      - joakim@intezer.com\n    lib: true\n    scope: basic block\n    mbc:\n      - File System::Create File [C0016]\n    examples:\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x401D7E\n  features:\n    - or:\n      - api: CreateFile\n      - api: CreateFileEx\n      - api: IoCreateFile\n      - api: IoCreateFileEx\n      - api: ZwOpenFile\n      - api: ZwCreateFile\n      - api: NtOpenFile\n      - api: NtCreateFile\n      - api: fopen\n      - api: fopen64\n      - api: fdopen\n      - api: freopen\n      - api: open\n      - api: openat\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse PE header",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse PE header\n    namespace: load-code/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x403DD0\n  features:\n    # TODO filter out false positives\n    - and:\n      - os: windows\n      - and:\n        - mnemonic: cmp\n        - or:\n          - number: 0x4550 = IMAGE_NT_SIGNATURE (PE)\n          - and:\n            - number: 0x50\n            - number: 0x45\n        - or:\n          - number: 0x5A4D = IMAGE_DOS_SIGNATURE (MZ)\n          - and:\n            - number: 0x4D\n            - number: 0x5A\n        - optional:\n          - and:\n            - offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n            - or:\n              - and:\n                - arch: i386\n                - offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                - offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n              - and:\n                - arch: amd64\n                - offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n                - offset: 0x30 = IMAGE_NT_HEADERS64.OptionalHeader.ImageBase\n          - basic block:\n            - and:\n              - offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n              - 3 or more:\n                - offset: 0x4 = IMAGE_NT_HEADERS.FileHeader.Machine\n                - offset: 0x6 = IMAGE_NT_HEADERS.FileHeader.NumberOfSections\n                - offset: 0x14 = IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader\n                - offset: 0x16 = IMAGE_NT_HEADERS.FileHeader.Characteristics\n                - offset: 0x28 = IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint  # for 32 and 64 bit\n                - or:\n                  - and:\n                    - arch: i386\n                    - offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                  - and:\n                    - arch: amd64\n                    - offset: 0x30 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain loop",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain loop\n    authors:\n      - moritz.raabe@mandiant.com\n    lib: true\n    scope: function\n    examples:\n      - 08AC667C65D36D6542917655571E61C8:0x406EAA\n  features:\n    - or:\n      - characteristic: loop\n      - characteristic: tight loop\n      - characteristic: recursive call\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create new key via CryptAcquireContext",
+                                               "description":  "data-manipulation/encryption",
+                                               "authors":  [
+                                                               "chuong.dong@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create new key via CryptAcquireContext\n    namespace: data-manipulation/encryption\n    authors:\n      - chuong.dong@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Cryptography::Encryption Key [C0028]\n    references:\n      - https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptacquirecontexta\n    examples:\n      - E5369AC309F1BE6D77AFEEB3EDAB0ED8:0x401350\n  features:\n    - and:\n      - api: advapi32.CryptAcquireContext\n      - or:\n        - number: 0x8 = CRYPT_NEWKEYSET\n        - number: 0x18 = CRYPT_NEWKEYSET | CRYPT_DELETEKEYSET\n        - number: 0x28 = CRYPT_NEWKEYSET | CRYPT_MACHINE_KEYSET\n        - number: 0x48 = CRYPT_NEWKEYSET | CRYPT_SILENT\n        - number: 0x88 = CRYPT_NEWKEYSET | CRYPT_DEFAULT_CONTAINER_OPTIONAL\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://docs.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-cryptacquirecontexta"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "initialize hashing via WinCrypt",
+                                               "description":  "data-manipulation/hashing",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: initialize hashing via WinCrypt\n    namespace: data-manipulation/hashing\n    authors:\n      - michael.hunhoff@mandiant.com\n    scope: function\n  features:\n    - and:\n      - api: advapi32.CryptCreateHash\n      - optional:\n        - api: advapi32.CryptDestroyHash\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data with MD5",
+                                               "description":  "data-manipulation/hashing/md5",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data with MD5\n    namespace: data-manipulation/hashing/md5\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: function\n    mbc:\n      - Cryptography::Cryptographic Hash::MD5 [C0029.001]\n    references:\n      - https://github.com/rwfpl/rewolf-x86-virtualizer/blob/master/src/test_app/main.cpp\n    examples:\n      - Practical Malware Analysis Lab 05-01.dll_:0x100108ED\n  features:\n    - or:\n      - and:\n        - description: magic initialization constants from MD4 and MD5\n        - number: 0x67452301 = A\n        - number: 0xefcdab89 = B\n        - number: 0x98badcfe = C\n        - number: 0x10325476 = D\n        - not:\n          - number: 0xc3d2e1f0 = likely SHA1\n        - optional:\n          - description: specific compilation from https://github.com/rwfpl/rewolf-x86-virtualizer/blob/master/src/test_app/main.cpp\n          - and:\n            - offset: -0x28955B88\n            - offset: -0x173848AA\n      - basic block:\n        - and:\n          - number: 0x8003 = CALG_MD5\n          - api: advapi32.CryptCreateHash\n      - and:\n        - format: dotnet\n        - api: System.Security.Cryptography.MD5::Create\n        - api: System.Security.Cryptography.HashAlgorithm::ComputeHash\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/rwfpl/rewolf-x86-virtualizer/blob/master/src/test_app/main.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data via WinCrypt",
+                                               "description":  "data-manipulation/hashing",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data via WinCrypt\n    namespace: data-manipulation/hashing\n    authors:\n      - michael.hunhoff@mandiant.com\n    scope: function\n    mbc:\n      - Cryptography::Cryptographic Hash [C0029]\n    examples:\n      - 03B236B23B1EC37C663527C1F53AF3FE:0x18002E46B\n  features:\n    - and:\n      - api: advapi32.CryptHashData\n      - optional:\n        - basic block:\n          - and:\n            - api: advapi32.CryptGetHashParam\n            - or:\n              - number: 1 = HP_ALGID\n              - number: 2 = HP_HASHVAL\n              - number: 4 = HP_HASHSIZE\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "check if file exists",
+                                               "description":  "host-interaction/file-system/exists",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: check if file exists\n    namespace: host-interaction/file-system/exists\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Discovery::File and Directory Discovery [T1083]\n    examples:\n      - 31600AD0D1A7EA615690DF111AE36C73:0x401284\n  features:\n    - or:\n      - basic block:\n        - and:\n          - api: kernel32.GetFileAttributes\n          - instruction:\n            - mnemonic: cmp\n            - number: 0xFFFFFFFF = INVALID_FILE_ATTRIBUTES\n      - basic block:\n        - and:\n          - api: kernel32.GetLastError\n          - instruction:\n            - mnemonic: cmp\n            - number: 2 = ERROR_FILE_NOT_FOUND\n      - api: shlwapi.PathFileExists\n      - api: System.IO.File::Exists\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "resolve function by parsing PE exports",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "sara-rn"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: resolve function by parsing PE exports\n    namespace: load-code/pe\n    authors:\n      - sara-rn\n    scope: function\n    examples:\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x406BA1\n  features:\n    - and:\n      - os: windows\n      - or:\n        - characteristic: loop\n        - mnemonic: movzx\n      - and:\n        - offset: 0x3C = IMAGE_DOS_HEADER.PE.e_lfanew\n        - or:\n          - and:\n            - arch: i386\n            - offset: 0x78 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n          - and:\n            - arch: amd64\n            - offset: 0x88 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n        - 3 or more:\n          - offset: 0x14 = IMAGE_EXPORT_DIRECTORY.NumberOfFunctions\n          - offset: 0x24 = IMAGE_EXPORT_DIRECTORY.AddressOfNameOrdinals\n          - offset: 0x20 = IMAGE_EXPORT_DIRECTORY.AddressOfNames\n          - offset: 0x18 = IMAGE_EXPORT_DIRECTORY.NumberOfNames\n          - offset: 0x1C = IMAGE_EXPORT_DIRECTORY.AddressOfFunctions\n      - optional:\n        - or:\n          - api: LoadLibrary\n          - api: strcmp\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "move file",
+                                               "description":  "host-interaction/file-system/move",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: move file\n    namespace: host-interaction/file-system/move\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scope: function\n    mbc:\n      - File System::Move File [C0063]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x401350\n  features:\n    - or:\n      - api: kernel32.MoveFile\n      - api: kernel32.MoveFileEx\n      - api: MoveFileWithProgress\n      - api: MoveFileTransacted\n      - api: rename\n      - api: _wrename\n      - api: System.IO.FileInfo::MoveTo\n      - api: System.IO.File::Move\n      - basic block:\n        - and:\n          - number: 1 = FO_MOVE\n          - or:\n            - api: kernel32.SHFileOperation\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "accept command line arguments",
+                                               "description":  "host-interaction/cli",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: accept command line arguments\n    namespace: host-interaction/cli\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Execution::Command and Scripting Interpreter [T1059]\n    examples:\n      - e5369ac309f1be6d77afeeb3edab0ed8:0x402760\n  features:\n    - or:\n      - api: GetCommandLine\n      - api: CommandLineToArgv\n      - api: System.Environment::GetCommandLineArgs\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using Base64",
+                                               "description":  "data-manipulation/encoding/base64",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using Base64\n    namespace: data-manipulation/encoding/base64\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::Base64 [C0026.001]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5:0x1314889C\n      - 074072B261FC27B65C72671F13510C05:0x100049B2\n      - 5DB2D2BE20D59AA0BE6709A6850F1775:0x18001CC30\n      - 08AC667C65D36D6542917655571E61C8:0x406EAA\n  features:\n    - or:\n      - and:\n        - mnemonic: shl\n        - mnemonic: shr\n        - number: 0x3F = modulo 64\n        - or:\n          - number: 0x3D = \u0027=\u0027\n          - number: 0x3D3D = \u0027==\u0027\n        - match: contain loop\n        - optional:\n          - number: 2\n          - number: 3\n          - number: 4\n          - number: 6\n          - number: 0xF\n          - string: \"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\"\n      - api: System.Convert::ToBase64String\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "authenticate HMAC",
+                                               "description":  "data-manipulation/hmac",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: authenticate HMAC\n    namespace: data-manipulation/hmac\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: function\n    mbc:\n      - Cryptography::Hashed Message Authentication Code [C0061]\n    references:\n      - https://tools.ietf.org/html/rfc2104\n      - https://tools.ietf.org/html/rfc4634\n      - https://github.com/ogay/hmac\n    examples:\n      - mimikatz.exe_:0x403408\n  features:\n    - and:\n      # block-sized inner padding, consisting of repeated bytes valued 0x36\n      - number: 0x36 = inner padding byte value\n      # block-sized outer padding, consisting of repeated bytes valued 0x5c\n      - number: 0x5C = outer padding byte value\n      - match: contain loop\n      - count(characteristic(nzxor)): 2 or more\n      - optional:\n        - description: block size\n        - number: 64 = MD5, SHA-1, SHA-224, or SHA-256\n        - number: 128 = SHA-384 or SHA-512\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://tools.ietf.org/html/rfc2104"
+                                                            },
+                                                            {
+                                                                "ref":  "https://tools.ietf.org/html/rfc4634"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/ogay/hmac"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "terminate process",
+                                               "description":  "host-interaction/process/terminate",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: terminate process\n    namespace: host-interaction/process/terminate\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: function\n    mbc:\n      - Process::Terminate Process [C0018]\n    examples:\n      - C91887D861D9BD4A5872249B641BC9F9:0x401A77\n      - 9B7CCAA2AE6A5B96E3110EBCBC4311F6:0x10010307\n  features:\n    - or:\n      - api: System.Diagnostics.Process::Kill\n      - api: System.Diagnostics.Process::WaitForExit\n      - api: System.Diagnostics.Process::WaitForExitAsync\n      - and:\n        - optional:\n          - match: open process\n        - or:\n          - api: kernel32.TerminateProcess\n          - api: ntdll.NtTerminateProcess\n          - api: kernel32.ExitProcess\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "link function at runtime on Windows",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: link function at runtime on Windows\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x404130\n      - Practical Malware Analysis Lab 01-04.exe_:0x401350\n  features:\n    - and:\n      - os: windows\n      - or:\n        - api: kernel32.LoadLibrary\n        - api: kernel32.GetModuleHandle\n        - api: kernel32.GetModuleHandleEx\n        - api: ntdll.LdrLoadDll\n      - or:\n        - api: kernel32.GetProcAddress\n        - api: ntdll.LdrGetProcedureAddress\n      - optional:\n        - characteristic: indirect call\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "allocate thread local storage",
+                                               "description":  "host-interaction/process",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: allocate thread local storage\n    namespace: host-interaction/process\n    authors:\n      - michael.hunhoff@mandiant.com\n    scope: function\n    mbc:\n      - Process::Allocate Thread Local Storage [C0040]\n    examples:\n      - 03B236B23B1EC37C663527C1F53AF3FE:0x18000ADF6\n  features:\n    - or:\n      - api: kernel32.TlsAlloc\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get thread local storage value",
+                                               "description":  "host-interaction/process",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get thread local storage value\n    namespace: host-interaction/process\n    authors:\n      - michael.hunhoff@mandiant.com\n    scope: function\n  features:\n    - and:\n      - api: kernel32.TlsGetValue\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "enumerate files on windows",
+                                               "description":  "host-interaction/file-system/files/list",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: enumerate files on windows\n    namespace: host-interaction/file-system/files/list\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Discovery::File and Directory Discovery [T1083]\n    references:\n      - https://github.com/hfiref0x/TDL/blob/cc4b46ae1c939b14a22a734a727b163f873a41b5/Source/Furutaka/sup.c#L315\n    examples:\n      - Practical Malware Analysis Lab 01-01.exe_:0x4011E0\n      - Practical Malware Analysis Lab 20-02.exe_:0x401000\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x14000203C\n  features:\n    - or:\n      - and:\n        - or:\n          - api: kernel32.FindFirstFile\n          - api: kernel32.FindFirstFileEx\n          - api: kernel32.FindFirstFileTransacted\n          - api: kernel32.FindFirstFileName\n          - api: kernel32.FindFirstFileNameTransacted\n        - or:\n          - api: kernel32.FindNextFile\n          - api: kernel32.FindNextFileName\n        - optional:\n          - api: kernel32.FindClose\n          - match: contain loop\n      - and:\n        - basic block:\n          - and:\n            - number: 1 = DIRECTORY_QUERY\n            - api: ntdll.NtOpenDirectoryObject\n        - api: ntdll.NtQueryDirectoryObject\n        - optional:\n          - api: RtlAllocateHeap\n          - match: contain loop\n          - characteristic: indirect call\n      - or:\n        - api: System.IO.DirectoryInfo::GetFiles\n        - api: System.IO.DirectoryInfo::EnumerateFiles\n        - api: System.IO.Directory::GetFiles\n        - api: System.IO.Directory::EnumerateFiles\n        - api: System.IO.Directory::EnumerateFileSystemEntries\n        - api: System.IO.DirectoryInfo::GetDirectories\n        - api: System.IO.DirectoryInfo::EnumerateDirectories\n        - api: System.IO.Directory::GetDirectories\n        - api: System.IO.Directory::EnumerateDirectories\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/hfiref0x/TDL/blob/cc4b46ae1c939b14a22a734a727b163f873a41b5/Source/Furutaka/sup.c#L315"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "query environment variable",
+                                               "description":  "host-interaction/environment-variable",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "@_re_fox"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: query environment variable\n    namespace: host-interaction/environment-variable\n    authors:\n      - michael.hunhoff@mandiant.com\n      - \"@_re_fox\"\n    scope: function\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    examples:\n      - Practical Malware Analysis Lab 14-02.exe_:0x401880\n      - 0761142efbda6c4b1e801223de723578:0x65483490\n  features:\n    - or:\n      - api: kernel32.GetEnvironmentVariable\n      - api: kernel32.GetEnvironmentStrings\n      - api: kernel32.ExpandEnvironmentStrings\n      - api: msvcr90.getenv\n      - api: msvcrt.getenv\n      - api: System.Environment::GetEnvironmentVariable\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write file on Windows",
+                                               "description":  "host-interaction/file-system/write",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write file on Windows\n    namespace: host-interaction/file-system/write\n    authors:\n      - william.ballenthin@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: function\n    mbc:\n      - File System::Writes File [C0052]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x1400025C4\n  features:\n    - or:\n      - and:\n        - os: windows\n        - optional:\n          - or:\n            - and:\n              - number: 0x40000000 = GENERIC_WRITE\n              - api: kernel32.CreateFile\n            - and:\n              - number: 0x2 = FILE_WRITE_DATA\n              - or:\n                - api: NtCreateFile\n                - api: ZwCreateFile\n        - or:\n          - api: kernel32.WriteFile\n          - api: kernel32.WriteFileEx\n          - api: NtWriteFile\n          - api: ZwWriteFile\n          - api: _fwrite\n          - api: fwrite\n      - api: System.IO.File::WriteAllBytes\n      - api: System.IO.File::WriteAllBytesAsync\n      - api: System.IO.File::WriteAllLines\n      - api: System.IO.File::WriteAllLinesAsync\n      - api: System.IO.File::WriteAllText\n      - api: System.IO.File::WriteAllTextAsync\n      - api: System.IO.File::AppendAllLines\n      - api: System.IO.File::AppendAllLinesAsync\n      - api: System.IO.File::AppendAllText\n      - api: System.IO.File::AppendAllTextAsync\n      - api: System.IO.File::AppendText\n      - api: System.IO.FileInfo::AppendText\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain a resource (.rsrc) section",
+                                               "description":  "executable/pe/section/rsrc",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain a resource (.rsrc) section\n    namespace: executable/pe/section/rsrc\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: file\n    examples:\n      - A933A1A402775CFA94B6BEE0963F4B46:0x41fd25\n  features:\n    - section: .rsrc\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "reference anti-VM strings targeting Qemu",
+                                               "description":  "anti-analysis/anti-vm/vm-detection",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: reference anti-VM strings targeting Qemu\n    namespace: anti-analysis/anti-vm/vm-detection\n    authors:\n      - michael.hunhoff@mandiant.com\n    scope: file\n    att\u0026ck:\n      - Defense Evasion::Virtualization/Sandbox Evasion::System Checks [T1497.001]\n    mbc:\n      - Anti-Behavioral Analysis::Virtual Machine Detection [B0009]\n    references:\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiVM/Qemu.cpp\n    examples:\n      - al-khaser_x86.exe_\n  features:\n    - or:\n      - string: /Qemu/i\n      - string: /qemu-ga.exe/i\n      - string: /BOCHS/i\n      - string: /BXPC/i\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiVM/Qemu.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "reference Base64 string",
+                                               "description":  "data-manipulation/encoding/base64",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: reference Base64 string\n    namespace: data-manipulation/encoding/base64\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: file\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Data::Encode Data::Base64 [C0026.001]\n      - Data::Check String [C0019]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5\n      - 074072B261FC27B65C72671F13510C05\n      - 5DB2D2BE20D59AA0BE6709A6850F1775\n  features:\n    - string: /ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "delay execution",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "@ramen0x3f"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: delay execution\n    authors:\n      - michael.hunhoff@mandiant.com\n      - \"@ramen0x3f\"\n    lib: true\n    scope: basic block\n    mbc:\n      - Anti-Behavioral Analysis::Dynamic Analysis Evasion::Delayed Execution [B0003.003]\n    references:\n      - https://docs.microsoft.com/en-us/windows/win32/sync/wait-functions\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/TimingAttacks/timing.cpp\n    examples:\n      - al-khaser_x86.exe_:0x449770\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x402FA6\n  features:\n    - or:\n      - and:\n        - os: windows\n        - or:\n          - api: kernel32.Sleep\n          - api: kernel32.SleepEx\n          - api: kernel32.WaitForSingleObject\n          - api: kernel32.SignalObjectAndWait\n          - api: kernel32.WaitForSingleObjectEx\n          - api: kernel32.WaitForMultipleObjects\n          - api: kernel32.WaitForMultipleObjectsEx\n          - api: kernel32.RegisterWaitForSingleObject\n          - api: WaitOnAddress\n          - api: user32.MsgWaitForMultipleObjects\n          - api: user32.MsgWaitForMultipleObjectsEx\n          - api: NtDelayExecution\n          - api: KeWaitForSingleObject\n          - api: KeDelayExecutionThread\n      - and:\n        - os: linux\n        - or:\n          - api: sleep\n          - api: usleep\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://docs.microsoft.com/en-us/windows/win32/sync/wait-functions"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/TimingAttacks/timing.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain obfuscated stackstrings",
+                                               "description":  "anti-analysis/obfuscation/string/stackstring",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain obfuscated stackstrings\n    namespace: anti-analysis/obfuscation/string/stackstring\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: basic block\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information::Indicator Removal from Tools [T1027.005]\n    mbc:\n      - Anti-Static Analysis::Executable Code Obfuscation::Argument Obfuscation [B0032.020]\n      - Anti-Static Analysis::Executable Code Obfuscation::Stack Strings [B0032.017]\n    examples:\n      - Practical Malware Analysis Lab 16-03.exe_:0x4013D0\n  features:\n    - characteristic: stack string\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get file attributes",
+                                               "description":  "host-interaction/file-system/meta",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get file attributes\n    namespace: host-interaction/file-system/meta\n    authors:\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: basic block\n    mbc:\n      - File System::Get File Attributes [C0049]\n    examples:\n      - 03B236B23B1EC37C663527C1F53AF3FE:0x180019824\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x4028B6\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x4029E0\n  features:\n    - or:\n      - api: kernel32.GetFileAttributes\n      - api: ZwQueryDirectoryFile\n      - api: ZwQueryInformationFile\n      - api: NtQueryDirectoryFile\n      - api: NtQueryInformationFile\n      - api: System.IO.File::GetAttributes\n      - api: System.IO.File::GetCreationTime\n      - api: System.IO.File::GetCreationTimeUtc\n      - api: System.IO.File::GetLastAccessTime\n      - api: System.IO.File::GetLastAccessTimeUtc\n      - api: System.IO.File::GetLastWriteTime\n      - api: System.IO.File::GetLastWriteTimeUtc\n      - property/read: System.IO.FileSystemInfo::Attributes\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse PE header",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse PE header\n    namespace: load-code/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x403DD0\n  features:\n    - and:\n      - os: windows\n      - and:\n        - mnemonic: cmp\n        - or:\n          - number: 0x4550 = IMAGE_NT_SIGNATURE (PE)\n          - and:\n            - number: 0x50\n            - number: 0x45\n        - or:\n          - number: 0x5A4D = IMAGE_DOS_SIGNATURE (MZ)\n          - and:\n            - number: 0x4D\n            - number: 0x5A\n        - optional:\n          - and:\n            - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n            - or:\n              - and:\n                - arch: i386\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n              - and:\n                - arch: amd64\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x30 = IMAGE_NT_HEADERS64.OptionalHeader.ImageBase\n          - basic block:\n            - and:\n              - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n              - 3 or more:\n                - operand[1].offset: 0x4 = IMAGE_NT_HEADERS.FileHeader.Machine\n                - operand[1].offset: 0x6 = IMAGE_NT_HEADERS.FileHeader.NumberOfSections\n                - operand[1].offset: 0x14 = IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader\n                - operand[1].offset: 0x16 = IMAGE_NT_HEADERS.FileHeader.Characteristics\n                - operand[1].offset: 0x28 = IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint  # for 32 and 64 bit\n                - or:\n                  - and:\n                    - arch: i386\n                    - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                  - and:\n                    - arch: amd64\n                    - operand[1].offset: 0x30 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data with MD5",
+                                               "description":  "data-manipulation/hashing/md5",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data with MD5\n    namespace: data-manipulation/hashing/md5\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scope: function\n    mbc:\n      - Cryptography::Cryptographic Hash::MD5 [C0029.001]\n    references:\n      - https://github.com/rwfpl/rewolf-x86-virtualizer/blob/master/src/test_app/main.cpp\n    examples:\n      - Practical Malware Analysis Lab 05-01.dll_:0x100108ED\n  features:\n    - or:\n      - and:\n        - description: magic initialization constants from MD4 and MD5\n        - number: 0x67452301 = A, also used in SHA1, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0xefcdab89 = B, also used in SHA1, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0x98badcfe = C, also used in SHA1, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - number: 0x10325476 = D, also used in SHA1, RIPEMD-128, RIPEMD-160, RIPEMD-256, and RIPEMD-320\n        - not:\n          - number: 0xc3d2e1f0 = likely SHA1 but also used in RIPEMD-160 and RIPEMD-320\n        - optional:\n          - description: specific compilation from https://github.com/rwfpl/rewolf-x86-virtualizer/blob/master/src/test_app/main.cpp\n          - and:\n            - offset: -0x28955B88\n            - offset: -0x173848AA\n      - basic block:\n        - and:\n          - number: 0x8003 = CALG_MD5\n          - api: advapi32.CryptCreateHash\n      - and:\n        - format: dotnet\n        - or:\n          - api: System.Security.Cryptography.MD5::Create\n          - api: System.Security.Cryptography.MD5CryptoServiceProvider::ctor\n        - optional:\n          - api: System.Security.Cryptography.HashAlgorithm::ComputeHash\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/rwfpl/rewolf-x86-virtualizer/blob/master/src/test_app/main.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "check if file exists",
+                                               "description":  "host-interaction/file-system/exists",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: check if file exists\n    namespace: host-interaction/file-system/exists\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Discovery::File and Directory Discovery [T1083]\n    mbc:\n      - Discovery::File and Directory Discovery [E1083]\n    examples:\n      - 31600AD0D1A7EA615690DF111AE36C73:0x401284\n  features:\n    - or:\n      - basic block:\n        - and:\n          - api: kernel32.GetFileAttributes\n          - instruction:\n            - mnemonic: cmp\n            - number: 0xFFFFFFFF = INVALID_FILE_ATTRIBUTES\n      - basic block:\n        - and:\n          - api: kernel32.GetLastError\n          - instruction:\n            - mnemonic: cmp\n            - number: 2 = ERROR_FILE_NOT_FOUND\n      - api: shlwapi.PathFileExists\n      - api: System.IO.File::Exists\n      - property/read: System.IO.FileSystemInfo::Exists\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get OS version",
+                                               "authors":  [
+                                                               "@mr-tz"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get OS version\n    authors:\n      - \"@mr-tz\"\n    lib: true\n    scope: function\n    examples:\n      - 493167E85E45363D09495D0841C30648:0x401000\n      - 5f66b82558ca92e54e77f216ef4c066c:0x44580A\n  features:\n    - or:\n      - api: RtlGetVersion\n      - api: ntoskrnl.PsGetVersion\n      - api: GetVersion\n      - api: GetVersionEx\n      - api: VerifyVersionInfo\n      - api: VerSetConditionMask\n      - api: RtlGetNtVersionNumbers\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "accept command line arguments",
+                                               "description":  "host-interaction/cli",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: accept command line arguments\n    namespace: host-interaction/cli\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Execution::Command and Scripting Interpreter [T1059]\n    mbc:\n      - Execution::Command and Scripting Interpreter [E1059]\n    examples:\n      - e5369ac309f1be6d77afeeb3edab0ed8:0x402760\n  features:\n    - or:\n      - api: GetCommandLine\n      - api: CommandLineToArgv\n      - api: System.Environment::GetCommandLineArgs\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using Base64",
+                                               "description":  "data-manipulation/encoding/base64",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using Base64\n    namespace: data-manipulation/encoding/base64\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::Base64 [C0026.001]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5:0x1314889C\n      - 074072B261FC27B65C72671F13510C05:0x100049B2\n      - 5DB2D2BE20D59AA0BE6709A6850F1775:0x18001CC30\n      - 08AC667C65D36D6542917655571E61C8:0x406EAA\n  features:\n    - or:\n      - and:\n        - mnemonic: shl\n        - mnemonic: shr\n        - number: 0x3F = modulo 64\n        - or:\n          - number: 0x3D = \u0027=\u0027\n          - number: 0x3D3D = \u0027==\u0027\n        - match: contain loop\n        - optional:\n          - number: 2\n          - number: 3\n          - number: 4\n          - number: 6\n          - number: 0xF\n          - string: \"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\"\n      - api: System.Convert::ToBase64String\n      - api: System.Convert::ToBase64CharArray\n      - api: System.Convert::TryToBase64Chars\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "terminate process",
+                                               "description":  "host-interaction/process/terminate",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: terminate process\n    namespace: host-interaction/process/terminate\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: function\n    mbc:\n      - Process::Terminate Process [C0018]\n    examples:\n      - C91887D861D9BD4A5872249B641BC9F9:0x401A77\n      - 9B7CCAA2AE6A5B96E3110EBCBC4311F6:0x10010307\n  features:\n    - or:\n      - api: System.Diagnostics.Process::Kill\n      - api: System.Diagnostics.Process::WaitForExit\n      - api: System.Diagnostics.Process::WaitForExitAsync\n      - api: System.Environment::Exit\n      - api: System.Windows.Forms.Application::Exit\n      - and:\n        - optional:\n          - match: open process\n        - or:\n          - api: kernel32.TerminateProcess\n          - api: ntdll.NtTerminateProcess\n          - api: kernel32.ExitProcess\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "link function at runtime on Windows",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: link function at runtime on Windows\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x404130\n      - Practical Malware Analysis Lab 01-04.exe_:0x401350\n  features:\n    - and:\n      - os: windows\n      - or:\n        - api: kernel32.GetProcAddress\n        - api: ntdll.LdrGetProcedureAddress\n      - optional:\n        - characteristic: indirect call\n        - api: kernel32.LoadLibrary\n        - api: kernel32.GetModuleHandle\n        - api: kernel32.GetModuleHandleEx\n        - api: ntdll.LdrLoadDll\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "enumerate files on Windows",
+                                               "description":  "host-interaction/file-system/files/list",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: enumerate files on Windows\n    namespace: host-interaction/file-system/files/list\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Discovery::File and Directory Discovery [T1083]\n    mbc:\n      - Discovery::File and Directory Discovery [E1083]\n    references:\n      - https://github.com/hfiref0x/TDL/blob/cc4b46ae1c939b14a22a734a727b163f873a41b5/Source/Furutaka/sup.c#L315\n    examples:\n      - Practical Malware Analysis Lab 01-01.exe_:0x4011E0\n      - Practical Malware Analysis Lab 20-02.exe_:0x401000\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x14000203C\n  features:\n    - or:\n      - and:\n        - or:\n          - api: kernel32.FindFirstFile\n          - api: kernel32.FindFirstFileEx\n          - api: kernel32.FindFirstFileTransacted\n          - api: kernel32.FindFirstFileName\n          - api: kernel32.FindFirstFileNameTransacted\n        - or:\n          - api: kernel32.FindNextFile\n          - api: kernel32.FindNextFileName\n        - optional:\n          - api: kernel32.FindClose\n          - match: contain loop\n      - and:\n        - basic block:\n          - and:\n            - number: 1 = DIRECTORY_QUERY\n            - api: ntdll.NtOpenDirectoryObject\n        - api: ntdll.NtQueryDirectoryObject\n        - optional:\n          - api: RtlAllocateHeap\n          - match: contain loop\n          - characteristic: indirect call\n      - or:\n        - api: System.IO.DirectoryInfo::GetFiles\n        - api: System.IO.DirectoryInfo::EnumerateFiles\n        - api: System.IO.Directory::GetFiles\n        - api: System.IO.Directory::EnumerateFiles\n        - api: System.IO.Directory::EnumerateFileSystemEntries\n        - api: System.IO.DirectoryInfo::GetDirectories\n        - api: System.IO.DirectoryInfo::EnumerateDirectories\n        - api: System.IO.Directory::GetDirectories\n        - api: System.IO.Directory::EnumerateDirectories\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/hfiref0x/TDL/blob/cc4b46ae1c939b14a22a734a727b163f873a41b5/Source/Furutaka/sup.c#L315"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "query environment variable",
+                                               "description":  "host-interaction/environment-variable",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "@_re_fox"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: query environment variable\n    namespace: host-interaction/environment-variable\n    authors:\n      - michael.hunhoff@mandiant.com\n      - \"@_re_fox\"\n    scope: function\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    mbc:\n      - Discovery::System Information Discovery [E1082]\n    examples:\n      - Practical Malware Analysis Lab 14-02.exe_:0x401880\n      - 0761142efbda6c4b1e801223de723578:0x65483490\n  features:\n    - or:\n      - api: kernel32.GetEnvironmentVariable\n      - api: kernel32.GetEnvironmentStrings\n      - api: kernel32.ExpandEnvironmentStrings\n      - api: msvcr90.getenv\n      - api: msvcrt.getenv\n      - api: System.Environment::GetEnvironmentVariable\n      - api: System.Environment::GetEnvironmentVariables\n      - api: System.Environment::ExpandEnvironmentVariables\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "reference analysis tools strings",
+                                               "description":  "anti-analysis",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: reference analysis tools strings\n    namespace: anti-analysis\n    authors:\n      - michael.hunhoff@mandiant.com\n    scope: file\n    mbc:\n      - Discovery::Analysis Tool Discovery::Process detection [B0013.001]\n    references:\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiAnalysis/process.cpp\n    examples:\n      - al-khaser_x86.exe_\n  features:\n    - or:\n      - string: /ollydbg(\\.exe)?/i\n      - string: /ProcessHacker(\\.exe)?/i\n      - string: /tcpview(\\.exe)?/i\n      - string: /autoruns(\\.exe)?/i\n      - string: /autorunsc(\\.exe)?/i\n      - string: /filemon(\\.exe)?/i\n      - string: /procmon(\\.exe)?/i\n      - string: /regmon(\\.exe)?/i\n      - string: /procexp(\\.exe)?/i\n      - string: /ida[gqtuw]?(\\.exe)?$/i\n      - string: /ida[gqtuw]64(\\.exe)?$/i\n      - string: /ImmunityDebugger(\\.exe)?/i\n      - string: /Wireshark(\\.exe)?/i\n      - string: /dumpcap(\\.exe)?/i\n      - string: /HookExplorer(\\.exe)?/i\n      - string: /ImportREC(\\.exe)?/i\n      - string: /PETools(\\.exe)?/i\n      - string: /LordPE(\\.exe)?/i\n      - string: /SysInspector(\\.exe)?/i\n      - string: /proc_analyzer(\\.exe)?/i\n      - string: /sysAnalyzer(\\.exe)?/i\n      - string: /sniff_hit(\\.exe)?/i\n      - string: /windbg(\\.exe)?/i\n      - string: /joeboxcontrol(\\.exe)?/i\n      - string: /joeboxserver(\\.exe)?/i\n      - string: /ResourceHacker(\\.exe)?/i\n      - string: /x32dbg(\\.exe)?/i\n      - string: /x64dbg(\\.exe)?/i\n      - string: /Fiddler(\\.exe)?/i\n      - string: /httpdebugger(\\.exe)?/i\n      - string: /fakenet(\\.exe)?/i\n      - string: /netmon(\\.exe)?/i\n      - string: /WPE PRO(\\.exe)?/i\n      - string: /decompile(\\.exe)?/i\n      - string: /scylla/i\n      - string: /megadumper/i\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiAnalysis/process.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create or open file",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create or open file\n    authors:\n      - michael.hunhoff@mandiant.com\n      - joakim@intezer.com\n    lib: true\n    scope: basic block\n    mbc:\n      - File System::Create File [C0016]\n    examples:\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x401D7E\n  features:\n    - or:\n      - api: CreateFile\n      - api: CreateFileEx\n      - api: IoCreateFile\n      - api: IoCreateFileEx\n      - api: ZwOpenFile\n      - api: ZwCreateFile\n      - api: NtOpenFile\n      - api: NtCreateFile\n      - api: LZCreateFile\n      - api: LZOpenFile\n      - api: fopen\n      - api: fopen64\n      - api: fdopen\n      - api: freopen\n      - api: open\n      - api: openat\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get OS version",
+                                               "authors":  [
+                                                               "@mr-tz"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get OS version\n    authors:\n      - \"@mr-tz\"\n    lib: true\n    scope: function\n    examples:\n      - 493167E85E45363D09495D0841C30648:0x401000\n      - 5f66b82558ca92e54e77f216ef4c066c:0x44580A\n  features:\n    - or:\n      - api: RtlGetVersion\n      - api: ntoskrnl.PsGetVersion\n      - api: GetVersion\n      - api: GetVersionEx\n      - api: VerifyVersionInfo\n      - api: VerSetConditionMask\n      - api: RtlGetNtVersionNumbers\n      - api: GetProductInfo\n      - and:\n        - match: PEB access\n        - or:\n          - and:\n            - arch: i386\n            - or:\n              - offset: 0xA4 = PEB-\u003eOSMajorVersion\n              - offset: 0xA8 = PEB-\u003eOSMinorVersion\n              - offset: 0xAC = PEB-\u003eOSBuildNumber\n          - and:\n            - arch: amd64\n            - or:\n              - offset: 0x118 = PEB-\u003eOSMajorVersion\n              - offset: 0x11C = PEB-\u003eOSMinorVersion\n              - offset: 0x120 = PEB-\u003eOSBuildNumber\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write file on Windows",
+                                               "description":  "host-interaction/file-system/write",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write file on Windows\n    namespace: host-interaction/file-system/write\n    authors:\n      - william.ballenthin@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: function\n    mbc:\n      - File System::Writes File [C0052]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x1400025C4\n  features:\n    - or:\n      - and:\n        - os: windows\n        - optional:\n          - basic block:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n        - or:\n          - api: kernel32.WriteFile\n          - api: kernel32.WriteFileEx\n          - api: NtWriteFile\n          - api: ZwWriteFile\n          - api: _fwrite\n          - api: fwrite\n      - api: System.IO.File::WriteAllBytes\n      - api: System.IO.File::WriteAllBytesAsync\n      - api: System.IO.File::WriteAllLines\n      - api: System.IO.File::WriteAllLinesAsync\n      - api: System.IO.File::WriteAllText\n      - api: System.IO.File::WriteAllTextAsync\n      - api: System.IO.File::AppendAllLines\n      - api: System.IO.File::AppendAllLinesAsync\n      - api: System.IO.File::AppendAllText\n      - api: System.IO.File::AppendAllTextAsync\n      - api: System.IO.File::AppendText\n      - api: System.IO.FileInfo::AppendText\n"
+                                           }
+                                       ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "time.windows.com",
+                                         "resolved_ips":  [
+                                                              "40.119.148.38"
+                                                          ]
+                                     }
+                                 ],
+                 "modules_loaded":  [
+                                        "C:\\Windows\\System32\\ntdll.dll",
+                                        "C:\\Windows\\SysWOW64\\ntdll.dll",
+                                        "C:\\Windows\\System32\\wow64.dll",
+                                        "C:\\Windows\\System32\\wow64win.dll",
+                                        "C:\\Windows\\System32\\wow64cpu.dll",
+                                        "C:\\Windows\\System32\\kernel32.dll",
+                                        "C:\\Windows\\SysWOW64\\kernel32.dll",
+                                        "C:\\Windows\\System32\\user32.dll",
+                                        "C:\\Windows\\SysWOW64\\KernelBase.dll",
+                                        "C:\\Windows\\SysWOW64\\shell32.dll",
+                                        "C:\\Windows\\SysWOW64\\msvcrt.dll",
+                                        "C:\\Windows\\SysWOW64\\shlwapi.dll",
+                                        "C:\\Windows\\SysWOW64\\gdi32.dll",
+                                        "C:\\Windows\\SysWOW64\\user32.dll",
+                                        "C:\\Windows\\SysWOW64\\advapi32.dll",
+                                        "C:\\Windows\\SysWOW64\\sechost.dll",
+                                        "C:\\Windows\\SysWOW64\\rpcrt4.dll",
+                                        "C:\\Windows\\SysWOW64\\sspicli.dll",
+                                        "C:\\Windows\\SysWOW64\\cryptbase.dll",
+                                        "C:\\Windows\\SysWOW64\\lpk.dll",
+                                        "C:\\Windows\\SysWOW64\\usp10.dll",
+                                        "C:\\Windows\\SysWOW64\\ole32.dll",
+                                        "C:\\Windows\\SysWOW64\\imagehlp.dll",
+                                        "C:\\Windows\\SysWOW64\\imm32.dll",
+                                        "C:\\Windows\\SysWOW64\\msctf.dll",
+                                        "C:\\Windows\\winsxs\\x86_microsoft.windows.gdiplus_6595b64144ccf1df_1.1.7601.24203_none_5c030043a0118fbf\\GdiPlus.dll",
+                                        "C:\\Windows\\SysWOW64\\dbghelp.dll",
+                                        "C:\\Windows\\SysWOW64\\ws2_32.dll",
+                                        "C:\\Windows\\SysWOW64\\nsi.dll",
+                                        "C:\\Windows\\SysWOW64\\psapi.dll",
+                                        "C:\\Windows\\SysWOW64\\oleaut32.dll",
+                                        "C:\\Windows\\SysWOW64\\setupapi.dll",
+                                        "C:\\Windows\\SysWOW64\\cfgmgr32.dll",
+                                        "C:\\Windows\\SysWOW64\\devobj.dll",
+                                        "C:\\Windows\\SysWOW64\\IPHLPAPI.DLL",
+                                        "C:\\Windows\\SysWOW64\\winnsi.dll",
+                                        "C:\\Windows\\SysWOW64\\api-ms-win-core-synch-l1-2-0.DLL",
+                                        "C:\\Windows\\SysWOW64\\version.dll",
+                                        "${SamplePath}\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll",
+                                        "C:\\Windows\\SysWOW64\\cryptsp.dll",
+                                        "C:\\Windows\\SysWOW64\\rsaenh.dll",
+                                        "C:\\Windows\\SysWOW64\\powrprof.dll",
+                                        "NETUTILS.dll",
+                                        "urlmon.dll",
+                                        "kernel32",
+                                        "API-MS-Win-Security-LSALookup-L1-1-0.dll",
+                                        "SRVCLI.dll",
+                                        "WINSTA.dll",
+                                        "KERNEL32.dll",
+                                        "msvcrt.dll",
+                                        "SAMLIB.dll",
+                                        "netapi32.dll",
+                                        "ntdll.dll",
+                                        "shlwapi.dll",
+                                        "ntmarta.dll",
+                                        "crypt32.dll",
+                                        "wtsapi32.dll",
+                                        "advapi32.dll",
+                                        "ole32.dll",
+                                        "LOGONCLI.dll",
+                                        "ws2_32.dll",
+                                        "USER32.dll",
+                                        "API-MS-Win-Security-SDDL-L1-1-0.dll",
+                                        "wininet.dll",
+                                        "shell32.dll",
+                                        "OLEAUT32.dll",
+                                        "RPCRT4.dll",
+                                        "WKSCLI.dll",
+                                        "CRYPTSP.dll",
+                                        "GDI32.dll",
+                                        "C:\\Users\\Virtual\\AppData\\Local\\Temp\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll",
+                                        "SAMCLI.dll",
+                                        "userenv.dll",
+                                        "\\Windows\\SysWOW64\\SHCore.dll",
+                                        "\\Windows\\SysWOW64\\cryptbase.dll",
+                                        "\\Windows\\System32\\ntdll.dll",
+                                        "\\Windows\\SysWOW64\\oleaut32.dll",
+                                        "\\Windows\\SysWOW64\\apphelp.dll",
+                                        "\\Windows\\SysWOW64\\shell32.dll",
+                                        "\\Windows\\SysWOW64\\KernelBase.dll",
+                                        "\\Windows\\SysWOW64\\uxtheme.dll",
+                                        "\\Windows\\SysWOW64\\bcryptprimitives.dll",
+                                        "\\Windows\\SysWOW64\\cfgmgr32.dll",
+                                        "\\Windows\\SysWOW64\\msvcrt.dll",
+                                        "\\Windows\\SysWOW64\\profapi.dll",
+                                        "\\Windows\\SysWOW64\\kernel32.dll",
+                                        "\\Windows\\SysWOW64\\combase.dll",
+                                        "\\Windows\\System32\\wow64cpu.dll",
+                                        "\\Windows\\SysWOW64\\propsys.dll",
+                                        "\\Windows\\SysWOW64\\advapi32.dll",
+                                        "\\Windows\\System32\\wow64win.dll",
+                                        "\\Windows\\SysWOW64\\windows.storage.dll",
+                                        "\\Windows\\SysWOW64\\sspicli.dll",
+                                        "\\Windows\\SysWOW64\\shlwapi.dll",
+                                        "\\Windows\\SysWOW64\\iertutil.dll",
+                                        "\\Windows\\SysWOW64\\gdi32.dll",
+                                        "\\Windows\\SysWOW64\\urlmon.dll",
+                                        "\\Windows\\System32\\wow64.dll",
+                                        "\\Windows\\SysWOW64\\ntdll.dll",
+                                        "\\Windows\\SysWOW64\\powrprof.dll",
+                                        "\\Windows\\SysWOW64\\kernel.appcore.dll",
+                                        "\\Windows\\SysWOW64\\pcacli.dll",
+                                        "\\Windows\\SysWOW64\\mpr.dll",
+                                        "\\Windows\\SysWOW64\\imm32.dll",
+                                        "\\Windows\\SysWOW64\\sechost.dll",
+                                        "\\Windows\\SysWOW64\\rpcrt4.dll",
+                                        "\\Windows\\SysWOW64\\clbcatq.dll",
+                                        "\\Windows\\SysWOW64\\ole32.dll",
+                                        "\\Windows\\SysWOW64\\user32.dll",
+                                        "\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll",
+                                        "\\Windows\\SysWOW64\\ws2_32.dll",
+                                        "\\Windows\\SysWOW64\\rsaenh.dll",
+                                        "\\Windows\\SysWOW64\\wkscli.dll",
+                                        "\\Windows\\SysWOW64\\netutils.dll",
+                                        "\\Windows\\SysWOW64\\srvcli.dll",
+                                        "\\Windows\\SysWOW64\\netapi32.dll",
+                                        "\\Windows\\SysWOW64\\cryptsp.dll",
+                                        "\\Windows\\SysWOW64\\samcli.dll",
+                                        "\\Windows\\SysWOW64\\bcrypt.dll",
+                                        "\\Windows\\SysWOW64\\logoncli.dll",
+                                        "\\Windows\\SysWOW64\\userenv.dll"
+                                    ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1027.005",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "contain obfuscated stackstrings"
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "parse PE header"
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "create new key via CryptAcquireContext"
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "check if file exists"
+                                                 },
+                                                 {
+                                                     "id":  "T1059",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "accept command line arguments"
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using Base64"
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "link function at runtime on Windows"
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "enumerate files on windows"
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "query environment variable"
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "reference Base64 string"
+                                                 },
+                                                 {
+                                                     "id":  "T1497.001",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "reference anti-VM strings targeting Qemu"
+                                                 },
+                                                 {
+                                                     "id":  "T1027.005",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "contain obfuscated stackstrings",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "contain obfuscated stackstrings"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "parse PE header",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "parse PE header"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "create new key via CryptAcquireContext",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "create new key via CryptAcquireContext"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "check if file exists",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "check if file exists"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1059",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "accept command line arguments",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "accept command line arguments"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using Base64",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encode data using Base64"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "link function at runtime on Windows",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "link function at runtime on Windows"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "enumerate files on windows",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "enumerate files on windows"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "query environment variable",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "query environment variable"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1497.001",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "reference anti-VM strings targeting Qemu",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "reference anti-VM strings targeting Qemu"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "reference Base64 string",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "reference Base64 string"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "enumerate files on Windows",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "enumerate files on Windows"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1486",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "call encryption algorithm library"
+                                                 },
+                                                 {
+                                                     "id":  "T1622",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "get time manytimes"
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "load third party dll"
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_MEDIUM",
+                                                     "signature_description":  "collect system fingerprint info"
+                                                 },
+                                                 {
+                                                     "id":  "T1497",
+                                                     "signature_description":  "Virtualization / Sandbox Evasion"
+                                                 },
+                                                 {
+                                                     "id":  "T1057",
+                                                     "signature_description":  "Process Discovery"
+                                                 },
+                                                 {
+                                                     "id":  "T1045",
+                                                     "signature_description":  "Software Packing"
+                                                 },
+                                                 {
+                                                     "id":  "T1055",
+                                                     "signature_description":  "Process Injection"
+                                                 }
+                                             ],
+                 "memory_pattern_urls":  [
+                                             "https://armmf.adobe.com"
+                                         ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2240",
+                                            "name":  "%windir%\\System32\\svchost.exe -k WerSvcGroup"
+                                        },
+                                        {
+                                            "process_id":  "2932",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        },
+                                        {
+                                            "process_id":  "2976",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        },
+                                        {
+                                            "process_id":  "2632",
+                                            "name":  "%SANDBOX_DLL_LOADER_X86% %SAMPLEPATH% %WORKDIR% 483",
+                                            "time_offset":  1,
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2712",
+                                                                 "name":  "%windir%\\SysWOW64\\wermgr.exe"
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2124",
+                                            "name":  "%windir%\\system32\\DllHost.exe /Processid:{3EB3C877-1F16-487C-9050-104DBCD66683}"
+                                        },
+                                        {
+                                            "process_id":  "1396",
+                                            "name":  "C:\\windows\\system32\\rundll32.exe ${SamplePath}\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll "
+                                        },
+                                        {
+                                            "process_id":  "2388",
+                                            "name":  "rundll32.exe",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2652",
+                                                                 "name":  "rundll32.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "2992",
+                                                                                      "name":  "wermgr.exe"
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "proc_1",
+                                            "name":  "lhewvzl.exe",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "proc_2",
+                                                                 "name":  "lhewvzl.exe"
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_3",
+                                                                 "name":  "lhewvzl.exe"
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_4",
+                                                                 "name":  "lhewvzl.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "proc_14",
+                                                                                      "name":  "lhewvzl.exe"
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "proc_15",
+                                                                                      "name":  "werfault.exe"
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_5",
+                                                                 "name":  "lhewvzl.exe"
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_6",
+                                                                 "name":  "lhewvzl.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "proc_24",
+                                                                                      "name":  "werfault.exe"
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "proc_25",
+                                                                                      "name":  "lhewvzl.exe"
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_7",
+                                                                 "name":  "lhewvzl.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "proc_18",
+                                                                                      "name":  "werfault.exe"
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "proc_19",
+                                                                                      "name":  "lhewvzl.exe"
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_8",
+                                                                 "name":  "lhewvzl.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "proc_21",
+                                                                                      "name":  "werfault.exe"
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "proc_22",
+                                                                                      "name":  "lhewvzl.exe"
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_9",
+                                                                 "name":  "lhewvzl.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "proc_42",
+                                                                                      "name":  "lhewvzl.exe"
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_10",
+                                                                 "name":  "lhewvzl.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "proc_11",
+                                                                                      "name":  "lhewvzl.exe"
+                                                                                  },
+                                                                                  {
+                                                                                      "process_id":  "proc_13",
+                                                                                      "name":  "werfault.exe"
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_12",
+                                                                 "name":  "lhewvzl.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "proc_27",
+                                                                                      "name":  "lhewvzl.exe"
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_16",
+                                                                 "name":  "lhewvzl.exe"
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_17",
+                                                                 "name":  "lhewvzl.exe"
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_20",
+                                                                 "name":  "lhewvzl.exe"
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_23",
+                                                                 "name":  "lhewvzl.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "proc_31",
+                                                                                      "name":  "lhewvzl.exe"
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_26",
+                                                                 "name":  "lhewvzl.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "proc_33",
+                                                                                      "name":  "lhewvzl.exe"
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_28",
+                                                                 "name":  "lhewvzl.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "proc_35",
+                                                                                      "name":  "lhewvzl.exe"
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_29",
+                                                                 "name":  "lhewvzl.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "proc_41",
+                                                                                      "name":  "lhewvzl.exe"
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_30",
+                                                                 "name":  "lhewvzl.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "proc_38",
+                                                                                      "name":  "lhewvzl.exe"
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_32",
+                                                                 "name":  "lhewvzl.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "proc_39",
+                                                                                      "name":  "lhewvzl.exe"
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_34",
+                                                                 "name":  "lhewvzl.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "proc_44",
+                                                                                      "name":  "lhewvzl.exe"
+                                                                                  }
+                                                                              ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_36",
+                                                                 "name":  "lhewvzl.exe"
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_37",
+                                                                 "name":  "lhewvzl.exe"
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_40",
+                                                                 "name":  "lhewvzl.exe"
+                                                             },
+                                                             {
+                                                                 "process_id":  "proc_43",
+                                                                 "name":  "lhewvzl.exe"
+                                                             }
+                                                         ]
+                                        }
+                                    ],
+                 "windows_hidden":  [
+                                        "C:\\windows\\system32\\rundll32.exe"
+                                    ],
+                 "verdicts":  [
+                                  "UNKNOWN_VERDICT",
+                                  "CLEAN",
+                                  "MALWARE",
+                                  "RANSOM",
+                                  "BANKER"
+                              ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "224.0.0.252",
+                                        "destination_port":  5355,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "239.255.255.250",
+                                        "destination_port":  1900,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "255.255.255.255",
+                                        "destination_port":  67,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "104.208.16.93",
+                                        "destination_port":  80,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "command_executions":  [
+                                            "%SANDBOX_DLL_LOADER_X86% %SAMPLEPATH% %WORKDIR% 483",
+                                            "C:\\windows\\system32\\rundll32.exe ${SamplePath}\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll ",
+                                            "\"C:\\Windows\\System32\\rundll32.exe\" C:\\Users\\Virtual\\AppData\\Local\\Temp\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll,allophanates",
+                                            "\"C:\\Windows\\System32\\rundll32.exe\" C:\\Users\\Virtual\\AppData\\Local\\Temp\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll,#1",
+                                            "\"C:\\Windows\\System32\\rundll32.exe\" C:\\Users\\Virtual\\AppData\\Local\\Temp\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll,DllRegisterServer",
+                                            "\"C:\\Windows\\System32\\rundll32.exe\" C:\\Users\\Virtual\\AppData\\Local\\Temp\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll,DllUnregisterServer",
+                                            "\"C:\\Windows\\System32\\rundll32.exe\" C:\\Users\\Virtual\\AppData\\Local\\Temp\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll,antereformational",
+                                            "C:\\Windows\\SysWOW64\\wermgr.exe",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=hepatauxe",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=pinus",
+                                            "C:\\Windows\\SysWOW64\\WerFault.exe -u -p 1576 -s 372",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=antereformational",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=partitively",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=avatar",
+                                            "C:\\Windows\\SysWOW64\\WerFault.exe -u -p 1032 -s 364",
+                                            "C:\\Windows\\SysWOW64\\WerFault.exe -u -p 3336 -s 372",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=electroosmotically",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=nonconstruction",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=DllUnregisterServer",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=hemochrome",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=harassable",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=capitoninae",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fel=\"C:\\Users\\RDHJ0C~1\\AppData\\Local\\Temp\\tmpz25mfxde\" /s",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=isoseismic",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=garrya",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=crownbeard",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=mockful",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=driving",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=breakableness",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=metagram",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=deordination",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=avifauna",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=nonadjournment",
+                                            "C:\\Windows\\SysWOW64\\WerFault.exe -u -p 4308 -s 376",
+                                            "C:\\Windows\\SysWOW64\\WerFault.exe -u -p 3320 -s 372",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=DllRegisterServer",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=jiggish",
+                                            "\"C:\\Users\\RDhJ0CNFevzX\\Desktop\\lhEWvZl.exe\" /dll=\"C:\\Users\\RDHJ0C~1\\Desktop\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll\" /fn_id=allophanates"
+                                        ],
+                 "files_dropped":  [
+                                       {
+                                           "path":  "C:\\Users\\Virtual\\AppData\\Local\\Temp\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll",
+                                           "sha256":  "07bc4c26d63b202dd89564e585b81ac491da7850e8253cde89228c395f522b3c"
+                                       }
+                                   ],
+                 "files_opened":  [
+                                      "C:\\Windows\\SysWOW64\\amstream.dll",
+                                      "C:\\Users\\Virtual\\AppData\\Local\\Temp\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll",
+                                      "C:\\Windows\\Globalization\\Sorting\\sortdefault.nls"
+                                  ],
+                 "memory_pattern_domains":  [
+                                                "armmf.adobe.com"
+                                            ],
+                 "ids_alerts":  [
+                                    {
+                                        "rule_msg":  "ET USER_AGENTS Microsoft Dr Watson User-Agent (MSDW)",
+                                        "rule_category":  "Unknown Traffic",
+                                        "rule_id":  "1:2027389",
+                                        "alert_severity":  "low",
+                                        "rule_source":  "Proofpoint Emerging Threats Open",
+                                        "alert_context":  {
+                                                              "dest_ip":  "104.208.16.93",
+                                                              "dest_port":  80,
+                                                              "hostname":  "watson.microsoft.com",
+                                                              "url":  "http://watson.microsoft.com/StageOne/rundll32_exe/6_1_7600_16385/4a5bc637/f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d/0_0_0_0/633af2f2/c0000005/0007541f.htm?LCID=1033\u0026OS=6.1.7601.2.00010100.1.0.1.17514\u0026SM=LEN\u0026SPN=647\u0026BV=6FET56WW\u0026MID=54046387-FC68-43CA-9068-077C0A157181"
+                                                          },
+                                        "rule_url":  "https://rules.emergingthreats.net/",
+                                        "rule_raw":  "alert http $HOME_NET any -\u003e $EXTERNAL_NET any (msg:\"ET USER_AGENTS Microsoft Dr Watson User-Agent (MSDW)\"; flow:established,to_server; http.user_agent; content:\"MSDW\"; depth:4; isdataat:!1,relative; fast_pattern; threshold: type limit, track by_src, count 1, seconds 300; classtype:unknown; sid:2027389; rev:4; metadata:affected_product Web_Browsers, attack_target Client_Endpoint, created_at 2019_05_28, deployment Perimeter, former_category USER_AGENTS, performance_impact Low, signature_severity Minor, updated_at 2019_10_16;)"
+                                    }
+                                ],
+                 "files_written":  [
+                                       "C:\\Users\\Virtual\\AppData\\Local\\Temp\\f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d.dll",
+                                       "\\\\?\\PIPE\\samr"
+                                   ],
+                 "registry_keys_opened":  [
+                                              "\\Registry\\Machine\\System\\CurrentControlSet\\Control\\Lsa\\FipsAlgorithmPolicy",
+                                              "\\REGISTRY\\MACHINE\\Software\\Wow6432Node\\Microsoft\\Windows NT\\CurrentVersion\\MiniDumpAuxiliaryDlls",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\S-1-5-21-3131157199-1995805048-2727015567-1000",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Gkitsjlkqkpr",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows NT\\Rpc",
+                                              "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\crypt32",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\S-1-5-21-3131157199-1995805048-2727015567-501",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\CurrentVersion\\Internet Settings",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\S-1-5-21-3131157199-1995805048-2727015567-500",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Rpc",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Netlogon\\Parameters",
+                                              "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\LSA\\AccessProviders",
+                                              "HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Services\\LDAP",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\Setup"
+                                          ],
+                 "processes_created":  [
+                                           "C:\\windows\\system32\\rundll32.exe",
+                                           "rundll32.exe",
+                                           "wermgr.exe",
+                                           "c:\\users\\rdhj0cnfevzx\\desktop\\lhewvzl.exe",
+                                           "c:\\windows\\syswow64\\werfault.exe"
+                                       ],
+                 "mutexes_created":  [
+                                         "{BD5491EA-9D8F-4425-9382-2A0F8F612C79}",
+                                         "Global\\{B0426E5A-BCB7-4A77-88A6-6B9BA8500414}",
+                                         "{B0426E5A-BCB7-4A77-88A6-6B9BA8500414}"
+                                     ],
+                 "http_conversations":  [
+                                            {
+                                                "url":  "http://watson.microsoft.com/StageOne/rundll32_exe/6_1_7600_16385/4a5bc637/f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d/0_0_0_0/633af2f2/c0000005/000464fb.htm?LCID=1033\u0026OS=6.1.7601.2.00010100.1.0.1.17514\u0026SM=LEN\u0026SPN=647\u0026BV=6FET56WW\u0026MID=54046387-FC68-43CA-9068-077C0A157181",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "MSDW",
+                                                                        "Host":  "watson.microsoft.com"
+                                                                    }
+                                            },
+                                            {
+                                                "url":  "http://watson.microsoft.com/StageOne/rundll32_exe/6_1_7600_16385/4a5bc637/f56d25cf9f20f2040b2ec14f769f36aa14819f56f6b254c0831c9b2a024b8c8d/0_0_0_0/633af2f2/c0000005/0007541f.htm?LCID=1033\u0026OS=6.1.7601.2.00010100.1.0.1.17514\u0026SM=LEN\u0026SPN=647\u0026BV=6FET56WW\u0026MID=54046387-FC68-43CA-9068-077C0A157181",
+                                                "request_method":  "GET",
+                                                "request_headers":  {
+                                                                        "User-Agent":  "MSDW",
+                                                                        "Host":  "watson.microsoft.com"
+                                                                    }
+                                            }
+                                        ],
+                 "registry_keys_set":  [
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{8cf9b00c-35b1-11ec-b508-167c9a143b1c}\\DefaultObjectStore\\_CurrentObjectId_"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{8cf9b00c-35b1-11ec-b508-167c9a143b1c}\\DefaultObjectStore\\IndexTable\\FileIdIndex-{853201e6-2d75-11ea-a138-806e6f6e6963}\\_IndexName_"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{8cf9b00c-35b1-11ec-b508-167c9a143b1c}\\DefaultObjectStore\\LruList\\0000000000002B69\\ObjectLru"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{8cf9b00c-35b1-11ec-b508-167c9a143b1c}\\DefaultObjectStore\\LruList\\0000000000002B69\\ObjectId"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{8cf9b00c-35b1-11ec-b508-167c9a143b1c}\\DefaultObjectStore\\LruList\\CurrentLru"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ProxyServer",
+                                               "value":  "%HTTP_PROXY%:8080"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ProxyEnable",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{8cf9b00c-35b1-11ec-b508-167c9a143b1c}\\DefaultObjectStore\\ObjectTable\\661\\Indexes\\FileIdIndex-{853201e6-2d75-11ea-a138-806e6f6e6963}\\1000000039786"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{8cf9b00c-35b1-11ec-b508-167c9a143b1c}\\DefaultObjectStore\\IndexTable\\FileIdIndex-{853201e6-2d75-11ea-a138-806e6f6e6963}\\1000000039786\\661"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Wqigacuybfu\\abe1bff3",
+                                               "value":  "3B C8 9D F2 FB 8A 5A 80 FD 1D 0F 1B 12 0B DD 6F 57 42 8D 8E 0B 0C B1 C4 F5 05 76 65 C4 D0 83 D8 03 55 95 BC A4 05 55"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Wqigacuybfu\\248328a4",
+                                               "value":  "30 80 E9 CC 70 5C 5A C7 5B 4D BF 95 8B 63 B5 5D C1 8C BE 4E E9 67 34 CC 40 0A F0 DF DE 80 96 A0 26 E7 B0 F9 90 39 84 BE 3F BB 39 73 57 1B 34 89 A4 14 4D 32 54 36 68"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Wqigacuybfu\\d4a8d005",
+                                               "value":  "86 A6 37 53 D0 A2 0E 1F 05 08 2A B2 50 21 99 DE 5E B0 92 9C 48 03 9E E6 F8 F7 FC A5 0C 31 6A D4 63 62 BE 80 0C A2 5C 26 F6 FE 20 53 47 0B B5 B9 27 A4 00 D5 A1 49 91 16 15 0E BC 3D E5 43 2A 9C 02 2E B7 A9 42 48 81 15 AF E3 D9 BF 1F 77"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Wqigacuybfu\\598b672e",
+                                               "value":  "75 07 60 5E 4A D5 1C 75 45 BA 09 49 1F 41 9B 2C 32 72 7E 1B F3 C6 03 52 F6 2B 77 EB DA 5D 32 99 7C E2 32 7F CD DC 33 E8 C9 4F D7 BF C7 BF B7 56 96 23 8C 7A EC 03 6B 7C F5 5A 5C E9 E0 5E AB 78 10 41 3C 1C 70 30 BE"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Wqigacuybfu\\26c208d8",
+                                               "value":  "10 57 09 9F 89 95 35 D5 7E B1 AE 98 B3 4B BF F2 90 8E 24 93 3D"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Wqigacuybfu\\e137004b",
+                                               "value":  "06 08 3D 40 BC D9 65 D7 D7 1E AF B8 57 C1 B7 65 8B F7 07 01 99 45 D5 13 CB 02 9B D6 B5 3B 8E 31 B8 05 D8 2B 42 88 CF BC 44 CE 95 A4 15 B0 2C 51 FD 5C"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Wqigacuybfu\\9e7e6fbd",
+                                               "value":  "A2 25 54 01 F1 0E 0F 17 23 32 9D 7A 70 93 CD 76 B3 D9 A6 98 1B FB 22 1D 18 90 C4 71 30 BE 7C 67 D3 F7 35 40 23 25 74 E4 A5 01 9D 9E B5 0E 68 9A EC 63 F6 08 56 6A E4 88 AC AB 99 A0 9B 27 C0 90 3D A6 16 A4 B0 4D CB 1B A2 5F B8 02 AB B8 8D 69 47 38 8B D5 C5 EF 19 29 2C 42 66 5F EB 04 C1 29 12 81 46 4E BE AD F9 06 63 EF FD 27 AE BF D7 81 A2 C5 CA 2D BF A4 36 F9 EB B4 87 2A D1 5A 8D 93 D4 34 FB 3C 39 B8 93 B2 36 1C B8 33 B1 C4 8D B0 C0 70 6A 43 17 42 5E 9E D9 2C 63 CB FF 73 BF 7F 0B C7 F8 2D 9E 7D 00 E8 E1 FE 7D 5D 6E 72 A7 74 89 FF 2B 7F 2F BA BF C8 2E 94 AB"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Wqigacuybfu\\9c3f4fc1",
+                                               "value":  "98 71 7E F3 A0 EA D7 08 64 14 F9 82 B2 43 82 82 FD 23 6C E0 6E FE 7E 99 C3 67 7B 9B 77 BA 82 26 BD FC F6 89 DD D1 75 58 CB 18 D3 98 D4 03 12 29 9C 1E 06 C8 EE 60 D5 B0 F4 12 4E 13 5F B4 25 16 21 77 24 B5 34 32 1A 44 63 62 8D 0A 1E AD 26 E4 D6 F4 7F DF A7 2B 59 88 0B 05 24 AB E1 96 A7 47 C3 1F 2E 79 0E C3 BB 14 8B 41 7C 90"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\Connections\\SavedLegacySettings",
+                                               "value":  "46 00 00 00 04 01 00 00 03 00 00 00 14 00 00 00 65 78 74 72 61 63 74 6F 72 2E 70 72 6F 78 79 3A 38 30 38 30 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 D0 5C 01 4D C1 D5 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{8cf9b00c-35b1-11ec-b508-167c9a143b1c}\\DefaultObjectStore\\ObjectTable\\661\\_FileId_"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{8cf9b00c-35b1-11ec-b508-167c9a143b1c}\\DefaultObjectStore\\ObjectTable\\661\\_ObjectLru_"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{8cf9b00c-35b1-11ec-b508-167c9a143b1c}\\DefaultObjectStore\\ObjectTable\\661\\_Usn_"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{8cf9b00c-35b1-11ec-b508-167c9a143b1c}\\DefaultObjectStore\\ObjectTable\\661\\_ObjectId_"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{8cf9b00c-35b1-11ec-b508-167c9a143b1c}\\DefaultObjectStore\\ObjectTable\\661\\AeFileID"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{8cf9b00c-35b1-11ec-b508-167c9a143b1c}\\DefaultObjectStore\\ObjectTable\\661\\_UsnJournalId_"
+                                           },
+                                           {
+                                               "key":  "\\\\REGISTRY\\A\\{8cf9b00c-35b1-11ec-b508-167c9a143b1c}\\DefaultObjectStore\\ObjectTable\\661\\AeProgramID"
+                                           }
+                                       ],
+                 "tags":  [
+                              "RUNTIME_MODULES"
+                          ],
+                 "attack_techniques":  {
+                                           "T1027.005":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "contain obfuscated stackstrings",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "contain obfuscated stackstrings"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "parse PE header",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "parse PE header"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "link function at runtime on Windows",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "link function at runtime on Windows"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "MEDIUM",
+                                                             "description":  "load third party dll"
+                                                         }
+                                                     ],
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "create new key via CryptAcquireContext",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "create new key via CryptAcquireContext"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using Base64",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encode data using Base64"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "reference Base64 string",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "reference Base64 string"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1083":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "check if file exists",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "check if file exists"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "enumerate files on windows",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "enumerate files on windows"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "enumerate files on Windows",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "enumerate files on Windows"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1059":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "accept command line arguments",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "accept command line arguments"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "query environment variable",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "query environment variable"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "MEDIUM",
+                                                             "description":  "collect system fingerprint info"
+                                                         }
+                                                     ],
+                                           "T1497.001":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "reference anti-VM strings targeting Qemu",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "reference anti-VM strings targeting Qemu"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1486":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "call encryption algorithm library"
+                                                         }
+                                                     ],
+                                           "T1622":  [
+                                                         {
+                                                             "severity":  "MEDIUM",
+                                                             "description":  "get time manytimes"
+                                                         }
+                                                     ],
+                                           "T1497":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Virtualization / Sandbox Evasion"
+                                                         }
+                                                     ],
+                                           "T1057":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Process Discovery"
+                                                         }
+                                                     ],
+                                           "T1045":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Software Packing"
+                                                         }
+                                                     ],
+                                           "T1055":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Process Injection"
+                                                         }
+                                                     ]
+                                       }
+             }
+}

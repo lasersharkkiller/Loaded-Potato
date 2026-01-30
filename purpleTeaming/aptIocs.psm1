@@ -3,10 +3,10 @@
     ThreatActorIOCs
 .SYNOPSIS
     Bulk Threat Intelligence Harvester (VirusTotal + Cybersixgill).
-    v11.6 - UPDATE:
-     - Added 'LAPSUS$' and 'DragonForce' to e-Crime.
-     - Added 'Restic' (Backup tool used by INC) to Dual-Use Tools.
-     - Retains all previous targets (SLH members, Voidlink, etc.).
+    v12.11 - UPDATE:
+     - Added 'UAT-8099' (China-linked IIS Threat).
+     - Added 'BadIIS' (Primary SEO Malware).
+     - Added 'GotoHTTP', 'Sharp4RemoveLog', 'CnCrypt Protect', 'OpenArk64'.
 #>
 
 function Get-ThreatActorIOCs {
@@ -14,7 +14,8 @@ function Get-ThreatActorIOCs {
     param (
         [string]$StartDate = ((Get-Date).AddYears(-6).ToString("yyyy-MM-dd")),
         [string]$SpecificActor = $null,
-        [int]$MaxSamples = 500
+        # UPDATED: Changed default from 260 to 275
+        [int]$MaxSamples = 275
     )
 
     process {
@@ -28,19 +29,19 @@ function Get-ThreatActorIOCs {
             @{ 
                 Name = "Velvet Ant"; Country = "China"; Type = "APT"; 
                 Aliases = @("Velvet Ant"); 
-                LinkedTools = @("VelvetSting", "VelvetTap", "PlugX", "EarthWorm", "Impacket") 
+                LinkedTools = @("VelvetSting", "VelvetTap", "PlugX", "Impacket") 
             },
             @{ 
                 Name = "Flax Typhoon"; Country = "China"; Type = "APT"; 
                 Aliases = @("Flax Typhoon", "Ethereal Panda", "RedJuliett"); 
                 LinkedTools = @("China Chopper", "JuicyPotato", "BadPotato", "SoftEther", "Metasploit") 
             },
-            @{ Name = "UAT-8837"; Country = "China"; Type = "APT"; Aliases = @("UAT-8837"); LinkedTools = @("GoTokenTheft", "EarthWorm", "DWAgent", "SharpHound", "Impacket", "GoExec", "Rubeus", "Certipy") },
-            @{ Name = "Salt Typhoon"; Country = "China"; Type = "APT"; Aliases = @("Salt Typhoon", "GhostEmperor", "FamousSparrow"); LinkedTools = @("GhostSpider", "Demodex", "ShadowPad") },
+            @{ Name = "UAT-8837"; Country = "China"; Type = "APT"; Aliases = @("UAT-8837"); LinkedTools = @("GoTokenTheft", "DWAgent", "SharpHound", "Impacket", "GoExec", "Rubeus", "Certipy") },
+            @{ Name = "Salt Typhoon"; Country = "China"; Type = "APT"; Aliases = @("Salt Typhoon", "GhostEmperor", "FamousSparrow"); LinkedTools = @("ShadowPad") },
             @{ Name = "Storm-2603"; Country = "China"; Type = "APT"; Aliases = @("Storm-2603", "CL-CRI-1040", "Gold Salem"); LinkedTools = @("AK47 C2", "ToolShell", "Impacket") },
             @{ Name = "Earth Krahang"; Country = "China"; Type = "APT"; Aliases = @("Earth Krahang"); LinkedTools = @("RESHELL", "XDealer", "Cobalt Strike", "Fscan") },
             @{ Name = "UAT-7290"; Country = "China"; Type = "APT"; Aliases = @("UAT-7290", "Red Foxtrot"); LinkedTools = @("RushDrop", "SilentRaid", "DriveSwitch", "ShadowPad") },
-            @{ Name = "UNC3886"; Country = "China"; Type = "APT"; Aliases = @("UNC3886", "Fire Ant"); LinkedTools = @("TinyShell", "Reptile", "Medusa") },
+            @{ Name = "UNC3886"; Country = "China"; Type = "APT"; Aliases = @("UNC3886", "Fire Ant"); LinkedTools = @("TinyShell", "Medusa") },
             @{ Name = "Volt Typhoon"; Country = "China"; Type = "APT"; Aliases = @("Volt Typhoon", "Bronze Silhouette"); LinkedTools = @("KV-Botnet", "Impacket", "EarthWorm", "FastReverseProxy") },
             @{ Name = "APT1"; Country = "China"; Type = "APT"; Aliases = @("APT1", "Comment Crew", "Comment Panda"); LinkedTools = @("PoisonIvy", "PlugX") },
             @{ Name = "APT10"; Country = "China"; Type = "APT"; Aliases = @("APT10", "Stone Panda", "MenuPass"); LinkedTools = @("PlugX", "QuasarRAT", "Chisel") },
@@ -52,7 +53,11 @@ function Get-ThreatActorIOCs {
             @{ Name = "Gallium"; Country = "China"; Type = "APT"; Aliases = @("Gallium", "Soft Cell"); LinkedTools = @("PingPull", "Gh0st RAT") },
             @{ Name = "Hafnium"; Country = "China"; Type = "APT"; Aliases = @("Hafnium", "Silk Typhoon"); LinkedTools = @("Tarrask", "China Chopper") },
             @{ Name = "Ke3chang"; Country = "China"; Type = "APT"; Aliases = @("Ke3chang", "APT15", "Vixen Panda"); LinkedTools = @("Okrum", "Ketrican", "RoyalDNS") },
-            @{ Name = "Mustang Panda"; Country = "China"; Type = "APT"; Aliases = @("Mustang Panda", "Bronze President"); LinkedTools = @("PlugX", "Cobalt Strike") },
+            @{ Name = "Mustang Panda"; Country = "China"; Type = "APT"; Aliases = @("Mustang Panda", "Bronze President"); LinkedTools = @("PlugX", "Cobalt Strike", "PDFSider") },
+            @{ Name = "Earth Lamia"; Country = "China"; Type = "APT"; Aliases = @("Earth Lamia", "FamousSparrow", "UNC4841") },
+            @{ Name = "Jackpot Panda"; Country = "China"; Type = "APT"; Aliases = @("Jackpot Panda", "RedDelta") },
+            # ADDED: UAT-8099
+            @{ Name = "UAT-8099"; Country = "China"; Type = "APT"; Aliases = @("UAT-8099", "BadIIS Group"); LinkedTools = @("BadIIS", "GotoHTTP", "Sharp4RemoveLog", "CnCrypt Protect") },
 
             # === IRAN ===
             @{ Name = "Agrius"; Country = "Iran"; Type = "APT"; Aliases = @("Agrius", "Pink Sandstorm") },
@@ -72,13 +77,15 @@ function Get-ThreatActorIOCs {
             @{ Name = "Famous Chollima"; Country = "NorthKorea"; Type = "APT"; Aliases = @("Famous Chollima", "Nickel Tapestry") },
             @{ Name = "Kimsuky"; Country = "NorthKorea"; Type = "APT"; Aliases = @("Kimsuky", "Velvet Chollima", "Black Banshee") },
             @{ Name = "Lazarus"; Country = "NorthKorea"; Type = "APT"; Aliases = @("Lazarus Group", "Hidden Cobra", "Zinc"); LinkedTools = @("Manuscrypt", "MimiKatz") },
+            @{ Name = "Konni Group"; Country = "NorthKorea"; Type = "APT"; Aliases = @("Konni Group", "TA406"); LinkedTools = @("Konni RAT", "Amadey") },
+            @{ Name = "UNC5454"; Country = "NorthKorea"; Type = "APT"; Aliases = @("UNC5454") },
 
             # === RUSSIA ===
             @{ Name = "ALLANITE"; Country = "Russia"; Type = "APT"; Aliases = @("ALLANITE", "Dragonfly", "Energetic Bear") },
             @{ Name = "APT28"; Country = "Russia"; Type = "APT"; Aliases = @("APT28", "Fancy Bear", "Forest Blizzard"); LinkedTools = @("Mimikatz", "Impacket", "Chisel") },
             @{ Name = "APT29"; Country = "Russia"; Type = "APT"; Aliases = @("APT29", "Cozy Bear", "Midnight Blizzard") },
             @{ Name = "Gamaredon"; Country = "Russia"; Type = "APT"; Aliases = @("Gamaredon", "Primitive Bear", "Shuckworm") },
-            @{ Name = "Sandworm"; Country = "Russia"; Type = "APT"; Aliases = @("Sandworm", "Voodoo Bear", "Seashell Blizzard"); LinkedTools = @("BlackEnergy", "Industroyer", "Chisel") },
+            @{ Name = "Sandworm"; Country = "Russia"; Type = "APT"; Aliases = @("Sandworm", "Voodoo Bear", "Seashell Blizzard"); LinkedTools = @("DynoWiper", "BlackEnergy", "Industroyer", "Chisel") },
             @{ Name = "Silence"; Country = "Russia"; Type = "APT"; Aliases = @("Silence", "Whisper Spider") },
             @{ Name = "Star Blizzard"; Country = "Russia"; Type = "APT"; Aliases = @("Star Blizzard", "ColdRiver", "Callisto") },
             @{ Name = "Turla"; Country = "Russia"; Type = "APT"; Aliases = @("Turla", "Venomous Bear", "Waterbug") },
@@ -88,7 +95,7 @@ function Get-ThreatActorIOCs {
             @{ Name = "Blind Eagle"; Country = "SouthAmerica"; Type = "APT"; Aliases = @("Blind Eagle", "APT-C-36") },
 
             # === E-CRIME ===
-            @{ Name = "ShinyHunters"; Country = "eCrime"; Type = "APT"; Aliases = @("ShinyHunters", "ShinyCorp", "UNC6040"); LinkedTools = @("Impacket", "Salesforce Data Loader", "Mimikatz") },
+            @{ Name = "ShinyHunters"; Country = "eCrime"; Type = "APT"; Aliases = @("ShinyHunters", "ShinyCorp", "UNC6040"); LinkedTools = @("ShinySp1d3r", "Impacket", "AsyncRAT", "ConnectWise", "Bland AI") },
             @{ Name = "LAPSUS$"; Country = "eCrime"; Type = "APT"; Aliases = @("LAPSUS$", "DEV-0537", "Lapsus Group"); LinkedTools = @("Mimikatz", "ADExplorer") },
             @{ Name = "DragonForce"; Country = "eCrime"; Type = "APT"; Aliases = @("DragonForce", "DragonForce Ransomware") },
             @{ Name = "RansomHub"; Country = "eCrime"; Type = "APT"; Aliases = @("RansomHub", "Cyclops", "Knight"); LinkedTools = @("Cobalt Strike", "Mimikatz", "Chisel", "AnyDesk") },
@@ -101,12 +108,16 @@ function Get-ThreatActorIOCs {
             @{ Name = "Scattered Spider"; Country = "eCrime"; Type = "APT"; Aliases = @("Scattered Spider", "Octo Tempest", "0ktapus"); LinkedTools = @("BlackCat", "Rubeus", "Mimikatz", "Rhadamanthys") },
             @{ Name = "TeamTNT"; Country = "eCrime"; Type = "APT"; Aliases = @("TeamTNT") },
             @{ Name = "Wizard Spider"; Country = "eCrime"; Type = "APT"; Aliases = @("Wizard Spider", "TrickBot", "Ryuk") },
+            @{ Name = "Exotic Lily"; Country = "eCrime"; Type = "APT"; Aliases = @("Exotic Lily", "DEV-0413"); LinkedTools = @("Bumblebee", "IcedID") },
+            @{ Name = "TA551"; Country = "eCrime"; Type = "APT"; Aliases = @("TA551", "Shathak"); LinkedTools = @("Valak", "IcedID") },
 
             # =========================================================
             # SECTION 2: MALWARE FAMILIES & TOOLS
             # =========================================================
 
-            # --- A. RANSOMWARE (BIG GAME HUNTING) ---
+            # --- A. RANSOMWARE ---
+            @{ Name = "ShinySp1d3r";      Type = "Malware"; Aliases = @("ShinySp1d3r", "shinysp1d3r ransomware") },
+            @{ Name = "Osiris Ransomware"; Type = "Malware"; Aliases = @("Osiris Ransomware", "Ransom.Osiris") },
             @{ Name = "LockBit";          Type = "Malware"; Aliases = @("LockBit", "LockBit 3.0", "LockBit Black") },
             @{ Name = "BlackCat";         Type = "Malware"; Aliases = @("BlackCat", "ALPHV", "Nokoyawa") },
             @{ Name = "BlackBasta";       Type = "Malware"; Aliases = @("BlackBasta") },
@@ -117,24 +128,27 @@ function Get-ThreatActorIOCs {
             @{ Name = "BianLian";         Type = "Malware"; Aliases = @("BianLian") },
             @{ Name = "Mallox";           Type = "Malware"; Aliases = @("Mallox", "TargetCompany") },
             @{ Name = "Inc Ransom";       Type = "Malware"; Aliases = @("Inc Ransom", "IncRansom") },
-            @{ Name = "Qilin";            Type = "Malware"; Aliases = @("Qilin", "Agenda Ransomware") },
-            @{ Name = "Cactus";           Type = "Malware"; Aliases = @("Cactus Ransomware") },
+            @{ Name = "Qilin";            Type = "Malware"; Aliases = @("Qilin", "Agenda Ransomware", "AgendaCrypt") },
+            @{ Name = "Cactus";           Type = "Malware"; Aliases = @("Cactus Ransomware", "Trojan.Cactus", "Cactus") },
             @{ Name = "Cuba";             Type = "Malware"; Aliases = @("Cuba Ransomware", "Fidel") },
-            @{ Name = "Royal";            Type = "Malware"; Aliases = @("Royal Ransomware") },
+            @{ Name = "BlackSuit";        Type = "Malware"; Aliases = @("BlackSuit", "BlackSuit Ransomware", "Royal Ransomware") },
             @{ Name = "Clop";             Type = "Malware"; Aliases = @("Clop", "Cl0p") },
             @{ Name = "AvosLocker";       Type = "Malware"; Aliases = @("AvosLocker") },
-            @{ Name = "Hive";             Type = "Malware"; Aliases = @("Hive Ransomware") },
             @{ Name = "Knight";           Type = "Malware"; Aliases = @("Knight Ransomware", "Cyclops") },
-            @{ Name = "NoEscape";         Type = "Malware"; Aliases = @("NoEscape") },
             @{ Name = "DarkSide";         Type = "Malware"; Aliases = @("DarkSide") },
             @{ Name = "Conti";            Type = "Malware"; Aliases = @("Conti") },
-            @{ Name = "Babuk";            Type = "Malware"; Aliases = @("Babuk", "Babyk") },
+            @{ Name = "Babuk";            Type = "Malware"; Aliases = @("Babuk", "Babuk") },
             @{ Name = "Wannacry";         Type = "Malware"; Aliases = @("Wannacry", "WanaCrypt0r") },
             @{ Name = "Dharma";           Type = "Malware"; Aliases = @("Dharma", "Crysis") },
-            @{ Name = "StopDjvu";         Type = "Malware"; Aliases = @("StopDjvu", "STOP Ransomware") },
+            @{ Name = "StopDjvu";         Type = "Malware"; Aliases = @("StopDjvu", "STOP Ransomware", "Djvu", "Trojan.Djvu") },
+            @{ Name = "Interlock";        Type = "Malware"; Aliases = @("Interlock Ransomware", "Interlock") },
+            @{ Name = "Morte";            Type = "Malware"; Aliases = @("Morte Ransomware", "Morte") },
+            @{ Name = "Aisuru";           Type = "Malware"; Aliases = @("Aisuru Ransomware", "Aisuru") },
+            @{ Name = "Rondo";            Type = "Malware"; Aliases = @("Rondo Ransomware", "RondoDoX", "RondoBOT") },
 
-            # --- B. INFOSTEALERS (MAAS) ---
+            # --- B. INFOSTEALERS ---
             @{ Name = "Lumma Stealer";    Type = "Malware"; Aliases = @("Lumma", "LummaC2") },
+            @{ Name = "Osiris Banking Trojan"; Type = "Malware"; Aliases = @("Osiris Banking Trojan", "Kronos", "Trojan:Win32/Osiris") },
             @{ Name = "RedLine";          Type = "Malware"; Aliases = @("RedLine", "RedLine Stealer") },
             @{ Name = "Vidar";            Type = "Malware"; Aliases = @("Vidar", "Vidar Stealer") },
             @{ Name = "Rhadamanthys";     Type = "Malware"; Aliases = @("Rhadamanthys") },
@@ -143,7 +157,7 @@ function Get-ThreatActorIOCs {
             @{ Name = "Meduza";           Type = "Malware"; Aliases = @("Meduza Stealer") },
             @{ Name = "Atomic Stealer";   Type = "Malware"; Aliases = @("Atomic Stealer", "AMOS", "Atomic macOS") },
             @{ Name = "Raccoon";          Type = "Malware"; Aliases = @("Raccoon Stealer", "RecordBreaker") },
-            @{ Name = "Meta Stealer";     Type = "Malware"; Aliases = @("Meta Stealer") },
+            @{ Name = "Meta Stealer";     Type = "Malware"; Aliases = @("Meta Stealer", "MetaStealer") },
             @{ Name = "Aurora";           Type = "Malware"; Aliases = @("Aurora Stealer", "Aurora Go") },
             @{ Name = "Ducktail";         Type = "Malware"; Aliases = @("Ducktail") },
             @{ Name = "Graphiron";        Type = "Malware"; Aliases = @("Graphiron") },
@@ -154,7 +168,7 @@ function Get-ThreatActorIOCs {
             @{ Name = "Predator";         Type = "Malware"; Aliases = @("Predator The Thief") },
             @{ Name = "Azorult";          Type = "Malware"; Aliases = @("Azorult") },
 
-            # --- C. LOADERS & DROPPERS (INITIAL ACCESS) ---
+            # --- C. LOADERS & DROPPERS ---
             @{ Name = "Latrodectus";      Type = "Malware"; Aliases = @("Latrodectus", "BlackWidow", "IceNova") },
             @{ Name = "Pikabot";          Type = "Malware"; Aliases = @("Pikabot") },
             @{ Name = "SocGholish";       Type = "Malware"; Aliases = @("SocGholish", "FakeUpdates") },
@@ -174,7 +188,7 @@ function Get-ThreatActorIOCs {
             @{ Name = "ZLoader";          Type = "Malware"; Aliases = @("ZLoader", "SilentNight") },
             @{ Name = "Ursnif";           Type = "Malware"; Aliases = @("Ursnif", "Gozi", "ISFB") },
 
-            # --- D. RATs (REMOTE ACCESS TROJANS) ---
+            # --- D. RATs ---
             @{ Name = "Agent Tesla";      Type = "Malware"; Aliases = @("Agent Tesla", "AgentTesla") },
             @{ Name = "AsyncRAT";         Type = "Malware"; Aliases = @("AsyncRAT") },
             @{ Name = "Remcos";           Type = "Malware"; Aliases = @("Remcos", "RemcosRAT") },
@@ -188,35 +202,38 @@ function Get-ThreatActorIOCs {
             @{ Name = "BitRAT";           Type = "Malware"; Aliases = @("BitRAT") },
             @{ Name = "DcRAT";            Type = "Malware"; Aliases = @("DcRAT") },
             @{ Name = "OrcusRAT";         Type = "Malware"; Aliases = @("OrcusRAT") },
-            @{ Name = "RevengeRAT";       Type = "Malware"; Aliases = @("RevengeRAT") },
             @{ Name = "StrRAT";           Type = "Malware"; Aliases = @("StrRAT") },
             @{ Name = "Parallax";         Type = "Malware"; Aliases = @("Parallax RAT") },
             @{ Name = "NetWire";          Type = "Malware"; Aliases = @("NetWire") },
             @{ Name = "ModeloRAT";        Type = "Malware"; Aliases = @("ModeloRAT") },
+            @{ Name = "Konni RAT";        Type = "Malware"; Aliases = @("Konni", "Konni RAT", "Trojan:Win32/Konni") },
+            @{ Name = "Nezha";            Type = "Malware"; Aliases = @("Nezha", "Nezha RAT", "Nezha Monitoring") },
+            @{ Name = "Noodle RAT";       Type = "Malware"; Aliases = @("Noodle RAT", "Nood RAT", "Backdoor.Noodle") },
+            @{ Name = "EtherRAT";         Type = "Malware"; Aliases = @("EtherRAT") },
 
-            # --- E. LINUX & CLOUD THREATS ---
-            @{ Name = "Mirai";            Type = "Malware"; Aliases = @("Mirai", "Mirai Botnet") },
+            # --- E. LINUX & CLOUD ---
+            @{ Name = "Mirai";            Type = "Malware"; Aliases = @("Mirai", "Mirai Botnet", "Satori", "Masuta", "Okiru", "PureMasuta", "Miori", "Wicked", "Mori") },
             @{ Name = "XorDDoS";          Type = "Malware"; Aliases = @("XorDDoS") },
             @{ Name = "Kinsing";          Type = "Malware"; Aliases = @("Kinsing", "H2Miner") },
             @{ Name = "Tsunami";          Type = "Malware"; Aliases = @("Tsunami", "Kaiten") },
-            @{ Name = "Gafgyt";           Type = "Malware"; Aliases = @("Gafgyt", "Bashlite") },
+            @{ Name = "Gafgyt";           Type = "Malware"; Aliases = @("Gafgyt", "Bashlite", "Bash0day", "Lizkebab", "Torlus") },
             @{ Name = "Mozi";             Type = "Malware"; Aliases = @("Mozi") },
             @{ Name = "TeamTNT Tools";    Type = "Malware"; Aliases = @("TeamTNT", "Hildegard") },
             @{ Name = "CoinMiner";        Type = "Malware"; Aliases = @("CoinMiner", "XMRig") },
-            @{ Name = "DreamBus";         Type = "Malware"; Aliases = @("DreamBus") },
             @{ Name = "Sysrv";            Type = "Malware"; Aliases = @("Sysrv", "Sysrv-hello") },
+            @{ Name = "BPFDoor";          Type = "Malware"; Aliases = @("BPFDoor", "Tricephalic Hellkeeper") },
+            @{ Name = "KSwapDoor";        Type = "Malware"; Aliases = @("KSwapDoor") },
+            @{ Name = "LZRD";             Type = "Malware"; Aliases = @("LZRD", "Lizard Botnet") },
+            @{ Name = "PeerBlight";       Type = "Malware"; Aliases = @("PeerBlight") },
+            @{ Name = "resgod";           Type = "Malware"; Aliases = @("resgod", "resgod botnet") },
 
             # --- F. APT-SPECIFIC & BESPOKE TOOLS ---
             @{ Name = "GoTokenTheft";     Type = "Malware"; Aliases = @("GoTokenTheft", "token-theft") },
             @{ Name = "EarthWorm";        Type = "Malware"; Aliases = @("EarthWorm", "EW_Tunnel", "ew_linux", "ew_win") },
-            @{ Name = "GhostSpider";      Type = "Malware"; Aliases = @("GhostSpider Backdoor") },
-            @{ Name = "Demodex";          Type = "Malware"; Aliases = @("Demodex Rootkit") },
             @{ Name = "RESHELL";          Type = "Malware"; Aliases = @("RESHELL") },
             @{ Name = "XDealer";          Type = "Malware"; Aliases = @("XDealer", "Luoyu") },
             @{ Name = "RushDrop";         Type = "Malware"; Aliases = @("RushDrop", "ChronosRAT") },
             @{ Name = "SilentRaid";       Type = "Malware"; Aliases = @("SilentRaid", "MystRodX") },
-            @{ Name = "TinyShell";        Type = "Malware"; Aliases = @("TinyShell", "TinySH") },
-            @{ Name = "Reptile";          Type = "Malware"; Aliases = @("Reptile Rootkit") },
             @{ Name = "ShadowPad";        Type = "Malware"; Aliases = @("ShadowPad", "PoisonPlug") },
             @{ Name = "Winnti";           Type = "Malware"; Aliases = @("Winnti Malware") },
             @{ Name = "PlugX";            Type = "Malware"; Aliases = @("PlugX", "Korplug") },
@@ -224,13 +241,27 @@ function Get-ThreatActorIOCs {
             @{ Name = "Okrum";            Type = "Malware"; Aliases = @("Okrum") },
             @{ Name = "KV-Botnet";        Type = "Malware"; Aliases = @("KV-Botnet", "JDYFJ Botnet") },
             @{ Name = "Voidlink";         Type = "Malware"; Aliases = @("Voidlink") },
+            @{ Name = "DynoWiper";        Type = "Malware"; Aliases = @("DynoWiper", "KillFiles", "Win32/KillFiles.NMO") },
+            @{ Name = "PDFSider";         Type = "Malware"; Aliases = @("PDFSider", "Trojan:PDF/Miner") },
+            @{ Name = "Malicious Data Loader"; Type = "Malware"; Aliases = @("SalesforceDataLoader123", "MyTicketingPortal", "Salesforce Data Loader") },
+            @{ Name = "Splinter";         Type = "Malware"; Aliases = @("Splinter") },
+            @{ Name = "PULSEPACK";        Type = "Malware"; Aliases = @("PULSEPACK") },
+            @{ Name = "VShell";           Type = "Malware"; Aliases = @("VShell") },
+            @{ Name = "COMPOOD";          Type = "Malware"; Aliases = @("COMPOOD") },
+            @{ Name = "ANGRYREBEL";       Type = "Malware"; Aliases = @("ANGRYREBEL") },
+            # ADDED: UAT-8099 Specific Tools
+            @{ Name = "BadIIS";           Type = "Malware"; Aliases = @("BadIIS", "Win.Trojan.BadIIS", "WEBJACK") },
+            @{ Name = "GotoHTTP";         Type = "Malware"; Aliases = @("GotoHTTP", "Trojan.GotoHTTP") },
+            @{ Name = "Sharp4RemoveLog";  Type = "Malware"; Aliases = @("Sharp4RemoveLog", "Log Wiper") },
+            @{ Name = "CnCrypt Protect";  Type = "Malware"; Aliases = @("CnCrypt", "CnCrypt Protect") },
+            @{ Name = "OpenArk64";        Type = "Malware"; Aliases = @("OpenArk64", "OpenArk") },
 
             # --- G. OFFENSIVE SECURITY / DUAL-USE TOOLS ---
-            @{ Name = "Cobalt Strike";    Type = "Malware"; Aliases = @("Cobalt Strike", "Beacon") },
-            @{ Name = "Sliver";           Type = "Malware"; Aliases = @("Sliver C2", "Sliver Implant") },
+            @{ Name = "Cobalt Strike";    Type = "Malware"; Aliases = @("Cobalt Strike", "Beacon", "BEACON") },
+            @{ Name = "Sliver";           Type = "Malware"; Aliases = @("Sliver", "Sliver C2", "Implant.Sliver", "Golang.Sliver") },
             @{ Name = "Brute Ratel";      Type = "Malware"; Aliases = @("Brute Ratel", "BRC4") },
-            @{ Name = "Havoc";            Type = "Malware"; Aliases = @("Havoc C2", "Havoc Demon") },
-            @{ Name = "Mythic";           Type = "Malware"; Aliases = @("Mythic C2") },
+            @{ Name = "Havoc";            Type = "Malware"; Aliases = @("Havoc", "Havoc C2", "Demon.bin", "Demon.exe") },
+            @{ Name = "Mythic";           Type = "Malware"; Aliases = @("Mythic", "Mythic C2", "Apfell") },
             @{ Name = "Maestro";          Type = "Malware"; Aliases = @("Maestro", "Maestro Toolkit") },
             @{ Name = "Mimikatz";         Type = "Malware"; Aliases = @("Mimikatz", "sekurlsa") },
             @{ Name = "Impacket";         Type = "Malware"; Aliases = @("Impacket", "secretsdump", "psexec.py", "wmiexec.py") },
@@ -243,6 +274,7 @@ function Get-ThreatActorIOCs {
             @{ Name = "Fscan";            Type = "Malware"; Aliases = @("Fscan", "Fscan tool") },
             @{ Name = "Rclone";           Type = "Malware"; Aliases = @("Rclone", "Rclone tool") },
             @{ Name = "AnyDesk";          Type = "Malware"; Aliases = @("AnyDesk", "AnyDesk abuse") },
+            @{ Name = "ConnectWise ScreenConnect"; Type = "Malware"; Aliases = @("ConnectWise", "ScreenConnect", "ConnectWise Control", "RemoteSupport") },
             @{ Name = "NetSupport";       Type = "Malware"; Aliases = @("NetSupport Manager", "NetSupport RAT") },
             @{ Name = "Ligolo";           Type = "Malware"; Aliases = @("Ligolo", "Ligolo-ng") },
             @{ Name = "Restic";           Type = "Malware"; Aliases = @("Restic", "restic backup") },
@@ -250,7 +282,7 @@ function Get-ThreatActorIOCs {
         )
 
         Write-Host "==========================================" -ForegroundColor Cyan
-        Write-Host "    GLOBAL THREAT INTEL HARVESTER v11.6"
+        Write-Host "    GLOBAL THREAT INTEL HARVESTER v12.11"
         Write-Host "    Total Targets: $($MasterConfig.Count) | Max Samples: $MaxSamples"
         Write-Host "==========================================" -ForegroundColor Cyan
         
@@ -336,8 +368,8 @@ function Get-ThreatActorIOCs {
                 try {
                     $CurrentQuery = "$($Q.Query) AND fs:$StartDate+"
                     $Encoded = [Uri]::EscapeDataString($CurrentQuery)
-                    # Limit 500, Newest First
-                    $Uri = "https://www.virustotal.com/api/v3/intelligence/search?query=$Encoded&limit=500&order=first_submission_date-"
+                    # Limit to MaxSamples, Newest First
+                    $Uri = "https://www.virustotal.com/api/v3/intelligence/search?query=$Encoded&limit=$MaxSamples&order=first_submission_date-"
                     
                     $Response = Invoke-RestMethod -Uri $Uri -Headers $VTHeaders -Method Get -ErrorAction Stop
                     
@@ -389,6 +421,7 @@ function Get-ThreatActorIOCs {
 
             # [B] CYBERSIXGILL HARVEST
             Write-Host " -> [C6G] Searching..." -NoNewline
+            # UPDATED: Independent limit for C6G as requested (MaxSamples for VT + MaxSamples for C6G)
             $SixCount = 0
             
             if ($Type -eq "Malware") {
@@ -400,11 +433,11 @@ function Get-ThreatActorIOCs {
             }
 
             foreach ($Alias in $Aliases) {
-                if (($Raw_IOCs.Count + $SixCount) -ge $MaxSamples) { break }
+                if ($SixCount -ge $MaxSamples) { break }
 
                 $Offset = 0; $PageLimit = 100; $MorePages = $true
                 do {
-                    if (($Raw_IOCs.Count + $SixCount) -ge $MaxSamples) { $MorePages = $false; break }
+                    if ($SixCount -ge $MaxSamples) { $MorePages = $false; break }
 
                     $PayloadMap = @{ pagination = @{ limit = $PageLimit; offset = $Offset } }
                     $PayloadMap[$C6G_Key] = $Alias
@@ -414,7 +447,7 @@ function Get-ThreatActorIOCs {
                         $Response = Invoke-RestMethod -Method Post -Uri $C6G_Url -Headers $SixHeaders -Body $Payload
                         if ($Response.objects) {
                             foreach ($Item in $Response.objects) {
-                                if (($Raw_IOCs.Count + $SixCount) -ge $MaxSamples) { break }
+                                if ($SixCount -ge $MaxSamples) { break }
                                 
                                 if ($Item.ioc_type -match "Hash|MD5|SHA") {
                                     $Raw_IOCs += [PSCustomObject]@{

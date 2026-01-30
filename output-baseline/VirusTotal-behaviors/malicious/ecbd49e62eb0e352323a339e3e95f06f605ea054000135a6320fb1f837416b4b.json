@@ -1,0 +1,497 @@
+{
+    "data":  {
+                 "verdicts":  [
+                                  "MALWARE"
+                              ],
+                 "mbc":  [
+                             {
+                                 "id":  "C0060",
+                                 "objective":  "Data",
+                                 "behavior":  "Compression Library",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "0"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0052",
+                                 "objective":  "File System",
+                                 "behavior":  "Writes File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "1"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0023",
+                                 "objective":  "Execution",
+                                 "behavior":  "Install Additional Program",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "3"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0017",
+                                 "objective":  "Process",
+                                 "behavior":  "Create Process",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "4"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "signature_matches":  [
+                                           {
+                                               "id":  "0",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "linked against ZLIB",
+                                               "description":  "linking/static/zlib",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "regex: /inflate .* Copyright/"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: linked against ZLIB\n    namespace: linking/static/zlib\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    mbc:\n      - Data::Compression Library [C0060]\n    examples:\n      - 6cc148363200798a12091b97a17181a1\n  features:\n    - or:\n      - string: /deflate .* Copyright/\n      - string: /inflate .* Copyright/\n"
+                                           },
+                                           {
+                                               "id":  "1",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write file on Windows",
+                                               "description":  "host-interaction/file-system/write",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: CreateFile",
+                                                                  "create or open file",
+                                                                  "FILE_WRITE_DATA"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write file on Windows\n    namespace: host-interaction/file-system/write\n    authors:\n      - william.ballenthin@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - File System::Writes File [C0052]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x1400025C4\n  features:\n    - or:\n      - and:\n        - os: windows\n        - optional:\n          - basic block:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n          - call:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n        - or:\n          - api: kernel32.WriteFile\n          - api: kernel32.WriteFileEx\n          - api: NtWriteFile\n          - api: ZwWriteFile\n          - api: _fwrite\n          - api: fwrite\n      - api: System.IO.File::WriteAllBytes\n      - api: System.IO.File::WriteAllBytesAsync\n      - api: System.IO.File::WriteAllLines\n      - api: System.IO.File::WriteAllLinesAsync\n      - api: System.IO.File::WriteAllText\n      - api: System.IO.File::WriteAllTextAsync\n      - api: System.IO.File::AppendAllLines\n      - api: System.IO.File::AppendAllLinesAsync\n      - api: System.IO.File::AppendAllText\n      - api: System.IO.File::AppendAllTextAsync\n      - api: System.IO.File::AppendText\n      - api: System.IO.FileInfo::AppendText\n"
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain an embedded PE file",
+                                               "description":  "executable/subfile/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain an embedded PE file\n    namespace: executable/subfile/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    mbc:\n      - Execution::Install Additional Program [B0023]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x4060\n  features:\n    - or:\n      - count(characteristic(embedded pe)): 1 or more\n      - count(string(This program cannot be run in DOS mode.)): 2 or more\n"
+                                           },
+                                           {
+                                               "id":  "4",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create process on Windows",
+                                               "description":  "host-interaction/process/create",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: CreateProcess"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create process on Windows\n    namespace: host-interaction/process/create\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - Process::Create Process [C0017]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x406DB0\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      - 692f7fd6d198e804d6af98eb9e390d61:0x6000003\n  features:\n    - or:\n      - api: kernel32.WinExec\n      - api: kernel32.CreateProcess\n      - api: shell32.ShellExecute\n      - api: shell32.ShellExecuteEx\n      - api: advapi32.CreateProcessAsUser\n      - api: advapi32.CreateProcessWithLogon\n      - api: advapi32.CreateProcessWithToken\n      - api: kernel32.CreateProcessInternal\n      - api: ntdll.NtCreateUserProcess\n      - api: ntdll.NtCreateProcess\n      - api: ntdll.NtCreateProcessEx\n      - api: ntdll.ZwCreateProcess\n      - api: ZwCreateProcessEx\n      - api: ntdll.ZwCreateUserProcess\n      - api: ntdll.RtlCreateUserProcess\n      - api: System.Diagnostics.Process::Start\n"
+                                           },
+                                           {
+                                               "id":  "5",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "extract resource via kernel32 functions",
+                                               "description":  "executable/resource",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: SizeofResource",
+                                                                  "api: LockResource",
+                                                                  "api: FindResource"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: extract resource via kernel32 functions\n    namespace: executable/resource\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    examples:\n      - BF88E1BD4A3BDE10B419A622278F1FF7:0x401000\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x140001ABA\n  features:\n    - or:\n      - and:\n        - or:\n          - api: kernel32.LoadResource\n          - api: kernel32.LockResource\n          - api: LdrAccessResource\n        - optional:\n          - api: kernel32.GetModuleHandle\n          # may occur in parent function, see 0664B09A86EC2DF7DFE01A93E184A1FA23DF66EA82CAB39000944E418EC1F7B2\n          - or:\n            - api: kernel32.FindResource\n            - api: kernel32.FindResourceEx\n            - api: LdrFindResource_U\n            - api: LdrFindResourceEx_U\n          - api: kernel32.SizeofResource\n          - api: kernel32.FreeResource\n"
+                                           }
+                                       ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2312",
+                                            "name":  "13f43b565119f43f7155f96cafa8b05d.exe",
+                                            "time_offset":  25090
+                                        }
+                                    ],
+                 "modules_loaded":  [
+                                        "ole32",
+                                        "ADVAPI32",
+                                        "kernel32",
+                                        "rpcrt4",
+                                        "MSCTF",
+                                        "CLBCatQ",
+                                        "OLEAUT32",
+                                        "1af105f8ed4aa71d61d3036f84b0c409.exe",
+                                        "CRYPTBASE",
+                                        "SspiCli"
+                                    ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1033",
+                                                     "signature_description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "signature_description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                 },
+                                                 {
+                                                     "id":  "T1012",
+                                                     "signature_description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "signature_description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                 },
+                                                 {
+                                                     "id":  "T1057",
+                                                     "signature_description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                 },
+                                                 {
+                                                     "id":  "T1518",
+                                                     "signature_description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                 },
+                                                 {
+                                                     "id":  "T1059",
+                                                     "signature_description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "signature_description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "signature_description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                 },
+                                                 {
+                                                     "id":  "T1134",
+                                                     "signature_description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                 },
+                                                 {
+                                                     "id":  "T1033",
+                                                     "signature_description":  "Manalize Local SandBox BTC Addres found"
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "signature_description":  "Manalize Local SandBox BTC Addres found"
+                                                 },
+                                                 {
+                                                     "id":  "T1012",
+                                                     "signature_description":  "Manalize Local SandBox BTC Addres found"
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "signature_description":  "Manalize Local SandBox BTC Addres found"
+                                                 },
+                                                 {
+                                                     "id":  "T1057",
+                                                     "signature_description":  "Manalize Local SandBox BTC Addres found"
+                                                 },
+                                                 {
+                                                     "id":  "T1518",
+                                                     "signature_description":  "Manalize Local SandBox BTC Addres found"
+                                                 },
+                                                 {
+                                                     "id":  "T1059",
+                                                     "signature_description":  "Manalize Local SandBox BTC Addres found"
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "signature_description":  "Manalize Local SandBox BTC Addres found"
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "signature_description":  "Manalize Local SandBox BTC Addres found"
+                                                 },
+                                                 {
+                                                     "id":  "T1134",
+                                                     "signature_description":  "Manalize Local SandBox BTC Addres found"
+                                                 },
+                                                 {
+                                                     "id":  "T1033",
+                                                     "signature_description":  "Manalize Local SandBox Find Crypto"
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "signature_description":  "Manalize Local SandBox Find Crypto"
+                                                 },
+                                                 {
+                                                     "id":  "T1012",
+                                                     "signature_description":  "Manalize Local SandBox Find Crypto"
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "signature_description":  "Manalize Local SandBox Find Crypto"
+                                                 },
+                                                 {
+                                                     "id":  "T1057",
+                                                     "signature_description":  "Manalize Local SandBox Find Crypto"
+                                                 },
+                                                 {
+                                                     "id":  "T1518",
+                                                     "signature_description":  "Manalize Local SandBox Find Crypto"
+                                                 },
+                                                 {
+                                                     "id":  "T1059",
+                                                     "signature_description":  "Manalize Local SandBox Find Crypto"
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "signature_description":  "Manalize Local SandBox Find Crypto"
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "signature_description":  "Manalize Local SandBox Find Crypto"
+                                                 },
+                                                 {
+                                                     "id":  "T1134",
+                                                     "signature_description":  "Manalize Local SandBox Find Crypto"
+                                                 },
+                                                 {
+                                                     "id":  "T1033",
+                                                     "signature_description":  "Manalize Local SandBox Strings"
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "signature_description":  "Manalize Local SandBox Strings"
+                                                 },
+                                                 {
+                                                     "id":  "T1012",
+                                                     "signature_description":  "Manalize Local SandBox Strings"
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "signature_description":  "Manalize Local SandBox Strings"
+                                                 },
+                                                 {
+                                                     "id":  "T1057",
+                                                     "signature_description":  "Manalize Local SandBox Strings"
+                                                 },
+                                                 {
+                                                     "id":  "T1518",
+                                                     "signature_description":  "Manalize Local SandBox Strings"
+                                                 },
+                                                 {
+                                                     "id":  "T1059",
+                                                     "signature_description":  "Manalize Local SandBox Strings"
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "signature_description":  "Manalize Local SandBox Strings"
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "signature_description":  "Manalize Local SandBox Strings"
+                                                 },
+                                                 {
+                                                     "id":  "T1134",
+                                                     "signature_description":  "Manalize Local SandBox Strings"
+                                                 },
+                                                 {
+                                                     "id":  "T1059",
+                                                     "signature_description":  "Apparent Internal Usage of CMD.EXE"
+                                                 }
+                                             ],
+                 "files_opened":  [
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\1af105f8ed4aa71d61d3036f84b0c409.exe.dll",
+                                      "C:\\Users\\user\\AppData\\Local\\Temp\\1af105f8ed4aa71d61d3036f84b0c409.exe.dll.manifest"
+                                  ],
+                 "attack_techniques":  {
+                                           "T1033":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox BTC Addres found"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Find Crypto"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Strings"
+                                                         }
+                                                     ],
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox BTC Addres found"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Find Crypto"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Strings"
+                                                         }
+                                                     ],
+                                           "T1012":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox BTC Addres found"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Find Crypto"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Strings"
+                                                         }
+                                                     ],
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox BTC Addres found"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Find Crypto"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Strings"
+                                                         }
+                                                     ],
+                                           "T1057":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox BTC Addres found"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Find Crypto"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Strings"
+                                                         }
+                                                     ],
+                                           "T1518":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox BTC Addres found"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Find Crypto"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Strings"
+                                                         }
+                                                     ],
+                                           "T1059":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox BTC Addres found"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Find Crypto"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Strings"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Apparent Internal Usage of CMD.EXE"
+                                                         }
+                                                     ],
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox BTC Addres found"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Find Crypto"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Strings"
+                                                         }
+                                                     ],
+                                           "T1083":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox BTC Addres found"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Find Crypto"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Strings"
+                                                         }
+                                                     ],
+                                           "T1134":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "SetUnhandledExceptionFilter detected: superseding the top-level exception handler of each thread of a process is a common anti-debug technique."
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox BTC Addres found"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Find Crypto"
+                                                         },
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Manalize Local SandBox Strings"
+                                                         }
+                                                     ]
+                                       }
+             }
+}

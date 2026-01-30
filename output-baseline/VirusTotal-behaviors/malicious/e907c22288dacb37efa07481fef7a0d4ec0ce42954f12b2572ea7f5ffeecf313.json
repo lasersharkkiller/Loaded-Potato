@@ -1,0 +1,1892 @@
+{
+    "data":  {
+                 "files_written":  [
+                                       "C:\\Windows\\System32\\Tasks\\Microsoft\\Windows\\Application Experience\\Microsoft Compatibility Appraiser"
+                                   ],
+                 "signature_matches":  [
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "reference absolute stream path on Windows",
+                                               "description":  "host-interaction/file-system",
+                                               "authors":  [
+                                                               "blas.kojusner@mandiant.com",
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: reference absolute stream path on Windows\n    namespace: host-interaction/file-system\n    authors:\n      - blas.kojusner@mandiant.com\n      - william.ballenthin@mandiant.com\n    scope: basic block\n    references:\n      - https://learn.microsoft.com/en-us/windows/win32/fileio/file-streams\n    examples:\n      - 51828683DC26BFABD3994494099AE97D:0x11A9\n  features:\n    - and:\n      - string: /^(..\\?\\\\)?([\\w]\\:|\\\\)(\\\\+((?![\\\u003c\\\u003e\\\"\\/\\|\\*\\?\\:\\\\])[\\x20-\\x5B\\x5D-\\x7E])+)+(\\:\\$?([a-zA-Z0-9_]+))?/\n        # ^(..\\?\\\\)? -\u003e Check for path starting with \"\\\\?\\\"\n        # ([\\w]\\:|\\\\) -\u003e Check for absolute path beginning\n        # (\\\\+((?![\\\u003c\\\u003e\\\"\\/\\|\\*\\?\\:\\\\])[\\x20-\\x5B\\x5D-\\x7E])+)+ -\u003e Check for valid path and filename\n        #   \\\\+ -\u003e Check for at least one backslash path separator\n        #   (?![\\\u003c\\\u003e\\\"\\/\\|\\*\\?\\:\\\\]) -\u003e path component must not start with \u003c, \u003e, \", ...\n        #   [\\x20-\\x5B\\x5D-\\x7E] -\u003e path component must be printable ASCII, except backslash path separator\n        # : -\u003e Check for start of stream filename\n        # \\$?([a-zA-Z0-9_]+))? -\u003e Check for valid stream filename\n        ### Example Matches:\n        ### \\\\\\\\server\\share\\\\file:stream\n        ### \\\\\\\\server\\share\\dir.ext\\\\file.ext:stream \n        ### \\\\\\\\server\\share\\dir.ext\\\\file.tar.gz:stream\n        ### \\\\\\\\server\\share\\dir.ext\\\\file:stream.tar.gz\n        ### \\\\\\\\server\\share\\dir\\\\file.ext:stream.ext\n        ### \\\\\\\\?\\C:\\dir1\\dir2\\\\file:stream\n        ### C:\\dir\\\\file:stream.ext\n        ### C:\\dir\\\\file:}{+,.\u0027;[]-=-0987654321`~!@#$%^\u0026()_+-.ext\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://learn.microsoft.com/en-us/windows/win32/fileio/file-streams"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create or open file",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create or open file\n    authors:\n      - michael.hunhoff@mandiant.com\n      - joakim@intezer.com\n    lib: true\n    scope: basic block\n    mbc:\n      - File System::Create File [C0016]\n    examples:\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x401D7E\n  features:\n    - or:\n      - api: CreateFile\n      - api: CreateFileEx\n      - api: IoCreateFile\n      - api: IoCreateFileEx\n      - api: ZwOpenFile\n      - api: ZwCreateFile\n      - api: NtOpenFile\n      - api: NtCreateFile\n      - api: fopen\n      - api: fopen64\n      - api: fdopen\n      - api: freopen\n      - api: open\n      - api: openat\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using XOR",
+                                               "description":  "data-manipulation/encoding/xor",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using XOR\n    namespace: data-manipulation/encoding/xor\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: basic block\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::XOR [C0026.002]\n    examples:\n      - 2D3EDC218A90F03089CC01715A9F047F:0x403D7E\n  features:\n    - and:\n      - characteristic: tight loop\n      - characteristic: nzxor\n      - not:\n        - description: filter for potential false positives\n        - or:\n          - or:\n            - description: unsigned bitwise negation operation (~i)\n            - number: 0xFFFFFFFF = bitwise negation for unsigned 32 bits\n            - number: 0xFFFFFFFFFFFFFFFF = bitwise negation for unsigned 64 bits\n          - or:\n            - description: signed bitwise negation operation (~i)\n            - number: 0x0FFFFFFF = bitwise negation for signed 32 bits\n            - number: 0x0FFFFFFFFFFFFFFF = bitwise negation for signed 64 bits\n          - or:\n            - description: Magic constants used in the implementation of strings functions.\n            # such as `strlen` and `strcat` in the Windows standard library:\n            # (((i - 0x81010101) ^ ~i) \u0026 0x81010100)\n            ## 32 bits\n            - number: 0x7EFEFEFF = optimized string constant for 32 bits\n            - number: 0x81010101 = -0x81010101 = 0x7EFEFEFF\n            - number: 0x81010100 = 0x81010100 = ~0x7EFEFEFF\n            ## 64 bits\n            - number: 0x7EFEFEFEFEFEFEFF = optimized string constant for 64 bits\n            - number: 0x8101010101010101 = -0x8101010101010101 = 0x7EFEFEFEFEFEFEFF\n            - number: 0x8101010101010100 = 0x8101010101010100 = ~0x7EFEFEFEFEFEFEFF\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain obfuscated stackstrings",
+                                               "description":  "anti-analysis/obfuscation/string/stackstring",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain obfuscated stackstrings\n    namespace: anti-analysis/obfuscation/string/stackstring\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: basic block\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information::Indicator Removal from Tools [T1027.005]\n    mbc:\n      - Anti-Static Analysis::Executable Code Obfuscation::Argument Obfuscation [B0032.020]\n      - Anti-Static Analysis::Executable Code Obfuscation::Stack Strings [B0032.017]\n    examples:\n      - Practical Malware Analysis Lab 16-03.exe_:0x4013D0\n  features:\n    - characteristic: stack string\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "PEB access",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: PEB access\n    authors:\n      - michael.hunhoff@mandiant.com\n    lib: true\n    scope: basic block\n    mbc:\n      - Anti-Behavioral Analysis::Debugger Detection::Process Environment Block [B0001.019]\n    references:\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/NtGlobalFlag.cpp\n    examples:\n      - al-khaser_x86.exe_:0x420D20\n  features:\n    - or:\n      - characteristic: peb access\n      - and:\n        # https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/NtGlobalFlag.cpp#L41\n        - arch: i386\n        - characteristic: fs access\n        - or:\n          # in 0f5d5d07c6533bc6d991836ce79daaa1\n          # then we have:\n          #\n          #     xor edx, edx\n          #     mov edx, fs:[edx+30h]\n          - offset: 0x30\n          - instruction:\n            # in the case of CallObfuscator, gs:[rax]\n            - mnemonic: add\n            - number: 0x30\n      - and:\n        - arch: amd64\n        - characteristic: gs access\n        - or:\n          - offset: 0x60\n          - instruction:\n            - mnemonic: add\n            - number: 0x60\n      - and:\n        # WoW64 PEB address is fetched via the WoW64 Thread Environment Block (TEB) at FS:[0x18]-0x2000\n        # https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/NtGlobalFlag.cpp#L45\n        - characteristic: fs access\n        - instruction:\n          - mnemonic: sub\n          - number: 0x2000\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/AntiDebug/NtGlobalFlag.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "access PEB ldr_data",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: access PEB ldr_data\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: basic block\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    references:\n      - https://www.geoffchappell.com/studies/windows/win32/ntdll/structs/peb_ldr_data.htm\n      - https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8\n    examples:\n      - 3FDFB2D522E7DEECAAAF2F87420F7E75:0x4117B7\n  features:\n    - or:\n      - and:\n        - arch: i386\n        - description: x32\n\n        - match: PEB access\n\n        # x86 Windows uses fs:0 to access the TIB which contains SEH information at offset 0\n        # checking for fs:0 and a (possibly unrelated) number or offset often results in false positives\n\n        - offset: 0x0C = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x0C = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x14 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x1C = PEB.LDR_DATA.InInitializationOrderModuleList\n\n      - and:\n        - arch: amd64\n        - description: x64\n\n        - match: PEB access\n\n        - offset: 0x18 = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x10 = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x20 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x30 = PEB.LDR_DATA.InInitializationOrderModuleList\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.geoffchappell.com/studies/windows/win32/ntdll/structs/peb_ldr_data.htm"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create thread",
+                                               "description":  "host-interaction/thread/create",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "joakim@intezer.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create thread\n    namespace: host-interaction/thread/create\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n      - joakim@intezer.com\n      - anushka.virgaonkar@mandiant.com\n    scope: basic block\n    mbc:\n      - Process::Create Thread [C0038]\n    examples:\n      - 946A99F36A46D335DEC080D9A4371940:0x10001DA0\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x408020\n  features:\n    - or:\n      - and:\n        - os: windows\n        - or:\n          - api: kernel32.CreateThread\n          - api: _beginthread\n          - api: _beginthreadex\n          - api: PsCreateSystemThread\n          - api: SHCreateThread\n          - api: SHCreateThreadWithHandle\n          - api: kernel32.CreateRemoteThread\n          - api: kernel32.CreateRemoteThreadEx\n          - api: RtlCreateUserThread\n          - api: ntdll.NtCreateThread\n          - api: ntdll.NtCreateThreadEx\n          - api: ntdll.ZwCreateThread\n          - api: ntdll.ZwCreateThreadEx\n      - and:\n        - os: linux\n        - api: pthread_create\n      - and:\n        - api: System.Threading.Thread::Start\n        - optional:\n          - api: System.Threading.Thread::ctor\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "delay execution",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "@ramen0x3f"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: delay execution\n    authors:\n      - michael.hunhoff@mandiant.com\n      - \"@ramen0x3f\"\n    lib: true\n    scope: basic block\n    mbc:\n      - Anti-Behavioral Analysis::Dynamic Analysis Evasion::Delayed Execution [B0003.003]\n    references:\n      - https://docs.microsoft.com/en-us/windows/win32/sync/wait-functions\n      - https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/TimingAttacks/timing.cpp\n    examples:\n      - al-khaser_x86.exe_:0x449770\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x402FA6\n  features:\n    - or:\n      - and:\n        - os: windows\n        - or:\n          - api: kernel32.Sleep\n          - api: kernel32.SleepEx\n          - api: kernel32.WaitForSingleObject\n          - api: kernel32.SignalObjectAndWait\n          - api: kernel32.WaitForSingleObjectEx\n          - api: kernel32.WaitForMultipleObjects\n          - api: kernel32.WaitForMultipleObjectsEx\n          - api: kernel32.RegisterWaitForSingleObject\n          - api: WaitOnAddress\n          - api: user32.MsgWaitForMultipleObjects\n          - api: user32.MsgWaitForMultipleObjectsEx\n          - api: NtDelayExecution\n          - api: KeWaitForSingleObject\n          - api: KeDelayExecutionThread\n      - and:\n        - os: linux\n        - or:\n          - api: sleep\n          - api: usleep\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://docs.microsoft.com/en-us/windows/win32/sync/wait-functions"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/TimingAttacks/timing.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "allocate memory",
+                                               "authors":  [
+                                                               "0x534a@mailbox.org"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: allocate memory\n    authors:\n      - 0x534a@mailbox.org\n    lib: true\n    scope: basic block\n    mbc:\n      - Memory::Allocate Memory [C0007]\n    examples:\n      - Practical Malware Analysis Lab 03-03.exe_:0x4010EA\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x140001ABA\n  features:\n    - or:\n      - api: kernel32.VirtualAlloc\n      - api: kernel32.VirtualAllocEx\n      - api: kernel32.VirtualAllocExNuma\n      - api: kernel32.VirtualProtect\n      - api: kernel32.VirtualProtectEx\n      - api: NtAllocateVirtualMemory\n      - api: ZwAllocateVirtualMemory\n      - api: NtMapViewOfSection\n      - api: ZwMapViewOfSection\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "allocate RWX memory",
+                                               "description":  "host-interaction/process/inject",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: allocate RWX memory\n    namespace: host-interaction/process/inject\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: basic block\n    mbc:\n      - Memory::Allocate Memory [C0007]\n    examples:\n      - Practical Malware Analysis Lab 03-03.exe_:0x4010EA\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x140001ABA\n  features:\n    - and:\n      - match: allocate memory\n      - number: 0x40 = PAGE_EXECUTE_READWRITE\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse PE header",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse PE header\n    namespace: load-code/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x403DD0\n  features:\n    - and:\n      - os: windows\n      - and:\n        - mnemonic: cmp\n        - or:\n          - number: 0x4550 = IMAGE_NT_SIGNATURE (PE)\n          - and:\n            - number: 0x50\n            - number: 0x45\n        - or:\n          - number: 0x5A4D = IMAGE_DOS_SIGNATURE (MZ)\n          - and:\n            - number: 0x4D\n            - number: 0x5A\n        - optional:\n          - and:\n            - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n            - or:\n              - and:\n                - arch: i386\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n              - and:\n                - arch: amd64\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x30 = IMAGE_NT_HEADERS64.OptionalHeader.ImageBase\n          - basic block:\n            - and:\n              - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n              - 3 or more:\n                - operand[1].offset: 0x4 = IMAGE_NT_HEADERS.FileHeader.Machine\n                - operand[1].offset: 0x6 = IMAGE_NT_HEADERS.FileHeader.NumberOfSections\n                - operand[1].offset: 0x14 = IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader\n                - operand[1].offset: 0x16 = IMAGE_NT_HEADERS.FileHeader.Characteristics\n                - operand[1].offset: 0x28 = IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint  # for 32 and 64 bit\n                - or:\n                  - and:\n                    - arch: i386\n                    - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                  - and:\n                    - arch: amd64\n                    - operand[1].offset: 0x30 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain loop",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain loop\n    authors:\n      - moritz.raabe@mandiant.com\n    lib: true\n    scope: function\n    examples:\n      - 08AC667C65D36D6542917655571E61C8:0x406EAA\n  features:\n    - or:\n      - characteristic: loop\n      - characteristic: tight loop\n      - characteristic: recursive call\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "link function at runtime on Windows",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: link function at runtime on Windows\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x404130\n      - Practical Malware Analysis Lab 01-04.exe_:0x401350\n  features:\n    - and:\n      - os: windows\n      - or:\n        - api: kernel32.GetProcAddress\n        - api: ntdll.LdrGetProcedureAddress\n      - optional:\n        - characteristic: indirect call\n        - api: kernel32.LoadLibrary\n        - api: kernel32.GetModuleHandle\n        - api: kernel32.GetModuleHandleEx\n        - api: ntdll.LdrLoadDll\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "terminate process",
+                                               "description":  "host-interaction/process/terminate",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: terminate process\n    namespace: host-interaction/process/terminate\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: function\n    mbc:\n      - Process::Terminate Process [C0018]\n    examples:\n      - C91887D861D9BD4A5872249B641BC9F9:0x401A77\n      - 9B7CCAA2AE6A5B96E3110EBCBC4311F6:0x10010307\n  features:\n    - or:\n      - api: System.Diagnostics.Process::Kill\n      - api: System.Diagnostics.Process::WaitForExit\n      - api: System.Diagnostics.Process::WaitForExitAsync\n      - api: System.Environment::Exit\n      - api: System.Windows.Forms.Application::Exit\n      - and:\n        - optional:\n          - match: open process\n        - or:\n          - api: kernel32.TerminateProcess\n          - api: ntdll.NtTerminateProcess\n          - api: kernel32.ExitProcess\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "allocate thread local storage",
+                                               "description":  "host-interaction/process",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: allocate thread local storage\n    namespace: host-interaction/process\n    authors:\n      - michael.hunhoff@mandiant.com\n    scope: function\n    mbc:\n      - Process::Allocate Thread Local Storage [C0040]\n    examples:\n      - 03B236B23B1EC37C663527C1F53AF3FE:0x18000ADF6\n  features:\n    - or:\n      - api: kernel32.TlsAlloc\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get thread local storage value",
+                                               "description":  "host-interaction/process",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get thread local storage value\n    namespace: host-interaction/process\n    authors:\n      - michael.hunhoff@mandiant.com\n    scope: function\n  features:\n    - and:\n      - api: kernel32.TlsGetValue\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "enumerate files on Windows",
+                                               "description":  "host-interaction/file-system/files/list",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: enumerate files on Windows\n    namespace: host-interaction/file-system/files/list\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Discovery::File and Directory Discovery [T1083]\n    mbc:\n      - Discovery::File and Directory Discovery [E1083]\n    references:\n      - https://github.com/hfiref0x/TDL/blob/cc4b46ae1c939b14a22a734a727b163f873a41b5/Source/Furutaka/sup.c#L315\n    examples:\n      - Practical Malware Analysis Lab 01-01.exe_:0x4011E0\n      - Practical Malware Analysis Lab 20-02.exe_:0x401000\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x14000203C\n  features:\n    - or:\n      - and:\n        - or:\n          - api: kernel32.FindFirstFile\n          - api: kernel32.FindFirstFileEx\n          - api: kernel32.FindFirstFileTransacted\n          - api: kernel32.FindFirstFileName\n          - api: kernel32.FindFirstFileNameTransacted\n        - or:\n          - api: kernel32.FindNextFile\n          - api: kernel32.FindNextFileName\n        - optional:\n          - api: kernel32.FindClose\n          - match: contain loop\n      - and:\n        - basic block:\n          - and:\n            - number: 1 = DIRECTORY_QUERY\n            - api: ntdll.NtOpenDirectoryObject\n        - api: ntdll.NtQueryDirectoryObject\n        - optional:\n          - api: RtlAllocateHeap\n          - match: contain loop\n          - characteristic: indirect call\n      - or:\n        - api: System.IO.DirectoryInfo::GetFiles\n        - api: System.IO.DirectoryInfo::EnumerateFiles\n        - api: System.IO.Directory::GetFiles\n        - api: System.IO.Directory::EnumerateFiles\n        - api: System.IO.Directory::EnumerateFileSystemEntries\n        - api: System.IO.DirectoryInfo::GetDirectories\n        - api: System.IO.DirectoryInfo::EnumerateDirectories\n        - api: System.IO.Directory::GetDirectories\n        - api: System.IO.Directory::EnumerateDirectories\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/hfiref0x/TDL/blob/cc4b46ae1c939b14a22a734a727b163f873a41b5/Source/Furutaka/sup.c#L315"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "query environment variable",
+                                               "description":  "host-interaction/environment-variable",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "@_re_fox"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: query environment variable\n    namespace: host-interaction/environment-variable\n    authors:\n      - michael.hunhoff@mandiant.com\n      - \"@_re_fox\"\n    scope: function\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    mbc:\n      - Discovery::System Information Discovery [E1082]\n    examples:\n      - Practical Malware Analysis Lab 14-02.exe_:0x401880\n      - 0761142efbda6c4b1e801223de723578:0x65483490\n  features:\n    - or:\n      - api: kernel32.GetEnvironmentVariable\n      - api: kernel32.GetEnvironmentStrings\n      - api: kernel32.ExpandEnvironmentStrings\n      - api: msvcr90.getenv\n      - api: msvcrt.getenv\n      - api: System.Environment::GetEnvironmentVariable\n      - api: System.Environment::GetEnvironmentVariables\n      - api: System.Environment::ExpandEnvironmentVariables\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write file on Windows",
+                                               "description":  "host-interaction/file-system/write",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write file on Windows\n    namespace: host-interaction/file-system/write\n    authors:\n      - william.ballenthin@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scope: function\n    mbc:\n      - File System::Writes File [C0052]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x1400025C4\n  features:\n    - or:\n      - and:\n        - os: windows\n        - optional:\n          - or:\n            - and:\n              - number: 0x40000000 = GENERIC_WRITE\n              - api: kernel32.CreateFile\n            - and:\n              - number: 0x2 = FILE_WRITE_DATA\n              - or:\n                - api: NtCreateFile\n                - api: ZwCreateFile\n        - or:\n          - api: kernel32.WriteFile\n          - api: kernel32.WriteFileEx\n          - api: NtWriteFile\n          - api: ZwWriteFile\n          - api: _fwrite\n          - api: fwrite\n      - api: System.IO.File::WriteAllBytes\n      - api: System.IO.File::WriteAllBytesAsync\n      - api: System.IO.File::WriteAllLines\n      - api: System.IO.File::WriteAllLinesAsync\n      - api: System.IO.File::WriteAllText\n      - api: System.IO.File::WriteAllTextAsync\n      - api: System.IO.File::AppendAllLines\n      - api: System.IO.File::AppendAllLinesAsync\n      - api: System.IO.File::AppendAllText\n      - api: System.IO.File::AppendAllTextAsync\n      - api: System.IO.File::AppendText\n      - api: System.IO.FileInfo::AppendText\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using Base64",
+                                               "description":  "data-manipulation/encoding/base64",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using Base64\n    namespace: data-manipulation/encoding/base64\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::Base64 [C0026.001]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5:0x1314889C\n      - 074072B261FC27B65C72671F13510C05:0x100049B2\n      - 5DB2D2BE20D59AA0BE6709A6850F1775:0x18001CC30\n      - 08AC667C65D36D6542917655571E61C8:0x406EAA\n  features:\n    - or:\n      - and:\n        - mnemonic: shl\n        - mnemonic: shr\n        - number: 0x3F = modulo 64\n        - or:\n          - number: 0x3D = \u0027=\u0027\n          - number: 0x3D3D = \u0027==\u0027\n        - match: contain loop\n        - optional:\n          - number: 2\n          - number: 3\n          - number: 4\n          - number: 6\n          - number: 0xF\n          - string: \"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\"\n      - api: System.Convert::ToBase64String\n      - api: System.Convert::ToBase64CharArray\n      - api: System.Convert::TryToBase64Chars\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "resolve function by parsing PE exports",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "sara-rn"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: resolve function by parsing PE exports\n    namespace: load-code/pe\n    authors:\n      - sara-rn\n    scope: function\n    examples:\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x406BA1\n  features:\n    - and:\n      - os: windows\n      - or:\n        - characteristic: loop\n        - mnemonic: movzx\n      - and:\n        - offset: 0x3C = IMAGE_DOS_HEADER.PE.e_lfanew\n        - or:\n          - and:\n            - arch: i386\n            - offset: 0x78 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n          - and:\n            - arch: amd64\n            - offset: 0x88 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n        - 3 or more:\n          - offset: 0x14 = IMAGE_EXPORT_DIRECTORY.NumberOfFunctions\n          - offset: 0x24 = IMAGE_EXPORT_DIRECTORY.AddressOfNameOrdinals\n          - offset: 0x20 = IMAGE_EXPORT_DIRECTORY.AddressOfNames\n          - offset: 0x18 = IMAGE_EXPORT_DIRECTORY.NumberOfNames\n          - offset: 0x1C = IMAGE_EXPORT_DIRECTORY.AddressOfFunctions\n      - optional:\n        - or:\n          - api: LoadLibrary\n          - api: strcmp\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "decrypt data using TEA",
+                                               "description":  "data-manipulation/encryption/tea",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "raymond.leong@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: decrypt data using TEA\n    namespace: data-manipulation/encryption/tea\n    authors:\n      - william.ballenthin@mandiant.com\n      - raymond.leong@mandiant.com\n    scope: function\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encryption-Standard Algorithm [E1027.m05]\n    references:\n      - https://en.wikipedia.org/wiki/Tiny_Encryption_Algorithm\n    examples:\n      - 5B99FA01C72CEBC53A76CC72E9581189:0x180001027\n      - 7FD2E2E3C88675D877190ABAA3002B55:0x010004EC0\n  features:\n    - and:\n      - basic block:\n        - and:\n          - instruction:\n            - mnemonic: shr\n            - operand[1].number: 0x5\n          - instruction:\n            - mnemonic: shl\n            - operand[1].number: 0x4\n          - count(mnemonic(shr)): 0x2\n          - characteristic: nzxor\n      - or:\n        - operand[1].number: 0x9E3779B9 = key schedule constant\n        - operand[1].number: 0x61C88647 = key schedule constant two\u0027s complement\n      - operand[1].number: 0xC6EF3720 = sum\n      - not:\n        - basic block:\n          - and:\n            - description: q setup only in XXTEA\n            - instruction:\n              - mnemonic: mov\n              - operand[1].number: 0x34\n            - instruction:\n              - mnemonic: add\n              - operand[1].number: 0x6\n            - instruction:\n              - mnemonic: idiv\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://en.wikipedia.org/wiki/Tiny_Encryption_Algorithm"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain a resource (.rsrc) section",
+                                               "description":  "executable/pe/section/rsrc",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain a resource (.rsrc) section\n    namespace: executable/pe/section/rsrc\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: file\n    examples:\n      - A933A1A402775CFA94B6BEE0963F4B46:0x41fd25\n  features:\n    - section: .rsrc\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "reference Base64 string",
+                                               "description":  "data-manipulation/encoding/base64",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: reference Base64 string\n    namespace: data-manipulation/encoding/base64\n    authors:\n      - moritz.raabe@mandiant.com\n    scope: file\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Data::Encode Data::Base64 [C0026.001]\n      - Data::Check String [C0019]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5\n      - 074072B261FC27B65C72671F13510C05\n      - 5DB2D2BE20D59AA0BE6709A6850F1775\n  features:\n    - string: /ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\n"
+                                           }
+                                       ],
+                 "processes_terminated":  [
+                                              "%SAMPLEPATH%",
+                                              "%windir%\\System32\\svchost.exe -k WerSvcGroup",
+                                              "%windir%\\SysWOW64\\WerFault.exe -u -p 2564 -s 36",
+                                              "wmiadap.exe /F /T /R",
+                                              "C:\\Windows\\System32\\wuapihost.exe"
+                                          ],
+                 "command_executions":  [
+                                            "%SAMPLEPATH%",
+                                            "\"%SAMPLEPATH%\\e907c22288dacb37efa07481fef7a0d4ec0ce42954f12b2572ea7f5ffeecf313.exe\" ",
+                                            "C:\\Windows\\SysWOW64\\WerFault.exe -u -p 3060 -s 208",
+                                            "C:\\Windows\\System32\\wuapihost.exe -Embedding"
+                                        ],
+                 "processes_created":  [
+                                           "%SAMPLEPATH%\\e907c22288dacb37efa07481fef7a0d4ec0ce42954f12b2572ea7f5ffeecf313.exe",
+                                           "C:\\Windows\\SysWOW64\\WerFault.exe",
+                                           "C:\\Windows\\System32\\wuapihost.exe"
+                                       ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "a83f:8110:0:0:f084:e4d8:7b02:0",
+                                        "destination_port":  53,
+                                        "transport_layer_protocol":  "UDP"
+                                    },
+                                    {
+                                        "destination_ip":  "23.216.147.61",
+                                        "destination_port":  80,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "20.99.133.109",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "192.229.211.108",
+                                        "destination_port":  80,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "text_highlighted":  [
+                                          "e907c22288dacb37efa07481fef7a0d4ec0ce42954f12b2572ea7f5ffeecf313.exe",
+                                          "Check online for a solution and close the program",
+                                          "Optional update delivery is not working"
+                                      ],
+                 "files_dropped":  [
+                                       {
+                                           "path":  "%USERPROFILE%\\AppData\\Local\\DBG"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WEREBD7.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WEREBD7.tmp.dmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WEREC93.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WEREC93.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERECFF.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERECFF.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERED6E.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WERED6E.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\Windows\\System32\\spp\\store\\2.0\\data.dat.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER11AE.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER11AE.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER11C0.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER11C0.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER11D0.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER11D0.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER13A3.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER13A3.tmp.WERInternalMetadata.xml"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER13A6.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER13A6.tmp.csv"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER13B7.tmp"
+                                       },
+                                       {
+                                           "path":  "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER13B7.tmp.txt"
+                                       },
+                                       {
+                                           "path":  "C:\\Windows\\System32\\spp\\store\\2.0\\cache\\cache.dat"
+                                       }
+                                   ],
+                 "verdicts":  [
+                                  "UNKNOWN_VERDICT"
+                              ],
+                 "modules_loaded":  [
+                                        "%SAMPLEPATH%\\e907c22288dacb37efa07481fef7a0d4ec0ce42954f12b2572ea7f5ffeecf313.exe"
+                                    ],
+                 "files_deleted":  [
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WEREBD7.tmp.dmp",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WEREC93.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER11AE.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER11C0.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER11D0.tmp.txt",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER13A3.tmp.WERInternalMetadata.xml",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER13A6.tmp.csv",
+                                       "C:\\ProgramData\\Microsoft\\Windows\\WER\\Temp\\WER13B7.tmp.txt",
+                                       "C:\\Windows\\System32\\spp\\store\\2.0\\cache\\cache.dat"
+                                   ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2564",
+                                            "name":  "%SAMPLEPATH%"
+                                        },
+                                        {
+                                            "process_id":  "2644",
+                                            "name":  "%windir%\\System32\\svchost.exe -k WerSvcGroup",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2672",
+                                                                 "name":  "%windir%\\SysWOW64\\WerFault.exe -u -p 2564 -s 36"
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2912",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        },
+                                        {
+                                            "process_id":  "2960",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        },
+                                        {
+                                            "process_id":  "2928",
+                                            "name":  "%WINDIR%\\explorer.exe",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "3060",
+                                                                 "name":  "%SAMPLEPATH%\\e907c22288dacb37efa07481fef7a0d4ec0ce42954f12b2572ea7f5ffeecf313.exe",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "3592",
+                                                                                      "name":  "C:\\Windows\\SysWOW64\\WerFault.exe"
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "612",
+                                            "name":  "C:\\Windows\\System32\\svchost.exe",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "3860",
+                                                                 "name":  "C:\\Windows\\System32\\wuapihost.exe"
+                                                             }
+                                                         ]
+                                        }
+                                    ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using XOR",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encode data using XOR"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027.005",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "contain obfuscated stackstrings",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "contain obfuscated stackstrings"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "access PEB ldr_data",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "access PEB ldr_data"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "parse PE header",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "parse PE header"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "link function at runtime on Windows",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "link function at runtime on Windows"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "enumerate files on Windows",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "enumerate files on Windows"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "query environment variable",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "query environment variable"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using Base64",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "encode data using Base64"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "decrypt data using TEA",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "decrypt data using TEA"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "reference Base64 string",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "reference Base64 string"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "registry_keys_set":  [
+                                           {
+                                               "key":  "HKU\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\SystemCertificates\\Root\\Certificates\\0174E68C97DDF1E0EEEA415EA336A163D2B61AFD\\Blob",
+                                               "value":  "5C 00 00 00 01 00 00 00 04 00 00 00 00 10 00 00 04 00 00 00 01 00 00 00 10 00 00 00 0D BE 92 DE FF 7D 36 BB 48 C4 A6 B1 15 24 95 38 0F 00 00 00 01 00 00 00 20 00 00 00 53 FE B9 19 2E D4 80 F2 09 12 4A 2C 57 D7 E8 97 7A 2E 9F 39 46 1D BF 21 4D F1 12 CB 16 02 4F A2 14 00 00 00 01 00 00 00 14 00 00 00 78 B8 30 FD 63 AC 7B 89 4A 07 3B ED F6 8A 83 9C C3 52 02 65 19 00 00 00 01 00 00 00 10 00 00 00 B5 74 AF 30 C5 C1 BA 3A 69 A7 10 02 00 82 4D D0 03 00 00 00 01 00 00 00 14 00 00 00 01 74 E6 8C 97 DD F1 E0 EE EA 41 5E A3 36 A1 63 D2 B6 1A FD 20 00 00 00 01 00 00 00 F8 05 00 00 30 82 05 F4 30 82 03 DC A0 03 02 01 02 02 09 00 E0 EA 61 4C 28 56 32 64 30 0D 06 09 2A 86 48 86 F7 0D 01 01 0B 05 00 30 81 8E 31 0B 30 09 06 03 55 04 06 13 02 49 4C 31 0F 30 0D 06 03 55 04 08 0C 06 43 65 6E 74 65 72 31 0C 30 0A 06 03 55 04 07 0C 03 4C 6F 64 31 10 30 0E 06 03 55 04 0A 0C 07 47 6F 50 72 6F 78 79 31 10 30 0E 06 03 55 04 0B 0C 07 47 6F 50 72 6F 78 79 31 1A 30 18 06 03 55 04 03 0C 11 67 6F 70 72 6F 78 79 2E 67 69 74 68 75 62 2E 69 6"
+                                           },
+                                           {
+                                               "key":  "HKU\\S-1-5-21-575823232-3065301323-1442773979-1000\\Software\\Microsoft\\Windows\\Windows Error Reporting\\Debug\\StoreLocation",
+                                               "value":  "%LOCALAPPDATA%\\Microsoft\\Windows\\WER\\ReportQueue\\AppCrash_026N6A6BB96F1GV8_e5c7e446bc776406d16790f34b44917cfe80bd_cab_0a7137b2"
+                                           },
+                                           {
+                                               "key":  "HKLM\\Software\\Microsoft\\Windows\\Windows Error Reporting\\Debug\\StoreLocation",
+                                               "value":  "%LOCALAPPDATA%\\Microsoft\\Windows\\WER\\ReportQueue\\AppCrash_026N6A6BB96F1GV8_e5c7e446bc776406d16790f34b44917cfe80bd_cab_0a7137b2"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplication\\0000c34c48b48a14753d8877e705591744db00000000\\Publisher",
+                                               "value":  "Microsoft Corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplication\\0000021f1df94e2c7570a94e39009b97cde300000000\\Publisher",
+                                               "value":  "Microsoft Corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\acpi/genuineintel_-_intel64_family_6_model_79_-____________intel(r)_xeon(r)_cpu_@_2.20ghz/_0\\DriverVerVersion",
+                                               "value":  "6.1.7601.24520"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\acpi/genuineintel_-_intel64_family_6_model_79_-____________intel(r)_xeon(r)_cpu_@_2.20ghz/_1\\DriverVerVersion",
+                                               "value":  "6.1.7601.24520"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\acpi/pnp0303/4\u00262c352a27\u00260\\DriverVerVersion",
+                                               "value":  "6.1.7601.17514"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\acpi/pnp0700/4\u00262c352a27\u00260\\DriverVerVersion",
+                                               "value":  "6.1.7600.16385"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\acpi/pnp0a03/0\\DriverVerVersion",
+                                               "value":  "6.1.7601.24441"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\acpi/pnp0a06/pci_hotplug_resources\\DriverVerVersion",
+                                               "value":  "6.1.7601.24441"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\acpi/pnp0b00/4\u00262c352a27\u00260\\DriverVerVersion",
+                                               "value":  "6.1.7601.24441"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\acpi/pnp0f13/4\u00262c352a27\u00260\\DriverVerVersion",
+                                               "value":  "6.1.7600.16385"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\acpi/qemu0002/3\u0026267a616a\u00260\\DriverVerVersion",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\hdaudio/func_01\u0026ven_1af4\u0026dev_0022\u0026subsys_1af40022\u0026rev_1001/4\u002682fd0c\u00260\u00260001\\DriverVerVersion",
+                                               "value":  "6.1.7601.24519"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\pci/ven_1af4\u0026dev_1001\u0026subsys_00021af4\u0026rev_00/3\u0026267a616a\u00260\u002638\\DriverVerVersion",
+                                               "value":  "61.77.104.17100"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\pci/ven_1af4\u0026dev_1002\u0026subsys_00051af4\u0026rev_00/3\u0026267a616a\u00260\u002640\\DriverVerVersion",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\pci/ven_1af4\u0026dev_1003\u0026subsys_00031af4\u0026rev_00/3\u0026267a616a\u00260\u002630\\DriverVerVersion",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\crashreporter.ex|ff7d4b2859769f83\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\updated\\crashreporter.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\crashreporter.ex|ff7d4b2859769f83\\Publisher",
+                                               "value":  "mozilla foundation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\crashreporter.ex|ff7d4b2859769f83\\LinkDate",
+                                               "value":  "01/04/2023 18:08:34"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\crashreporter.ex|ff7d4b2859769f83\\BinProductVersion",
+                                               "value":  "108.0.2.8404"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\default-browser-|42c867fb8c2e92b5\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\updated\\default-browser-agent.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\default-browser-|42c867fb8c2e92b5\\Publisher",
+                                               "value":  "mozilla foundation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\default-browser-|42c867fb8c2e92b5\\LinkDate",
+                                               "value":  "01/04/2023 18:14:01"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\default-browser-|42c867fb8c2e92b5\\BinProductVersion",
+                                               "value":  "108.0.2.8404"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\firefox.exe|2ad62017703a5d51\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\updated\\firefox.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\firefox.exe|2ad62017703a5d51\\Publisher",
+                                               "value":  "mozilla corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\firefox.exe|2ad62017703a5d51\\LinkDate",
+                                               "value":  "01/04/2023 18:07:51"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\firefox.exe|2ad62017703a5d51\\BinProductVersion",
+                                               "value":  "108.0.2.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|9e41ab94690fe110\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\updated\\maintenanceservice.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|9e41ab94690fe110\\Publisher",
+                                               "value":  "mozilla foundation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|9e41ab94690fe110\\LinkDate",
+                                               "value":  "01/04/2023 18:08:08"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|9e41ab94690fe110\\BinProductVersion",
+                                               "value":  "108.0.2.8404"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|835fe6e36c60be8a\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\updated\\maintenanceservice_installer.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|835fe6e36c60be8a\\Publisher",
+                                               "value":  "mozilla corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|835fe6e36c60be8a\\LinkDate",
+                                               "value":  "07/24/2021 22:21:04"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|835fe6e36c60be8a\\BinProductVersion",
+                                               "value":  "1.0.0.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\minidump-analyze|65ea540e962fc321\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\updated\\minidump-analyzer.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\minidump-analyze|65ea540e962fc321\\Publisher",
+                                               "value":  "mozilla foundation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\minidump-analyze|65ea540e962fc321\\LinkDate",
+                                               "value":  "01/04/2023 18:08:09"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\minidump-analyze|65ea540e962fc321\\BinProductVersion",
+                                               "value":  "108.0.2.8404"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\pingsender.exe|8b73640a1b1d1fbf\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\updated\\pingsender.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\pingsender.exe|8b73640a1b1d1fbf\\Publisher",
+                                               "value":  "mozilla foundation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\pingsender.exe|8b73640a1b1d1fbf\\LinkDate",
+                                               "value":  "01/04/2023 18:08:08"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\pingsender.exe|8b73640a1b1d1fbf\\BinProductVersion",
+                                               "value":  "108.0.2.8404"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\plugin-container|d11f96b41e7541d1\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\updated\\plugin-container.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\plugin-container|d11f96b41e7541d1\\Publisher",
+                                               "value":  "mozilla corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\plugin-container|d11f96b41e7541d1\\LinkDate",
+                                               "value":  "01/04/2023 18:25:28"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\plugin-container|d11f96b41e7541d1\\BinProductVersion",
+                                               "value":  "108.0.2.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\private_browsing|f9cb5f69ed313a48\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\updated\\private_browsing.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\private_browsing|f9cb5f69ed313a48\\Publisher",
+                                               "value":  "mozilla corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\private_browsing|f9cb5f69ed313a48\\LinkDate",
+                                               "value":  "01/04/2023 18:07:20"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\private_browsing|f9cb5f69ed313a48\\BinProductVersion",
+                                               "value":  "108.0.2.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\helper.exe|d40dac1890f7a00\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\updated\\uninstall\\helper.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\helper.exe|d40dac1890f7a00\\Publisher",
+                                               "value":  "mozilla corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\helper.exe|d40dac1890f7a00\\LinkDate",
+                                               "value":  "07/24/2021 22:21:04"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\helper.exe|d40dac1890f7a00\\BinProductVersion",
+                                               "value":  "1.0.0.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\updater.exe|1b3aeb7e8625ed27\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\updated\\updater.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\updater.exe|1b3aeb7e8625ed27\\Publisher",
+                                               "value":  "mozilla foundation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\updater.exe|1b3aeb7e8625ed27\\LinkDate",
+                                               "value":  "01/04/2023 18:07:32"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\updater.exe|1b3aeb7e8625ed27\\BinProductVersion",
+                                               "value":  "108.0.2.8404"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\pci/ven_1b36\u0026dev_0100\u0026subsys_11001af4\u0026rev_05/3\u0026267a616a\u00260\u002610\\DriverVerVersion",
+                                               "value":  "6.1.7600.16385"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\pci/ven_8086\u0026dev_100e\u0026subsys_11001af4\u0026rev_03/3\u0026267a616a\u00260\u002618\\DriverVerVersion",
+                                               "value":  "8.4.1.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\pci/ven_8086\u0026dev_1237\u0026subsys_11001af4\u0026rev_02/3\u0026267a616a\u00260\u002600\\DriverVerVersion",
+                                               "value":  "6.1.7601.24441"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\pci/ven_8086\u0026dev_2668\u0026subsys_11001af4\u0026rev_01/3\u0026267a616a\u00260\u002620\\DriverVerVersion",
+                                               "value":  "6.1.7601.17514"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\pci/ven_8086\u0026dev_2934\u0026subsys_11001af4\u0026rev_03/3\u0026267a616a\u00260\u002628\\DriverVerVersion",
+                                               "value":  "6.1.7601.24138"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\pci/ven_8086\u0026dev_2935\u0026subsys_11001af4\u0026rev_03/3\u0026267a616a\u00260\u002629\\DriverVerVersion",
+                                               "value":  "6.1.7601.24138"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\crashreporter.ex|63c55d3d1009672b\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\crashreporter.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\crashreporter.ex|63c55d3d1009672b\\Publisher",
+                                               "value":  "mozilla foundation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\crashreporter.ex|63c55d3d1009672b\\LinkDate",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\crashreporter.ex|63c55d3d1009672b\\BinProductVersion",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplication\\0000ca0169d7b9bbcfa4e65eb68a13f930210000ffff\\Publisher",
+                                               "value":  "Mozilla"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\default-browser-|dc77861eecd2248\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\default-browser-agent.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\default-browser-|dc77861eecd2248\\Publisher",
+                                               "value":  "mozilla foundation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\default-browser-|dc77861eecd2248\\LinkDate",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\default-browser-|dc77861eecd2248\\BinProductVersion",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\firefox.exe|ebd16581180f4552\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\firefox.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\firefox.exe|ebd16581180f4552\\Publisher",
+                                               "value":  "mozilla corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\firefox.exe|ebd16581180f4552\\LinkDate",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\firefox.exe|ebd16581180f4552\\BinProductVersion",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|97180995320ca115\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\maintenanceservice.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|97180995320ca115\\Publisher",
+                                               "value":  "mozilla foundation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|97180995320ca115\\LinkDate",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|97180995320ca115\\BinProductVersion",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|a02830353e4ef7f\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\maintenanceservice_installer.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|a02830353e4ef7f\\Publisher",
+                                               "value":  "mozilla corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|a02830353e4ef7f\\LinkDate",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\maintenanceservi|a02830353e4ef7f\\BinProductVersion",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\minidump-analyze|c30fa22ff3f6a149\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\minidump-analyzer.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\minidump-analyze|c30fa22ff3f6a149\\Publisher",
+                                               "value":  "mozilla foundation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\minidump-analyze|c30fa22ff3f6a149\\LinkDate",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\minidump-analyze|c30fa22ff3f6a149\\BinProductVersion",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\pingsender.exe|aaf23943349d4957\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\pingsender.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\pingsender.exe|aaf23943349d4957\\Publisher",
+                                               "value":  "mozilla foundation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\pingsender.exe|aaf23943349d4957\\LinkDate",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\pingsender.exe|aaf23943349d4957\\BinProductVersion",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\plugin-container|bff6e47ff7f94db5\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\plugin-container.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\plugin-container|bff6e47ff7f94db5\\Publisher",
+                                               "value":  "mozilla corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\plugin-container|bff6e47ff7f94db5\\LinkDate",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\plugin-container|bff6e47ff7f94db5\\BinProductVersion",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\updater.exe|c1b2e9c223e636df\\LowerCaseLongPath",
+                                               "value":  "c:\\program files\\mozilla firefox\\updater.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\updater.exe|c1b2e9c223e636df\\Publisher",
+                                               "value":  "mozilla foundation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\updater.exe|c1b2e9c223e636df\\LinkDate",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\updater.exe|c1b2e9c223e636df\\BinProductVersion",
+                                               "value":  "(Empty)"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess.exe|313edc2dd92685a6\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\addinprocess.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess.exe|313edc2dd92685a6\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess.exe|313edc2dd92685a6\\LinkDate",
+                                               "value":  "03/28/2019 06:56:01"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess.exe|313edc2dd92685a6\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess.exe|31487d5668d38eef\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\addinprocess.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess.exe|31487d5668d38eef\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess.exe|31487d5668d38eef\\LinkDate",
+                                               "value":  "03/28/2019 06:56:01"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess.exe|31487d5668d38eef\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess32.e|3e8e05d4ef4495aa\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\addinprocess32.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess32.e|3e8e05d4ef4495aa\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess32.e|3e8e05d4ef4495aa\\LinkDate",
+                                               "value":  "03/28/2019 06:56:57"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess32.e|3e8e05d4ef4495aa\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess32.e|fe3b638e0334bae2\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\addinprocess32.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess32.e|fe3b638e0334bae2\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess32.e|fe3b638e0334bae2\\LinkDate",
+                                               "value":  "03/28/2019 06:56:57"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinprocess32.e|fe3b638e0334bae2\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinutil.exe|92167fbc1ed0ed08\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\addinutil.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinutil.exe|92167fbc1ed0ed08\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinutil.exe|92167fbc1ed0ed08\\LinkDate",
+                                               "value":  "03/28/2019 06:56:58"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinutil.exe|92167fbc1ed0ed08\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinutil.exe|ab652f18224684a7\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\addinutil.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinutil.exe|ab652f18224684a7\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinutil.exe|ab652f18224684a7\\LinkDate",
+                                               "value":  "03/28/2019 06:56:58"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\addinutil.exe|ab652f18224684a7\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\applaunch.exe|45b62bd7e4fc0c6f\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\applaunch.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\applaunch.exe|45b62bd7e4fc0c6f\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\applaunch.exe|45b62bd7e4fc0c6f\\LinkDate",
+                                               "value":  "03/28/2019 06:36:04"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\applaunch.exe|45b62bd7e4fc0c6f\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\applaunch.exe|7127527a8f617d48\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\applaunch.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\applaunch.exe|7127527a8f617d48\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\applaunch.exe|7127527a8f617d48\\LinkDate",
+                                               "value":  "03/28/2019 06:49:21"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\applaunch.exe|7127527a8f617d48\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_compiler.|4b7f3f64b82fdfc9\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\aspnet_compiler.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_compiler.|4b7f3f64b82fdfc9\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_compiler.|4b7f3f64b82fdfc9\\LinkDate",
+                                               "value":  "03/28/2019 06:48:46"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_compiler.|4b7f3f64b82fdfc9\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_compiler.|e1cf3170e346d70f\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\aspnet_compiler.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_compiler.|e1cf3170e346d70f\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_compiler.|e1cf3170e346d70f\\LinkDate",
+                                               "value":  "03/28/2019 06:56:53"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_compiler.|e1cf3170e346d70f\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regbrowse|8255322e96705ae8\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\aspnet_regbrowsers.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regbrowse|8255322e96705ae8\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regbrowse|8255322e96705ae8\\LinkDate",
+                                               "value":  "03/28/2019 06:48:49"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regbrowse|8255322e96705ae8\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regbrowse|87ef4760aa410a54\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\aspnet_regbrowsers.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regbrowse|87ef4760aa410a54\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regbrowse|87ef4760aa410a54\\LinkDate",
+                                               "value":  "03/28/2019 06:56:53"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regbrowse|87ef4760aa410a54\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regiis.ex|12e275fb52b742fb\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\aspnet_regiis.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regiis.ex|12e275fb52b742fb\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regiis.ex|12e275fb52b742fb\\LinkDate",
+                                               "value":  "03/28/2019 06:48:55"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regiis.ex|12e275fb52b742fb\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regiis.ex|9ffa85ecfdd8c5d0\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\aspnet_regiis.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regiis.ex|9ffa85ecfdd8c5d0\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regiis.ex|9ffa85ecfdd8c5d0\\LinkDate",
+                                               "value":  "03/28/2019 06:56:58"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regiis.ex|9ffa85ecfdd8c5d0\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regsql.ex|5e0151b8dea6687b\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\aspnet_regsql.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regsql.ex|5e0151b8dea6687b\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regsql.ex|5e0151b8dea6687b\\LinkDate",
+                                               "value":  "03/28/2019 06:56:56"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regsql.ex|5e0151b8dea6687b\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regsql.ex|a1587a010eaeaa18\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\aspnet_regsql.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regsql.ex|a1587a010eaeaa18\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regsql.ex|a1587a010eaeaa18\\LinkDate",
+                                               "value":  "03/28/2019 06:48:55"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_regsql.ex|a1587a010eaeaa18\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_state.exe|5841eb7e6d8b7edb\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\aspnet_state.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_state.exe|5841eb7e6d8b7edb\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_state.exe|5841eb7e6d8b7edb\\LinkDate",
+                                               "value":  "03/28/2019 06:57:06"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_state.exe|5841eb7e6d8b7edb\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_state.exe|a2ade42aec949a2c\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\aspnet_state.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_state.exe|a2ade42aec949a2c\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_state.exe|a2ade42aec949a2c\\LinkDate",
+                                               "value":  "03/28/2019 06:48:55"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_state.exe|a2ade42aec949a2c\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_wp.exe|2cd7c621dc57cefc\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\aspnet_wp.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_wp.exe|2cd7c621dc57cefc\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_wp.exe|2cd7c621dc57cefc\\LinkDate",
+                                               "value":  "12/03/2019 22:00:00"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_wp.exe|2cd7c621dc57cefc\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_wp.exe|d4da0ae1ea579195\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\aspnet_wp.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_wp.exe|d4da0ae1ea579195\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_wp.exe|d4da0ae1ea579195\\LinkDate",
+                                               "value":  "12/03/2019 22:08:22"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\aspnet_wp.exe|d4da0ae1ea579195\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\caspol.exe|1c3df8b9b20d9142\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\caspol.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\caspol.exe|1c3df8b9b20d9142\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\caspol.exe|1c3df8b9b20d9142\\LinkDate",
+                                               "value":  "03/28/2019 06:49:14"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\caspol.exe|1c3df8b9b20d9142\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\caspol.exe|3d95aa202ac5f130\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\caspol.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\caspol.exe|3d95aa202ac5f130\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\caspol.exe|3d95aa202ac5f130\\LinkDate",
+                                               "value":  "03/28/2019 06:35:27"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\caspol.exe|3d95aa202ac5f130\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\comsvcconfig.exe|127ae901cca76da4\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\comsvcconfig.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\comsvcconfig.exe|127ae901cca76da4\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\comsvcconfig.exe|127ae901cca76da4\\LinkDate",
+                                               "value":  "03/28/2019 07:24:03"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\comsvcconfig.exe|127ae901cca76da4\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\comsvcconfig.exe|8253c813c9c92b41\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\comsvcconfig.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\comsvcconfig.exe|8253c813c9c92b41\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\comsvcconfig.exe|8253c813c9c92b41\\LinkDate",
+                                               "value":  "03/28/2019 07:24:03"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\comsvcconfig.exe|8253c813c9c92b41\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryDevicePnp\\pci/ven_8086\u0026dev_2936\u0026subsys_11001af4\u0026rev_03/3\u0026267a616a\u00260\u00262a\\DriverVerVersion",
+                                               "value":  "6.1.7601.24138"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\csc.exe|151e2b3228d75f8e\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\csc.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\csc.exe|151e2b3228d75f8e\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\csc.exe|151e2b3228d75f8e\\LinkDate",
+                                               "value":  "03/28/2019 07:23:26"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\csc.exe|151e2b3228d75f8e\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\csc.exe|9b9c2e289b6f7430\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\csc.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\csc.exe|9b9c2e289b6f7430\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\csc.exe|9b9c2e289b6f7430\\LinkDate",
+                                               "value":  "03/28/2019 07:20:59"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\csc.exe|9b9c2e289b6f7430\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\cvtres.exe|3e0333619bb586da\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\cvtres.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\cvtres.exe|3e0333619bb586da\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\cvtres.exe|3e0333619bb586da\\LinkDate",
+                                               "value":  "09/26/2018 23:48:24"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\cvtres.exe|3e0333619bb586da\\BinProductVersion",
+                                               "value":  "14.10.25028.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\cvtres.exe|9c0eb88f7ba223af\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\cvtres.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\cvtres.exe|9c0eb88f7ba223af\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\cvtres.exe|9c0eb88f7ba223af\\LinkDate",
+                                               "value":  "09/26/2018 23:45:05"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\cvtres.exe|9c0eb88f7ba223af\\BinProductVersion",
+                                               "value":  "14.10.25028.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\datasvcutil.exe|2f484f7d34674ba\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\datasvcutil.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\datasvcutil.exe|2f484f7d34674ba\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\datasvcutil.exe|2f484f7d34674ba\\LinkDate",
+                                               "value":  "03/28/2019 06:57:10"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\datasvcutil.exe|2f484f7d34674ba\\BinProductVersion",
+                                               "value":  "4.8.3761.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\datasvcutil.exe|7374bdcd0d8b988d\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\datasvcutil.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\datasvcutil.exe|7374bdcd0d8b988d\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\datasvcutil.exe|7374bdcd0d8b988d\\LinkDate",
+                                               "value":  "03/28/2019 06:57:10"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\datasvcutil.exe|7374bdcd0d8b988d\\BinProductVersion",
+                                               "value":  "4.8.3761.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\dfsvc.exe|726d5ed0fc38e92f\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\dfsvc.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\dfsvc.exe|726d5ed0fc38e92f\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\dfsvc.exe|726d5ed0fc38e92f\\LinkDate",
+                                               "value":  "03/28/2019 06:56:35"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\dfsvc.exe|726d5ed0fc38e92f\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\dfsvc.exe|cccc1df8872c992e\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\dfsvc.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\dfsvc.exe|cccc1df8872c992e\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\dfsvc.exe|cccc1df8872c992e\\LinkDate",
+                                               "value":  "03/28/2019 06:56:35"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\dfsvc.exe|cccc1df8872c992e\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\edmgen.exe|5efc2f3d0a4c87e2\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\edmgen.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\edmgen.exe|5efc2f3d0a4c87e2\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\edmgen.exe|5efc2f3d0a4c87e2\\LinkDate",
+                                               "value":  "03/28/2019 06:57:51"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\edmgen.exe|5efc2f3d0a4c87e2\\BinProductVersion",
+                                               "value":  "4.8.3761.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\edmgen.exe|ba34d2097aba251\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\edmgen.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\edmgen.exe|ba34d2097aba251\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\edmgen.exe|ba34d2097aba251\\LinkDate",
+                                               "value":  "03/28/2019 06:57:51"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\edmgen.exe|ba34d2097aba251\\BinProductVersion",
+                                               "value":  "4.8.3761.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\ilasm.exe|27fd71b20771561e\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\ilasm.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\ilasm.exe|27fd71b20771561e\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\ilasm.exe|27fd71b20771561e\\LinkDate",
+                                               "value":  "03/28/2019 06:38:02"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\ilasm.exe|27fd71b20771561e\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\ilasm.exe|c81c4887c12ac429\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\ilasm.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\ilasm.exe|c81c4887c12ac429\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\ilasm.exe|c81c4887c12ac429\\LinkDate",
+                                               "value":  "03/28/2019 06:48:55"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\ilasm.exe|c81c4887c12ac429\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\installutil.exe|95e234cbcbb20632\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\installutil.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\installutil.exe|95e234cbcbb20632\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\installutil.exe|95e234cbcbb20632\\LinkDate",
+                                               "value":  "03/28/2019 06:56:27"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\installutil.exe|95e234cbcbb20632\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\installutil.exe|9c12a7aa48d106cd\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\installutil.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\installutil.exe|9c12a7aa48d106cd\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\installutil.exe|9c12a7aa48d106cd\\LinkDate",
+                                               "value":  "03/28/2019 06:47:19"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\installutil.exe|9c12a7aa48d106cd\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\jsc.exe|785d24c55cf53178\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\jsc.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\jsc.exe|785d24c55cf53178\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\jsc.exe|785d24c55cf53178\\LinkDate",
+                                               "value":  "03/28/2019 07:26:30"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\jsc.exe|785d24c55cf53178\\BinProductVersion",
+                                               "value":  "14.8.3761.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\jsc.exe|d324e2e35ff7610f\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\jsc.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\jsc.exe|d324e2e35ff7610f\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\jsc.exe|d324e2e35ff7610f\\LinkDate",
+                                               "value":  "03/28/2019 07:26:30"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\jsc.exe|d324e2e35ff7610f\\BinProductVersion",
+                                               "value":  "14.8.3761.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\microsoft.workfl|413f97257efd1489\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\microsoft.workflow.compiler.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\microsoft.workfl|413f97257efd1489\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\microsoft.workfl|413f97257efd1489\\LinkDate",
+                                               "value":  "03/28/2019 07:23:52"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\microsoft.workfl|413f97257efd1489\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\microsoft.workfl|abb7cedc80142e09\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\assembly\\gac_msil\\microsoft.workflow.compiler\\v4.0_4.0.0.0__31bf3856ad364e35\\microsoft.workflow.compiler.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\microsoft.workfl|abb7cedc80142e09\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\microsoft.workfl|abb7cedc80142e09\\LinkDate",
+                                               "value":  "03/28/2019 07:23:52"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\microsoft.workfl|abb7cedc80142e09\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\microsoft.workfl|cac4f8bfecd2d08a\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\microsoft.workflow.compiler.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\microsoft.workfl|cac4f8bfecd2d08a\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\microsoft.workfl|cac4f8bfecd2d08a\\LinkDate",
+                                               "value":  "03/28/2019 07:23:52"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\microsoft.workfl|cac4f8bfecd2d08a\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\msbuild.exe|94596b7cc5f070ff\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\msbuild.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\msbuild.exe|94596b7cc5f070ff\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\msbuild.exe|94596b7cc5f070ff\\LinkDate",
+                                               "value":  "03/28/2019 07:00:59"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\msbuild.exe|94596b7cc5f070ff\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\msbuild.exe|d51fd18b57a7d7c0\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\msbuild.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\msbuild.exe|d51fd18b57a7d7c0\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\msbuild.exe|d51fd18b57a7d7c0\\LinkDate",
+                                               "value":  "03/28/2019 06:52:52"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\msbuild.exe|d51fd18b57a7d7c0\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\mscorsvw.exe|290adaef7b288bf7\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\mscorsvw.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\mscorsvw.exe|290adaef7b288bf7\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\mscorsvw.exe|290adaef7b288bf7\\LinkDate",
+                                               "value":  "03/28/2019 06:49:16"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\mscorsvw.exe|290adaef7b288bf7\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\mscorsvw.exe|c9bd36993d973183\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\mscorsvw.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\mscorsvw.exe|c9bd36993d973183\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\mscorsvw.exe|c9bd36993d973183\\LinkDate",
+                                               "value":  "03/28/2019 06:37:00"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\mscorsvw.exe|c9bd36993d973183\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\netfxrepair.exe|ab6bc855dbd9d78e\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\netfxrepair.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\netfxrepair.exe|ab6bc855dbd9d78e\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\netfxrepair.exe|ab6bc855dbd9d78e\\LinkDate",
+                                               "value":  "03/28/2019 07:26:43"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\netfxrepair.exe|ab6bc855dbd9d78e\\BinProductVersion",
+                                               "value":  "14.8.3761.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\ngen.exe|4653055c63a37b02\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework\\v4.0.30319\\ngen.exe"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\ngen.exe|4653055c63a37b02\\Publisher",
+                                               "value":  "microsoft corporation"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\ngen.exe|4653055c63a37b02\\LinkDate",
+                                               "value":  "03/28/2019 06:49:28"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\ngen.exe|4653055c63a37b02\\BinProductVersion",
+                                               "value":  "4.0.30319.0"
+                                           },
+                                           {
+                                               "key":  "\\REGISTRY\\A\\{06AB22CB-6A4E-A69E-B195-CF93FD7318EE}\\Root\\InventoryApplicationFile\\ngen.exe|6737a0e56950a135\\LowerCaseLongPath",
+                                               "value":  "c:\\windows\\microsoft.net\\framework64\\v4.0.30319\\ngen.exe"
+                                           }
+                                       ],
+                 "attack_techniques":  {
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using XOR",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encode data using XOR"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using Base64",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "encode data using Base64"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "decrypt data using TEA",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "decrypt data using TEA"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "reference Base64 string",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "reference Base64 string"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027.005":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "contain obfuscated stackstrings",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "contain obfuscated stackstrings"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "access PEB ldr_data",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "access PEB ldr_data"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "parse PE header",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "parse PE header"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "link function at runtime on Windows",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "link function at runtime on Windows"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1083":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "enumerate files on Windows",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "enumerate files on Windows"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "query environment variable",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "query environment variable"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

@@ -1,0 +1,1777 @@
+{
+    "data":  {
+                 "signature_matches":  [
+                                           {
+                                               "id":  "0",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "connect socket",
+                                               "description":  "communication/socket : Detects socket connection attempts using common APIs or ConnectEx setup.",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "joakim@intezer.com",
+                                                               "mrhafizfarhad@gmail.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: connect"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: connect socket\n    namespace: communication/socket\n    authors:\n      - moritz.raabe@mandiant.com\n      - joakim@intezer.com\n      - mrhafizfarhad@gmail.com\n    description: Detects socket connection attempts using common APIs or ConnectEx setup.\n    scopes:\n      static: basic block\n      dynamic: span of calls\n    examples:\n      - Practical Malware Analysis Lab 01-01.dll_:0x10001010\n  features:\n    - or:\n      - api: connect\n      - api: ws2_32.connect\n      - api: ws2_32.#4 = connect\n      - api: ws2_32.WSAConnect\n      - api: ws2_32.#33 = WSAConnect\n      - api: ConnectEx\n      - or:\n        - and:\n          # static\n          - basic block:\n            # candidate for GUID: WSAID_CONNECTEX/25a207b9-ddf3-4660-8ee9-76e58c74063e\n            - and:\n              - number: 0x25A207B9\n              - number: 0x4660DDF3\n              - number: 0xE576E98E\n              - number: 0x3E06748C\n          - basic block:\n            - and:\n              - or:\n                - api: ws2_32.WSAIoctl\n                - api: ws2_32.#60 = WSAIoctl\n              - number: 0xC8000006 = SIO_GET_EXTENSION_FUNCTION_POINTER\n          - basic block:\n            - and:\n              - or:\n                - api: setsockopt\n                - api: ws2_32.#21 = setsockopt\n              - number: 0xFFFF = SOL_SOCKET\n              - number: 0x7010 = SO_UPDATE_CONNECT_CONTEXT\n          # socket must be bound to ConnectEx\n          # https://gist.github.com/joeyadams/4158972\n          - or:\n            - api: bind\n            - api: ws2_32.#2 = bind\n        - and:\n          # dynamic\n          - call:\n            - and:\n              - or:\n                - api: ws2_32.WSAIoctl\n                - api: ws2_32.#60 = WSAIoctl\n              - number: 0xC8000006 = SIO_GET_EXTENSION_FUNCTION_POINTER\n          - call:\n            - and:\n              - or:\n                - api: setsockopt\n                - api: ws2_32.#21 = setsockopt\n              - number: 0xFFFF = SOL_SOCKET\n              - number: 0x7010 = SO_UPDATE_CONNECT_CONTEXT\n          # socket must be bound to ConnectEx\n          # https://gist.github.com/joeyadams/4158972\n          - or:\n            - api: bind\n            - api: ws2_32.#2 = bind\n"
+                                           },
+                                           {
+                                               "id":  "1",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get current PID on Linux",
+                                               "description":  "host-interaction/process",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: getpid"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get current PID on Linux\n    namespace: host-interaction/process\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: call\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: getpid\n        - api: getppid\n"
+                                           },
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write file on Linux",
+                                               "description":  "host-interaction/file-system/write",
+                                               "authors":  [
+                                                               "joakim@intezer.com",
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: fputc",
+                                                                  "api: write"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write file on Linux\n    namespace: host-interaction/file-system/write\n    authors:\n      - joakim@intezer.com\n      - mehunhoff@google.com\n    scopes:\n      static: instruction\n      dynamic: call\n    mbc:\n      - File System::Writes File [C0052]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x401E14\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: fputc\n        - api: fputs\n        - api: putc\n        - api: write\n        - api: fputwc\n        - api: putwc\n        - api: fputws\n        - api: fwrite\n        - api: putwchar\n        - api: dprintf\n        - api: vdprintf\n        - api: fprintf\n        - api: vfprintf\n"
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "read file on Linux",
+                                               "description":  "host-interaction/file-system/read",
+                                               "authors":  [
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: read"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: read file on Linux\n    namespace: host-interaction/file-system/read\n    authors:\n      - joakim@intezer.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - File System::Read File [C0051]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x4059AD\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - optional:\n        - match: create or open file\n      - or:\n        - api: fgetc\n        - api: fgets\n        - api: getc\n        - api: getchar\n        - api: read\n        - api: getline\n        - api: getdelim\n        - api: fgetwc\n        - api: getwc\n        - api: fscanf\n        - api: vfscanf\n        - api: fread\n"
+                                           },
+                                           {
+                                               "id":  "4",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "set socket configuration",
+                                               "description":  "communication/socket",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: setsockopt"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: set socket configuration\n    namespace: communication/socket\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - Communication::Socket Communication::Set Socket Config [C0001.001]\n    examples:\n      - 6A352C3E55E8AE5ED39DC1BE7FB964B1:0x1000C1F0\n  features:\n    - or:\n      - api: ws2_32.setsockopt\n      - api: ws2_32.#21 = setsockopt\n      - api: ws2_32.ioctlsocket\n      - api: ws2_32.#10 = ioctlsocket\n"
+                                           },
+                                           {
+                                               "id":  "5",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get local IPv4 addresses",
+                                               "description":  "host-interaction/network/address",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "joakim@intezer.com",
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: getsockname"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get local IPv4 addresses\n    namespace: host-interaction/network/address\n    authors:\n      - moritz.raabe@mandiant.com\n      - joakim@intezer.com\n      - mehunhoff@google.com\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::System Network Configuration Discovery [T1016]\n    examples:\n      - Practical Malware Analysis Lab 05-01.dll_:0x100037e6\n      - 4C0553285D724DCAF5909924B4E3E90A:0x402010\n  features:\n    - or:\n      - api: getsockname\n      - and:\n        - api: GetAdaptersInfo\n        - offset: 0x1B0 = IP_ADAPTER_INFO.IpAddressList.IpAddress\n        # loop feature?\n      - and:\n        - api: GetAdaptersAddresses\n        - optional:\n          - or:\n            - number: 0 = AF_UNSPEC\n            - number: 2 = AF_INET\n            - number: 23 = AF_INET6\n"
+                                           },
+                                           {
+                                               "id":  "6",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "start TCP server",
+                                               "description":  "communication/tcp/serve",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "AF_INET",
+                                                                  "protocol (default)",
+                                                                  "SOCK_STREAM"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: start TCP server\n    namespace: communication/tcp/serve\n    authors:\n      - william.ballenthin@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Communication::Socket Communication::Start TCP Server [C0001.005]\n    examples:\n      - AF2F4142463F42548B8650A3ADF5CEB2:0x10010880\n  features:\n    - or:\n      - and:\n        - match: create TCP socket\n        - api: listen\n        - or:\n          - api: accept\n          - api: WSAAccept\n      - api: System.Net.Sockets.TcpListener::Start\n      - api: System.Net.Sockets.TcpListener::AcceptTcpClient\n      - api: System.Net.Sockets.TcpListener::BeginAcceptTcpClient\n      - api: System.Net.Sockets.TcpListener::AcceptTcpClientAsync\n      - api: System.Net.Sockets.TcpListener::AcceptSocket\n      - api: System.Net.Sockets.TcpListener::BeginAcceptSocket\n      - api: System.Net.Sockets.TcpListener::AcceptSocketAsync\n"
+                                           },
+                                           {
+                                               "id":  "7",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using RC4 PRGA",
+                                               "description":  "data-manipulation/encryption/rc4",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "loop",
+                                                                  "contain loop"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using RC4 PRGA\n    namespace: data-manipulation/encryption/rc4\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic, basicblock features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Cryptography::Encrypt Data::RC4 [C0027.009]\n      - Cryptography::Generate Pseudo-random Sequence::RC4 PRGA [C0021.004]\n    examples:\n      - 34404A3FB9804977C6AB86CB991FB130:0x403DB0\n      - 34404A3FB9804977C6AB86CB991FB130:0x403E50\n      - 9324D1A8AE37A36AE560C37448C9705A:0x4049F0\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x4064C6\n  features:\n    - and:\n      # TODO: maybe add characteristic for nzxor reg size\n      - count(characteristic(nzxor)): 1\n      - or:\n        - match: calculate modulo 256 via x86 assembly\n        # compiler may do this via zero-extended mov from 8-bit register\n        - count(mnemonic(movzx)): 4 or more\n      # should not call (many) functions\n      - count(characteristic(calls from)): (0, 4)\n      # should not be too simple or too complex (50 is picked by intuition)\n      - count(basic blocks): (4, 50)\n      - match: contain loop\n      - optional:\n        - or:\n          - number: 0xFF\n          - number: 0x100\n"
+                                           },
+                                           {
+                                               "id":  "8",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create process on Linux",
+                                               "description":  "host-interaction/process/create",
+                                               "authors":  [
+                                                               "joakim@intezer.com",
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: fork"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create process on Linux\n    namespace: host-interaction/process/create\n    authors:\n      - joakim@intezer.com\n      - mehunhoff@google.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - Process::Create Process [C0017]\n    examples:\n      - 7351f8a40c5450557b24622417fc478d:0x40236D\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: execve\n        - and:\n          - match: execute syscall\n          - arch: aarch64\n          - number: 0xdd = execve\n        - api: execl\n        - api: execlp\n        - api: execle\n        - api: execv\n        - api: execvp\n        - api: execvpe\n        - api: posix_spawn\n        - api: posix_spawnp\n        - api: popen\n        - api: fork\n"
+                                           },
+                                           {
+                                               "id":  "9",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "send data",
+                                               "description":  "communication : all known techniques for sending data to a potential C2 server",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "joakim@intezer.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "create UDP socket",
+                                                                  "AF_INET",
+                                                                  "protocol (default)"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: send data\n    namespace: communication\n    authors:\n      - william.ballenthin@mandiant.com\n      - joakim@intezer.com\n    description: all known techniques for sending data to a potential C2 server\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Command and Control::C2 Communication::Send Data [B0030.001]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5:0x13145D60\n  features:\n    - or:\n      - and:\n        - os: windows\n        - or:\n          - match: send HTTP request\n          - match: send data on socket\n          - match: send file via HTTP\n          - match: send data to Internet\n      - and:\n        - os: linux\n        - or: # Require network bound socket.\n          - match: create TCP socket\n          - match: create UDP socket\n        - or:\n          - match: send HTTP request\n          - match: send data on socket\n          - match: send file via HTTP\n"
+                                           },
+                                           {
+                                               "id":  "10",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "send data on socket",
+                                               "description":  "communication/socket/send",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "joakim@intezer.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: sendto"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: send data on socket\n    namespace: communication/socket/send\n    authors:\n      - moritz.raabe@mandiant.com\n      - joakim@intezer.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - Communication::Socket Communication::Send Data [C0001.007]\n    examples:\n      - Practical Malware Analysis Lab 01-01.dll_:0x10001010\n  features:\n    - or:\n      - api: send\n      - api: ws2_32.send\n      - api: ws2_32.#19 = send\n      - api: ws2_32.sendto\n      - api: ws2_32.#20 = sendto\n      - api: ws2_32.WSASend\n      - api: ws2_32.#76 = WSASend\n      - api: ws2_32.WSASendMsg\n      - api: ws2_32.WSASendTo\n      - api: ws2_32.#78 = WSASendTo\n      - api: System.Net.Sockets.Socket::Send\n      - api: System.Net.Sockets.Socket::SendAsync\n      - api: System.Net.Sockets.Socket::SendTo\n      - api: System.Net.Sockets.Socket::SendToAsync\n      - api: System.Net.Sockets.UdpClient::Send\n"
+                                           },
+                                           {
+                                               "id":  "11",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create TCP socket",
+                                               "description":  "communication/socket/tcp",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "joakim@intezer.com",
+                                                               "anushka.virgaonkar@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "protocol (default)",
+                                                                  "SOCK_STREAM",
+                                                                  "api: socket"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create TCP socket\n    namespace: communication/socket/tcp\n    authors:\n      - william.ballenthin@mandiant.com\n      - joakim@intezer.com\n      - anushka.virgaonkar@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - Communication::Socket Communication::Create TCP Socket [C0001.011]\n    references:\n      - https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket\n      - https://man7.org/linux/man-pages/man2/socket.2.html\n    examples:\n      - Practical Malware Analysis Lab 01-01.dll_:0x10001010\n  features:\n    - or:\n      - and:\n        - or:\n          - number: 0 = protocol (default)\n          - number: 6 = IPPROTO_TCP\n        - number: 1 = SOCK_STREAM\n        - number: 2 = AF_INET\n        - or:\n          - api: socket\n          - api: ws2_32.socket\n          - api: ws2_32.#23 = socket\n          - api: ws2_32.WSASocket\n          - api: ws2_32.#82 = WSASocketA\n          - api: ws2_32.#83 = WSASocketW\n          - api: System.Net.Sockets.Socket::ctor\n      - property/read: System.Net.Sockets.TcpClient::Client\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket"
+                                                            },
+                                                            {
+                                                                "ref":  "https://man7.org/linux/man-pages/man2/socket.2.html"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "12",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "connect UDP socket",
+                                               "description":  "communication/socket/udp : Detects UDP socket connections by combining UDP socket creation with connection attempts.",
+                                               "authors":  [
+                                                               "mrhafizfarhad@gmail.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "create UDP socket",
+                                                                  "api: connect",
+                                                                  "connect socket"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: connect UDP socket\n    namespace: communication/socket/udp\n    authors:\n      - mrhafizfarhad@gmail.com\n    description: Detects UDP socket connections by combining UDP socket creation with connection attempts.\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Communication::Socket Communication::UDP Client [C0001.013]\n    examples:\n      - 368239d36d221d8877a07ab6799e643a.elf_:0x20011E9\n  features:\n    - and:\n      - match: create UDP socket\n      - match: connect socket\n"
+                                           },
+                                           {
+                                               "id":  "13",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "receive and write data from server to client",
+                                               "description":  "communication/c2/file-transfer",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "receive data on socket",
+                                                                  "api: write",
+                                                                  "api: recv"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: receive and write data from server to client\n    namespace: communication/c2/file-transfer\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n  features:\n    - and:\n      - match: receive data\n      - match: host-interaction/file-system/write\n"
+                                           },
+                                           {
+                                               "id":  "15",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "download and write a file",
+                                               "description":  "communication/c2/file-transfer",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "receive data on socket",
+                                                                  "api: write",
+                                                                  "api: recv"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: download and write a file\n    namespace: communication/c2/file-transfer\n    maec/malware-category: downloader\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    att\u0026ck:\n      - Command and Control::Ingress Tool Transfer [T1105]\n    mbc:\n      - Command and Control::C2 Communication::Server to Client File Transfer [B0030.003]\n    examples:\n      - 5D7C34B6854D48D3DA4F96B71550A221:0x401346\n  features:\n    - and:\n      - match: receive data\n      - match: host-interaction/file-system/write\n"
+                                           },
+                                           {
+                                               "id":  "16",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get socket information",
+                                               "description":  "communication/socket",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: getsockname"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get socket information\n    namespace: communication/socket\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::System Network Configuration Discovery [T1016]\n  features:\n    - or:\n      - api: ws2_32.getsockname\n      - api: ws2_32.#6 = getsockname\n"
+                                           },
+                                           {
+                                               "id":  "17",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "set thread name on Linux",
+                                               "description":  "host-interaction/thread",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "PR_SET_NAME",
+                                                                  "api: prctl"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: set thread name on Linux\n    namespace: host-interaction/thread\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: span of calls\n  features:\n    - and:\n      - or:\n        - os: linux\n        - os: android\n      - or:\n        - api: pthread_setname_np\n        - and:\n          - api: prctl\n          - number: 0xF = PR_SET_NAME\n"
+                                           },
+                                           {
+                                               "id":  "18",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "receive data",
+                                               "description":  "communication : all known techniques for receiving data from a potential C2 server",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: recv",
+                                                                  "receive data on socket"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: receive data\n    namespace: communication\n    authors:\n      - william.ballenthin@mandiant.com\n    description: all known techniques for receiving data from a potential C2 server\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Command and Control::C2 Communication::Receive Data [B0030.002]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5:0x13145D60\n  features:\n    - or:\n      - match: receive data on socket\n      - match: read data from Internet\n      - match: download URL\n"
+                                           },
+                                           {
+                                               "id":  "19",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "connect TCP socket",
+                                               "description":  "communication/socket/tcp",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "joakim@intezer.com",
+                                                               "mrhafizfarhad@gmail.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "AF_INET",
+                                                                  "api: connect",
+                                                                  "connect socket"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: connect TCP socket\n    namespace: communication/socket/tcp\n    authors:\n      - moritz.raabe@mandiant.com\n      - joakim@intezer.com\n      - mrhafizfarhad@gmail.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Communication::Socket Communication::Connect Socket [C0001.004]\n    examples:\n      - Practical Malware Analysis Lab 01-01.dll_:0x10001010\n  features:\n    - and:\n      - match: create TCP socket\n      - match: connect socket\n"
+                                           },
+                                           {
+                                               "id":  "20",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create raw socket",
+                                               "description":  "communication/socket",
+                                               "authors":  [
+                                                               "blas.kojusner@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "SOCK_RAW",
+                                                                  "AF_INET",
+                                                                  "api: socket"
+                                                              ],
+                                               "rule_src":  "# generated using capa explorer for IDA Pro\nrule:\n  meta:\n    name: create raw socket\n    namespace: communication/socket\n    authors:\n      - blas.kojusner@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - Communication::Socket Communication::Create Socket [C0001.003]\n    references:\n      - https://learn.microsoft.com/en-us/windows/win32/winsock/tcp-ip-raw-sockets-2\n      - https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket\n      - https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa\n    examples:\n      - 10EBCF8C20403457A08762200015B151:0x140001000\n  features:\n    - and:\n      - or:\n        - api: socket\n        - api: ws2_32.#23 = socket\n        - api: ws2_32.WSASocket\n        - api: ws2_32.#82 = WSASocketA\n        - api: ws2_32.#83 = WSASocketW\n      - or:\n        - number: 2 = AF_INET\n        - number: 23 = AF_INET6\n      - number: 3 = SOCK_RAW\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://learn.microsoft.com/en-us/windows/win32/winsock/tcp-ip-raw-sockets-2"
+                                                            },
+                                                            {
+                                                                "ref":  "https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket"
+                                                            },
+                                                            {
+                                                                "ref":  "https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsasocketa"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "21",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "query environment variable",
+                                               "description":  "host-interaction/environment-variable",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "@_re_fox"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: getenv"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: query environment variable\n    namespace: host-interaction/environment-variable\n    authors:\n      - michael.hunhoff@mandiant.com\n      - \"@_re_fox\"\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    mbc:\n      - Discovery::System Information Discovery [E1082]\n    examples:\n      - Practical Malware Analysis Lab 14-02.exe_:0x401880\n      - 0761142efbda6c4b1e801223de723578:0x65483490\n  features:\n    - or:\n      - api: kernel32.GetEnvironmentVariable\n      - api: kernel32.GetEnvironmentStrings\n      - api: kernel32.ExpandEnvironmentStrings\n      - api: msvcr90.getenv\n      - api: msvcrt.getenv\n      - api: System.Environment::GetEnvironmentVariable\n      - api: System.Environment::GetEnvironmentVariables\n      - api: System.Environment::ExpandEnvironmentVariables\n"
+                                           },
+                                           {
+                                               "id":  "22",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create UDP socket",
+                                               "description":  "communication/socket/udp/send",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "joakim@intezer.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "protocol (default)",
+                                                                  "api: socket",
+                                                                  "IPPROTO_UDP"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create UDP socket\n    namespace: communication/socket/udp/send\n    authors:\n      - moritz.raabe@mandiant.com\n      - joakim@intezer.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - Communication::Socket Communication::Create UDP Socket [C0001.010]\n    references:\n      - https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket\n      - https://man7.org/linux/man-pages/man2/socket.2.html\n  features:\n    - or:\n      - and:\n        - number: 2 = AF_INET\n        - number: 2 = SOCK_DGRAM\n        - or:\n          - number: 0 = protocol (default)\n          - number: 17 = IPPROTO_UDP\n        - or:\n          - api: socket\n          - api: ws2_32.socket\n          - api: ws2_32.#23 = socket\n          - api: ws2_32.WSASocket\n          - api: ws2_32.#82 = WSASocketA\n          - api: ws2_32.#83 = WSASocketW\n          - api: System.Net.Sockets.Socket::ctor\n      - api: System.Net.Sockets.UdpClient::ctor\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket"
+                                                            },
+                                                            {
+                                                                "ref":  "https://man7.org/linux/man-pages/man2/socket.2.html"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "23",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "resolve DNS",
+                                               "description":  "communication/dns",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "johnk3r",
+                                                               "joakim@intezer.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: gethostbyname"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: resolve DNS\n    namespace: communication/dns\n    authors:\n      - william.ballenthin@mandiant.com\n      - johnk3r\n      - joakim@intezer.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - Communication::DNS Communication::Resolve [C0011.001]\n    examples:\n      - 17264e3126a97c319a6a0c61e6da951e:0x5FDC25D0\n  features:\n    - or:\n      - api: gethostbyname\n      - api: ws2_32.gethostbyname\n      - api: ws2_32.#52 = gethostbyname\n      - api: DnsQuery_A\n      - api: DnsQuery_W\n      - api: DnsQuery_UTF8\n      - api: DnsQueryEx\n      - api: GetAddrInfo\n      - api: ws2_32.#24 = GetAddrInfoW\n      - api: GetAddrInfoEx\n      - api: getaddrinfo\n      - api: ws2_32.#98 = getaddrinfo\n      - api: getnameinfo\n      - api: ws2_32.#99 = getnameinfo\n      - api: gethostent\n      - api: System.Net.Dns::GetHostAddresses\n"
+                                           },
+                                           {
+                                               "id":  "24",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "act as TCP client",
+                                               "description":  "communication/tcp/client",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "AF_INET",
+                                                                  "connect TCP socket",
+                                                                  "api: connect"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: act as TCP client\n    namespace: communication/tcp/client\n    authors:\n      - william.ballenthin@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Communication::Socket Communication::TCP Client [C0001.008]\n    examples:\n      - Practical Malware Analysis Lab 01-01.dll_:0x10001010\n  features:\n    - or:\n      - match: connect TCP socket\n      - api: System.Net.Sockets.TcpClient::ctor\n"
+                                           },
+                                           {
+                                               "id":  "25",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "receive data on socket",
+                                               "description":  "communication/socket/receive",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "joakim@intezer.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: recv"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: receive data on socket\n    namespace: communication/socket/receive\n    authors:\n      - moritz.raabe@mandiant.com\n      - joakim@intezer.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - Communication::Socket Communication::Receive Data [C0001.006]\n    examples:\n      - Practical Malware Analysis Lab 01-01.dll_:0x10001010\n  features:\n    - or:\n      - api: recv\n      - api: ws2_32.recv\n      - api: ws2_32.#16 = recv\n      - api: ws2_32.recvfrom\n      - api: ws2_32.#17 = recvfrom\n      - api: ws2_32.WSARecv\n      - api: ws2_32.#71 = WSARecv\n      - api: ws2_32.WSARecvDisconnect\n      - api: ws2_32.#72 = WSARecvDisconnect\n      - api: ws2_32.WSARecvEx\n      - api: ws2_32.WSARecvFrom\n      - api: ws2_32.#73 = WSARecvFrom\n      - api: ws2_32.WSARecvMsg\n      - api: recvmsg\n      - api: System.Net.Sockets.Socket::Receive\n      - api: System.Net.Sockets.Socket::ReceiveAsync\n      - api: System.Net.Sockets.Socket::ReceiveFrom\n      - api: System.Net.Sockets.Socket::ReceiveFromAsync\n      - api: System.Net.Sockets.Socket::ReceiveMessageFrom\n      - api: System.Net.Sockets.Socket::ReceiveMessageFromAsync\n      - api: System.Net.Sockets.Socket::BeginReceive\n      - api: System.Net.Sockets.Socket::BeginReceiveFrom\n      - api: System.Net.Sockets.Socket::BeginReceiveMessageFrom\n      - api: System.Net.Sockets.Socket::EndReceive\n      - api: System.Net.Sockets.Socket::EndReceiveFrom\n      - api: System.Net.Sockets.Socket::EndReceiveMessageFrom\n"
+                                           },
+                                           {
+                                               "id":  "stealth_network",
+                                               "name":  "stealth_network",
+                                               "description":  "Network activity detected but not expressed in monitor API logs",
+                                               "match_data":  [
+                                                                  "{\"ip\": \"185.125.188.58\"}",
+                                                                  "{\"ip\": \"185.125.188.54\"}",
+                                                                  "{\"ip\": \"8.8.8.8\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "drops_files",
+                                               "name":  "drops_files",
+                                               "description":  "Drops files onto disk",
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           }
+                                       ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "api.snapcraft.io",
+                                         "resolved_ips":  [
+                                                              "185.125.188.58",
+                                                              "185.125.188.54",
+                                                              "185.125.188.55",
+                                                              "185.125.188.59"
+                                                          ]
+                                     },
+                                     {
+                                         "hostname":  "canonical-lgw01.cdn.snapcraftcontent.com",
+                                         "resolved_ips":  [
+                                                              "185.125.190.26",
+                                                              "185.125.190.28",
+                                                              "185.125.190.27"
+                                                          ]
+                                     }
+                                 ],
+                 "files_attribute_changed":  [
+                                                 "/run/mount/utab.lock",
+                                                 "/run/mount/utab.D9OBEt"
+                                             ],
+                 "files_opened":  [
+                                      "/root/.Xdefaults-laptop",
+                                      "/etc/X11/app-defaults/XTerm",
+                                      "/dev/tty",
+                                      "/dev/ptmx",
+                                      "/usr/share/fonts",
+                                      "/usr/local/share/fonts/.uuid",
+                                      "/usr/local/share/fonts",
+                                      "/root/.local/share/fonts/.uuid",
+                                      "/root/.fonts/.uuid",
+                                      "/root/.XCompose",
+                                      "/lib/terminfo/x/xterm",
+                                      "/dev/pts/0",
+                                      "/etc/group",
+                                      "/etc/passwd",
+                                      "/proc/sys/kernel/ngroups_max",
+                                      "/etc/shells",
+                                      "/etc/ld.so.cache",
+                                      "/lib/x86_64-linux-gnu/libc.so.6",
+                                      "//",
+                                      "/dev/loop-control",
+                                      "/dev/loop0",
+                                      "/dev/loop1",
+                                      "/dev/loop10",
+                                      "/dev/loop11",
+                                      "/dev/loop12",
+                                      "/dev/loop3",
+                                      "/dev/loop4",
+                                      "/dev/loop5",
+                                      "/dev/loop6",
+                                      "/dev/loop7",
+                                      "/dev/loop8",
+                                      "/dev/loop9",
+                                      "/dev/sda2",
+                                      "/etc//localtime",
+                                      "/etc/adjtime",
+                                      "/etc/apparmor.d/abstractions/base",
+                                      "/etc/apparmor.d/abstractions/consoles",
+                                      "/etc/apparmor.d/abstractions/dbus-strict",
+                                      "/etc/apparmor.d/abstractions/kerberosclient",
+                                      "/etc/apparmor.d/abstractions/ldapclient",
+                                      "/etc/apparmor.d/abstractions/likewise",
+                                      "/etc/apparmor.d/abstractions/mdns",
+                                      "/etc/apparmor.d/abstractions/nameservice",
+                                      "/etc/apparmor.d/abstractions/nis",
+                                      "/etc/apparmor.d/abstractions/openssl",
+                                      "/etc/apparmor.d/abstractions/perl",
+                                      "/etc/apparmor.d/abstractions/python",
+                                      "/etc/apparmor.d/abstractions/ssl_certs",
+                                      "/etc/apparmor.d/abstractions/winbind",
+                                      "/etc/apparmor.d/tunables/alias",
+                                      "/etc/apparmor.d/tunables/global",
+                                      "/etc/apparmor.d/tunables/home",
+                                      "/etc/apparmor.d/tunables/home.d",
+                                      "/etc/apparmor.d/tunables/home.d/site.local",
+                                      "/etc/apparmor.d/tunables/home.d/ubuntu",
+                                      "/etc/apparmor.d/tunables/kernelvars",
+                                      "/etc/apparmor.d/tunables/multiarch",
+                                      "/etc/apparmor.d/tunables/multiarch.d",
+                                      "/etc/apparmor.d/tunables/multiarch.d/site.local",
+                                      "/etc/apparmor.d/tunables/proc",
+                                      "/etc/apparmor.d/tunables/share",
+                                      "/etc/apparmor.d/tunables/xdg-user-dirs",
+                                      "/etc/apparmor.d/tunables/xdg-user-dirs.d",
+                                      "/etc/apparmor.d/tunables/xdg-user-dirs.d/site.local",
+                                      "/etc/apparmor/parser.conf",
+                                      "/etc/dbus-1/system.d",
+                                      "/etc/fstab",
+                                      "/etc/gai.conf",
+                                      "/etc/host.conf",
+                                      "/etc/hosts",
+                                      "/etc/locale.alias",
+                                      "/etc/modprobe.d",
+                                      "/etc/modules-load.d",
+                                      "/etc/os-release",
+                                      "/etc/resolv.conf",
+                                      "/etc/ssl/certs",
+                                      "/etc/ssl/certs/02265526.0",
+                                      "/etc/ssl/certs/03179a64.0",
+                                      "/etc/ssl/certs/062cdee6.0",
+                                      "/etc/ssl/certs/064e0aa9.0",
+                                      "/etc/ssl/certs/06dc52d5.0",
+                                      "/etc/ssl/certs/080911ac.0",
+                                      "/etc/ssl/certs/09789157.0",
+                                      "/etc/ssl/certs/0a775a30.0",
+                                      "/etc/ssl/certs/0b1b94ef.0",
+                                      "/etc/ssl/certs/0bf05006.0",
+                                      "/etc/ssl/certs/0c4c9b6c.0",
+                                      "/etc/ssl/certs/0f5dc4f3.0",
+                                      "/etc/ssl/certs/0f6fa695.0",
+                                      "/etc/ssl/certs/1001acf7.0",
+                                      "/etc/ssl/certs/106f3e4d.0",
+                                      "/etc/ssl/certs/116bf586.0",
+                                      "/etc/ssl/certs/14bc7599.0",
+                                      "/etc/ssl/certs/1636090b.0",
+                                      "/etc/ssl/certs/18856ac4.0",
+                                      "/etc/ssl/certs/1d3472b9.0",
+                                      "/etc/ssl/certs/1e08bfd1.0",
+                                      "/etc/ssl/certs/1e09d511.0",
+                                      "/etc/ssl/certs/244b5494.0",
+                                      "/etc/ssl/certs/2923b3f9.0",
+                                      "/etc/ssl/certs/2ae6433e.0",
+                                      "/etc/ssl/certs/2b349938.0",
+                                      "/etc/ssl/certs/32888f65.0",
+                                      "/etc/ssl/certs/349f2832.0",
+                                      "/etc/ssl/certs/3513523f.0",
+                                      "/etc/ssl/certs/3bde41ac.0",
+                                      "/etc/ssl/certs/3e44d2f7.0",
+                                      "/etc/ssl/certs/3e45d192.0",
+                                      "/etc/ssl/certs/3fb36b73.0",
+                                      "/etc/ssl/certs/40193066.0",
+                                      "/etc/ssl/certs/4042bcee.0",
+                                      "/etc/ssl/certs/40547a79.0",
+                                      "/etc/ssl/certs/406c9bb1.0",
+                                      "/etc/ssl/certs/4304c5e5.0",
+                                      "/etc/ssl/certs/48bec511.0",
+                                      "/etc/ssl/certs/4a6481c9.0",
+                                      "/etc/ssl/certs/4b718d9b.0",
+                                      "/etc/ssl/certs/4bfab552.0",
+                                      "/etc/ssl/certs/4f316efb.0",
+                                      "/etc/ssl/certs/5273a94c.0",
+                                      "/etc/ssl/certs/5443e9e3.0",
+                                      "/etc/ssl/certs/54657681.0",
+                                      "/etc/ssl/certs/570f6391",
+                                      "/etc/ssl/certs/57bcb2da.0",
+                                      "/etc/ssl/certs/5a4d6896.0",
+                                      "/etc/ssl/certs/5ad8a5d6.0",
+                                      "/etc/ssl/certs/5cd81ad7.0",
+                                      "/etc/ssl/certs/5d3033c5.0",
+                                      "/etc/ssl/certs/5e98733a.0",
+                                      "/etc/ssl/certs/5f15c80c.0",
+                                      "/etc/ssl/certs/5f618aec.0",
+                                      "/etc/ssl/certs/607986c7.0",
+                                      "/etc/ssl/certs/626dceaf.0",
+                                      "/etc/ssl/certs/653b494a.0",
+                                      "/etc/ssl/certs/68dd7389.0",
+                                      "/etc/ssl/certs/6b99d060.0",
+                                      "/etc/ssl/certs/6d41d539.0",
+                                      "/etc/ssl/certs/6fa5da56.0",
+                                      "/etc/ssl/certs/706f604c.0",
+                                      "/etc/ssl/certs/749e9e03.0",
+                                      "/etc/ssl/certs/75d1b2ed.0",
+                                      "/etc/ssl/certs/76cb8f92.0",
+                                      "/etc/ssl/certs/76faf6c0.0",
+                                      "/etc/ssl/certs/7719f463.0",
+                                      "/etc/ssl/certs/773e07ad.0",
+                                      "/etc/ssl/certs/7aaf71c0.0",
+                                      "/etc/ssl/certs/7f3d5d1d.0",
+                                      "/etc/ssl/certs/8160b96c.0",
+                                      "/etc/ssl/certs/8cb5ee0f.0",
+                                      "/etc/ssl/certs/8d86cdd1.0",
+                                      "/etc/ssl/certs/8d89cda1.0",
+                                      "/etc/ssl/certs/930ac5d2.0",
+                                      "/etc/ssl/certs/93bc0acc.0",
+                                      "/etc/ssl/certs/988a38cb.0",
+                                      "/etc/ssl/certs/9b5697b0.0",
+                                      "/etc/ssl/certs/9c2e7d30.0",
+                                      "/etc/ssl/certs/9c8dfbd4.0",
+                                      "/etc/ssl/certs/9d04f354.0",
+                                      "/etc/ssl/certs/ACCVRAIZ1.pem",
+                                      "/etc/ssl/certs/AC_RAIZ_FNMT-RCM.pem",
+                                      "/etc/ssl/certs/Actalis_Authentication_Root_CA.pem",
+                                      "/etc/ssl/certs/AffirmTrust_Commercial.pem",
+                                      "/etc/ssl/certs/AffirmTrust_Networking.pem",
+                                      "/etc/ssl/certs/AffirmTrust_Premium.pem",
+                                      "/etc/ssl/certs/AffirmTrust_Premium_ECC.pem",
+                                      "/etc/ssl/certs/Amazon_Root_CA_1.pem",
+                                      "/etc/ssl/certs/Amazon_Root_CA_2.pem",
+                                      "/etc/ssl/certs/Amazon_Root_CA_3.pem",
+                                      "/etc/ssl/certs/Amazon_Root_CA_4.pem",
+                                      "/etc/ssl/certs/Atos_TrustedRoot_2011.pem",
+                                      "/etc/ssl/certs/Autoridad_de_Certificacion_Firmaprofesional_CIF_A62634068.pem",
+                                      "/etc/ssl/certs/Baltimore_CyberTrust_Root.pem",
+                                      "/etc/ssl/certs/Buypass_Class_2_Root_CA.pem",
+                                      "/etc/ssl/certs/Buypass_Class_3_Root_CA.pem",
+                                      "/etc/ssl/certs/CA_Disig_Root_R2.pem",
+                                      "/etc/ssl/certs/CFCA_EV_ROOT.pem",
+                                      "/etc/ssl/certs/COMODO_Certification_Authority.pem",
+                                      "/etc/ssl/certs/COMODO_ECC_Certification_Authority.pem",
+                                      "/etc/ssl/certs/COMODO_RSA_Certification_Authority.pem",
+                                      "/etc/ssl/certs/Certigna.pem",
+                                      "/etc/ssl/certs/Certigna_Root_CA.pem",
+                                      "/etc/ssl/certs/Certum_Trusted_Network_CA.pem",
+                                      "/etc/ssl/certs/Certum_Trusted_Network_CA_2.pem",
+                                      "/etc/ssl/certs/Chambers_of_Commerce_Root_-_2008.pem",
+                                      "/etc/ssl/certs/Comodo_AAA_Services_root.pem",
+                                      "/etc/ssl/certs/Cybertrust_Global_Root.pem",
+                                      "/etc/ssl/certs/D-TRUST_Root_Class_3_CA_2_2009.pem",
+                                      "/etc/ssl/certs/D-TRUST_Root_Class_3_CA_2_EV_2009.pem",
+                                      "/etc/ssl/certs/DigiCert_Assured_ID_Root_CA.pem",
+                                      "/etc/ssl/certs/DigiCert_Assured_ID_Root_G2.pem",
+                                      "/etc/ssl/certs/DigiCert_Assured_ID_Root_G3.pem",
+                                      "/etc/ssl/certs/DigiCert_Global_Root_CA.pem",
+                                      "/etc/ssl/certs/DigiCert_Global_Root_G2.pem",
+                                      "/etc/ssl/certs/DigiCert_Global_Root_G3.pem",
+                                      "/etc/ssl/certs/DigiCert_High_Assurance_EV_Root_CA.pem",
+                                      "/etc/ssl/certs/DigiCert_Trusted_Root_G4.pem",
+                                      "/etc/ssl/certs/E-Tugra_Certification_Authority.pem",
+                                      "/etc/ssl/certs/EC-ACC.pem",
+                                      "/etc/ssl/certs/Entrust.net_Premium_2048_Secure_Server_CA.pem",
+                                      "/etc/ssl/certs/Entrust_Root_Certification_Authority.pem",
+                                      "/etc/ssl/certs/Entrust_Root_Certification_Authority_-_EC1.pem",
+                                      "/etc/ssl/certs/Entrust_Root_Certification_Authority_-_G2.pem",
+                                      "/etc/ssl/certs/Entrust_Root_Certification_Authority_-_G4.pem",
+                                      "/etc/ssl/certs/GDCA_TrustAUTH_R5_ROOT.pem",
+                                      "/etc/ssl/certs/GTS_Root_R1.pem",
+                                      "/etc/ssl/certs/GTS_Root_R2.pem",
+                                      "/etc/ssl/certs/GTS_Root_R3.pem",
+                                      "/etc/ssl/certs/GTS_Root_R4.pem",
+                                      "/etc/ssl/certs/GeoTrust_Primary_Certification_Authority_-_G2.pem",
+                                      "/etc/ssl/certs/GlobalSign_ECC_Root_CA_-_R4.pem",
+                                      "/etc/ssl/certs/GlobalSign_ECC_Root_CA_-_R5.pem",
+                                      "/etc/ssl/certs/GlobalSign_Root_CA.pem",
+                                      "/etc/ssl/certs/GlobalSign_Root_CA_-_R2.pem",
+                                      "/etc/ssl/certs/GlobalSign_Root_CA_-_R3.pem",
+                                      "/etc/ssl/certs/GlobalSign_Root_CA_-_R6.pem",
+                                      "/etc/ssl/certs/Global_Chambersign_Root_-_2008.pem",
+                                      "/etc/ssl/certs/Go_Daddy_Class_2_CA.pem"
+                                  ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1016",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get local IPv4 addresses",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "5"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using RC4 PRGA",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "7"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1105",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "download and write a file",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "15"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1016",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get socket information",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "16"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "query environment variable",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "21"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1543.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Executes the \"systemctl\" command used for controlling the systemd system and service manager"
+                                                 },
+                                                 {
+                                                     "id":  "T1518.001",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Uses the \"uname\" system call to query kernel version information (possible evasion)"
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "severity":  "IMPACT_SEVERITY_LOW",
+                                                     "signature_description":  "Sample reads /proc/mounts (often used for finding a writable filesystem)"
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Reads system information from the proc file system"
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Reads CPU information from /sys indicative of miner or evasive malware"
+                                                 },
+                                                 {
+                                                     "id":  "T1573",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Uses HTTPS"
+                                                 },
+                                                 {
+                                                     "id":  "T1095",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Performs DNS lookups"
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Performs DNS lookups"
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Uses HTTPS"
+                                                 }
+                                             ],
+                 "processes_created":  [
+                                           "xterm -hold -e sh -c /tmp/sample",
+                                           "sh -c /tmp/sample",
+                                           "/tmp/sample"
+                                       ],
+                 "mbc":  [
+                             {
+                                 "id":  "C0052",
+                                 "objective":  "File System",
+                                 "behavior":  "Writes File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "2"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0051",
+                                 "objective":  "File System",
+                                 "behavior":  "Read File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "3"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0001.001",
+                                 "objective":  "Communication",
+                                 "behavior":  "Socket Communication",
+                                 "method":  "Set Socket Config",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "4"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0001.005",
+                                 "objective":  "Communication",
+                                 "behavior":  "Socket Communication",
+                                 "method":  "Start TCP Server",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "6"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0027.009",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encrypt Data",
+                                 "method":  "RC4",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "7"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0021.004",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Generate Pseudo-random Sequence",
+                                 "method":  "RC4 PRGA",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "7"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0017",
+                                 "objective":  "Process",
+                                 "behavior":  "Create Process",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "8"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0030.001",
+                                 "objective":  "Command and Control",
+                                 "behavior":  "C2 Communication",
+                                 "method":  "Send Data",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "9"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0001.007",
+                                 "objective":  "Communication",
+                                 "behavior":  "Socket Communication",
+                                 "method":  "Send Data",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "10"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0001.011",
+                                 "objective":  "Communication",
+                                 "behavior":  "Socket Communication",
+                                 "method":  "Create TCP Socket",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "11"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0001.013",
+                                 "objective":  "Communication",
+                                 "behavior":  "Socket Communication",
+                                 "method":  "UDP Client",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "12"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0030.003",
+                                 "objective":  "Command and Control",
+                                 "behavior":  "C2 Communication",
+                                 "method":  "Server to Client File Transfer",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "15"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0030.002",
+                                 "objective":  "Command and Control",
+                                 "behavior":  "C2 Communication",
+                                 "method":  "Receive Data",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "18"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0001.004",
+                                 "objective":  "Communication",
+                                 "behavior":  "Socket Communication",
+                                 "method":  "Connect Socket",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "19"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0001.003",
+                                 "objective":  "Communication",
+                                 "behavior":  "Socket Communication",
+                                 "method":  "Create Socket",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "20"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1082",
+                                 "objective":  "Discovery",
+                                 "behavior":  "System Information Discovery",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "21"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0001.010",
+                                 "objective":  "Communication",
+                                 "behavior":  "Socket Communication",
+                                 "method":  "Create UDP Socket",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "22"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0011.001",
+                                 "objective":  "Communication",
+                                 "behavior":  "DNS Communication",
+                                 "method":  "Resolve",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "23"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0001.008",
+                                 "objective":  "Communication",
+                                 "behavior":  "Socket Communication",
+                                 "method":  "TCP Client",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "24"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0001.006",
+                                 "objective":  "Communication",
+                                 "behavior":  "Socket Communication",
+                                 "method":  "Receive Data",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "25"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "1824",
+                                            "name":  "xterm -hold -e sh -c /tmp/sample",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "1826",
+                                                                 "name":  "sh -c /tmp/sample",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "1827",
+                                                                                      "name":  "/tmp/sample"
+                                                                                  }
+                                                                              ]
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2893",
+                                            "name":  "/tmp/base"
+                                        }
+                                    ],
+                 "ids_alerts":  [
+                                    {
+                                        "rule_msg":  "(tcp) experimental TCP options found",
+                                        "rule_category":  "protocol-command-decode",
+                                        "rule_id":  "116:58",
+                                        "alert_severity":  "low",
+                                        "rule_source":  "Snort registered user ruleset",
+                                        "alert_context":  {
+                                                              "src_ip":  "8.8.8.8",
+                                                              "src_port":  53
+                                                          },
+                                        "rule_url":  "https://www.snort.org/downloads/#rule-downloads",
+                                        "rule_raw":  "alert ( gid:116; sid:58; rev:2; msg:\"(tcp) experimental TCP options found\"; metadata: policy max-detect-ips drop, rule-type decode; classtype:protocol-command-decode;)"
+                                    }
+                                ],
+                 "processes_terminated":  [
+                                              "/tmp/EB93A6/996E.elf",
+                                              "/lib/systemd/systemd-udevd --daemon"
+                                          ],
+                 "services_stopped":  [
+                                          "snapd.socket",
+                                          "snap-core20-1328.mount"
+                                      ],
+                 "files_dropped":  [
+                                       {
+                                           "path":  "/memfd:snapd-env-generator (deleted)",
+                                           "sha256":  "85889ab8222c947c58be565723ae603cc1a0bd2153b6b11e156826a21e6ccd45",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/run/mount/utab.D9OBEt",
+                                           "sha256":  "966843afba075995dc5a88ef00a31ac0397302ae4035bc412acf0ee81618733c",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/sys/fs/cgroup/freezer/snap.lxd/freezer.state",
+                                           "sha256":  "ade69ae57f97e1d067cb7b3024ca5444c945eb67fe06d12759cc057ea39794bd",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/tmp/sanity-squashfs-061248953",
+                                           "sha256":  "a65a6d36ba973cc18c52b90a1e5efb75a76c982f37c57e6f43f35c518af454c8",
+                                           "type":  "SQUASHFS"
+                                       },
+                                       {
+                                           "path":  "/var/cache/snapd/sections.Q4wphm8GjkRX~",
+                                           "sha256":  "244eb764054feccd5d77fad9273ecc7c1b427551fa153876c889c59d1959630d",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/apparmor/profiles/snap.lxd.activate.xwt0nMDls0gg~",
+                                           "sha256":  "5df153a8def9d6e79252b4b3780e1007506aa17471516f389f253c5ed44fbf7b",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/apparmor/profiles/snap.lxd.benchmark.knwkw3B6grNQ~",
+                                           "sha256":  "0eb45b3f2d8ffe7a55765e2b89fd8f56bedbf5d9eab4a1b95ec5f7c1bd6ba541",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/apparmor/profiles/snap.lxd.buginfo.HlKBY5g5gm84~",
+                                           "sha256":  "b9838f5094c0df0cce599777d72646c96f9b32eada7ee33e01f53c31fedc671e",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/apparmor/profiles/snap.lxd.check-kernel.wYkt92FmHjry~",
+                                           "sha256":  "225c3e732a0a873817feb6e6c70387586993cdae5f0ba86e6ff5e1dd4b7bf45d",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/apparmor/profiles/snap.lxd.daemon.LsVnKMjHxYCv~",
+                                           "sha256":  "c4e7b6589b32f299ba4d74a1125b1d79eb2bfbaf5c337579bdcdd4c888781bdf",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/apparmor/profiles/snap.lxd.hook.configure.StDg8SBCVmSV~",
+                                           "sha256":  "493bf08fe32612207f02ed1647676ba69730e95b47b0c50925895dfb5ff8f9d4",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/apparmor/profiles/snap.lxd.hook.install.T8NtxqtmdtSb~",
+                                           "sha256":  "f3c723ce535262e2d7d57921af6514f39dc0a8df3cfde5790b3a3f6295bb93ee",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/apparmor/profiles/snap.lxd.hook.remove.lnwtFNHhJFbH~",
+                                           "sha256":  "d9171d275cbf73e8a82d3aeaabadad13a2c77636adff630c0897b0c76e233c18",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/apparmor/profiles/snap.lxd.lxc-to-lxd.VyTpqhKxnvWM~",
+                                           "sha256":  "21188276675da469a69a32c84123c72db672bfffff49bf6cfb912eb1f00ea14c",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/apparmor/profiles/snap.lxd.lxc.lpYvLgXx026k~",
+                                           "sha256":  "b63affe42ef7d2697630b1804aa98aad15b67061b9baa838b1e5a3cd9ad1e6dc",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/apparmor/profiles/snap.lxd.lxd.40sHgj9n4NHk~",
+                                           "sha256":  "c64709e2fb531b403f410cd8b7f888f4fbd78caaff0130cb1ba0e7897d0e01ae",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/apparmor/profiles/snap.lxd.migrate.8k09CWHRWsBL~",
+                                           "sha256":  "b568d08eed452a78fb3411ddc2f1825b67be3d792cdb6cabf7d2575869bfa45e",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.activate.bin.Qh3y3ygFYXyS~",
+                                           "sha256":  "099a70c4a097ea7dc05a5c8db39f3eb355f6f6bf805920fdec07f6be6309fcdd",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.activate.src.RVsSxjXrvrcn~",
+                                           "sha256":  "16d054526e15a6fc911c401545dc6dfcba7a6302e5620a5f8f26ccf9ff283dfa",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.benchmark.bin.ypwX13PQRyQl~",
+                                           "sha256":  "099a70c4a097ea7dc05a5c8db39f3eb355f6f6bf805920fdec07f6be6309fcdd",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.benchmark.src.pyl12CQrtpBx~",
+                                           "sha256":  "16d054526e15a6fc911c401545dc6dfcba7a6302e5620a5f8f26ccf9ff283dfa",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.buginfo.bin.LQWqm9QbrYS7~",
+                                           "sha256":  "099a70c4a097ea7dc05a5c8db39f3eb355f6f6bf805920fdec07f6be6309fcdd",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.buginfo.src.jM1Qpky3j2xs~",
+                                           "sha256":  "16d054526e15a6fc911c401545dc6dfcba7a6302e5620a5f8f26ccf9ff283dfa",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.check-kernel.bin.9lWXwkFN4n2Q~",
+                                           "sha256":  "099a70c4a097ea7dc05a5c8db39f3eb355f6f6bf805920fdec07f6be6309fcdd",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.check-kernel.src.11l2rmKh7MmQ~",
+                                           "sha256":  "16d054526e15a6fc911c401545dc6dfcba7a6302e5620a5f8f26ccf9ff283dfa",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.daemon.bin.HVV3vgDmy2LK~",
+                                           "sha256":  "099a70c4a097ea7dc05a5c8db39f3eb355f6f6bf805920fdec07f6be6309fcdd",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.daemon.src.Chg79pkg4mD8~",
+                                           "sha256":  "4836a25a43fd82414bbb8e982f1a3287476e4037a5ed62263640bdbb0d292f4e",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.hook.configure.bin.6dGTqHsgPSl4~",
+                                           "sha256":  "099a70c4a097ea7dc05a5c8db39f3eb355f6f6bf805920fdec07f6be6309fcdd",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.hook.configure.src.cKChwRKxDG11~",
+                                           "sha256":  "e9eb9dfa48b8d66640e08de7ca64fbcc0365430e4208c74b90a79d1d59f70ecc",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.hook.install.src.gtBGTPJcMM2w~",
+                                           "sha256":  "b0115829099617b10ff657cf9afabbed048b414575cdf517e02fe5289dc6968b",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.hook.remove.bin.J49CNrt894gm~",
+                                           "sha256":  "099a70c4a097ea7dc05a5c8db39f3eb355f6f6bf805920fdec07f6be6309fcdd",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.hook.remove.src.XWVB96rN5Grm~",
+                                           "sha256":  "16d054526e15a6fc911c401545dc6dfcba7a6302e5620a5f8f26ccf9ff283dfa",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.lxc-to-lxd.bin.xqbmjtJGL2x7~",
+                                           "sha256":  "099a70c4a097ea7dc05a5c8db39f3eb355f6f6bf805920fdec07f6be6309fcdd",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.lxc-to-lxd.src.bp42PC6kRP03~",
+                                           "sha256":  "16d054526e15a6fc911c401545dc6dfcba7a6302e5620a5f8f26ccf9ff283dfa",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.lxc.bin.P2clWM1c9HtL~",
+                                           "sha256":  "099a70c4a097ea7dc05a5c8db39f3eb355f6f6bf805920fdec07f6be6309fcdd",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.lxc.src.yrV0xkRXjR24~",
+                                           "sha256":  "16d054526e15a6fc911c401545dc6dfcba7a6302e5620a5f8f26ccf9ff283dfa",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.lxd.bin.HqBqMny7xtnP~",
+                                           "sha256":  "099a70c4a097ea7dc05a5c8db39f3eb355f6f6bf805920fdec07f6be6309fcdd",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.lxd.src.q9dGk2xNjVN5~",
+                                           "sha256":  "16d054526e15a6fc911c401545dc6dfcba7a6302e5620a5f8f26ccf9ff283dfa",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.migrate.bin.Wpl3sdg3j6v7~",
+                                           "sha256":  "099a70c4a097ea7dc05a5c8db39f3eb355f6f6bf805920fdec07f6be6309fcdd",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.lxd.migrate.src.g8LsGb1fQyr9~",
+                                           "sha256":  "16d054526e15a6fc911c401545dc6dfcba7a6302e5620a5f8f26ccf9ff283dfa",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.powershell.powershell.bin.2FY2W4WtpLnG~",
+                                           "sha256":  "099a70c4a097ea7dc05a5c8db39f3eb355f6f6bf805920fdec07f6be6309fcdd",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/seccomp/bpf/snap.powershell.powershell.src.bm6FDbDV09TL~",
+                                           "sha256":  "e30790b7644976fe405383c3459bcb50f51006cab180b76d2cf33e0da6130872",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.1K730dBrTVGW~",
+                                           "sha256":  "c6b580156b8c219c46fe289974d9794e61236904bde15608b33112efcfc24001",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.2hN6hh8HS7yC~",
+                                           "sha256":  "1e530713a78a4a62dc3ee49bee85e8006c4682f02b3c180c3cc76ff58ac5af8b",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.2jhdyjN1y8LC~",
+                                           "sha256":  "83eee99d33c02f699eac25705cfd6e0375924e0a662a973563c05cf6a6812304",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.2l27w4xBvYhS~",
+                                           "sha256":  "a12bf140e494fead8a10f92e0e764dbde3f6761efe04e6c0dada5180461514cb",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.4t7BbtWkG1Hk~",
+                                           "sha256":  "6c6714aed5853e29144ab792e276d0716d94004fbebcc29d37f43af5dcce3a74",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.5Kv5FdLPY13W~",
+                                           "sha256":  "5425298eefe2145415414782f79bd94d119b3bcbb627d0ccf7731c446c82a105",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.6ddr3s4msrGy~",
+                                           "sha256":  "d209c512353b41063638f53279810d32194be2ba3a4641e6d04c74fbe0527cc2",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.6lY0CYqdmk42~",
+                                           "sha256":  "22414192df441a7eb42ebfc99e9725fdc8b6d9fafb0259a41f0b2a9546cd3c1a",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.BbM7dX2VGq3n~",
+                                           "sha256":  "6bb026fba44cdb4210adcebed710795a55ea1b4bea8851e6534457a049f83382",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.C7FV5DG4tRk9~",
+                                           "sha256":  "c600b54cd61ef095df9a50331ae3a8760127ff94dd2b9355216c2206e3218331",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.Jw5G4pkKkpq8~",
+                                           "sha256":  "523e29a476bddeb5346c3a11f9fa296e91ebd24abe47527f439a8f181304d93a",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.L0Lm3gkC4lcY~",
+                                           "sha256":  "0ccaa5e4fd5d6ac02ab0fef8601e460434622bab94180b7ee32c06b236b7e027",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.LH0YcPnYDmsX~",
+                                           "sha256":  "03d12959d497862dd389e1d3cc15fb47d2d129ef6274601cb6a37133f326f1fc",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.LVv4KX45wD2Y~",
+                                           "sha256":  "5951893cf73b82fe4386875705590cabd94695f73d06252f32ba5dadc6a7629f",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.LqnfxbyCrqyY~",
+                                           "sha256":  "d3096f101012cb2775b8f830c29d106f5666d228c8b31de67d6eda06d1311321",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.PRWnRHSwxMrM~",
+                                           "sha256":  "34046d35b89854604e7a94dc9bd8ef81b10f1bdcd7d5c0180c18c5bf0e87bc24",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.VVpQpyqKcrgJ~",
+                                           "sha256":  "1e530713a78a4a62dc3ee49bee85e8006c4682f02b3c180c3cc76ff58ac5af8b",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.VxNkcKdmcWNr~",
+                                           "sha256":  "5a4026e464d2b7d0bad2c98c4d81b6f90c421149746d638a7d97de8395838dce",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.W3t8qrjLJ0cx~",
+                                           "sha256":  "3fb435d0165e70afcbb37f59ecaf29e5baddddec35b72762da8bfb92c0d226f2",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.YSm6hyqwSNqN~",
+                                           "sha256":  "bf687e08230836ce0c74089741361033730c0d70d889491145bd982dec2ef9fe",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.Yc6FqxTMQs8m~",
+                                           "sha256":  "1998c10a6be83fec171ccfeeb3f766e0f1789a695992bab10c90cc771a5aa144",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.cRBv85FnKy83~",
+                                           "sha256":  "aed464ad17aaadb7a403950907324f48ae8493e34bb6f5555466c5b02cf17777",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.dtxgTctDCTj9~",
+                                           "sha256":  "ceab112415fffe7358c51e8936ceff4229673b82837c50ec3767d354fd22e724",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.ftSst6cbYHTv~",
+                                           "sha256":  "46908cc82c2a6f7b25e1eb616a3eb54e9ee49f252c9618a864526308902cb063",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.k96TgnxjyYMr~",
+                                           "sha256":  "0b4afe4129ca33b21372cb5f83b36964a265b6077214ecad96474bf057acf6ec",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.l9lf30kXP7yM~",
+                                           "sha256":  "e34f1def4f98cbb51f19710b9fc027fb42a40574f48fad7ee60fc1b6cd101baa",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.mpQH4hcKMC9n~",
+                                           "sha256":  "e21b472d01bd00986789df1607862f161687fc48781f2f7d584016ee15ecaeee",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.pPDJwxdqSr1C~",
+                                           "sha256":  "fcdd76fdc549ed4cae69c511ad77c9705b4ddda8269f8d9e40b77881c20fc6e6",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.pTpFXs6S2J7h~",
+                                           "sha256":  "1658d313077e8fa4ec19a4374fa4e533411a5f8aeb502f82bb3d58ec52500b5d",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.qfkNQ3MfTJ3C~",
+                                           "sha256":  "1e530713a78a4a62dc3ee49bee85e8006c4682f02b3c180c3cc76ff58ac5af8b",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.r1X45mCqNJh9~",
+                                           "sha256":  "acad8cd8a6d13f33a1ddab57b3b131e8d0e63256a97cfee1357d0c07c3bf216c",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.vK0vB7G1Fjt3~",
+                                           "sha256":  "30883afe49ebbd5fc8ff3fcc937b3e1132396942d1c3d864331f3b314b0cd652",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.vtqp53BTrSnv~",
+                                           "sha256":  "511b9725ae17a42358c08b2313639f2833c7611f882308721a915a27ec427436",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.vxlXrXQ1XpxQ~",
+                                           "sha256":  "9893c04c656aafce0ee78ae0c0dfb10f85aefb57747cf166978bb00157a71fbd",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.wkpTjhVxH9hX~",
+                                           "sha256":  "f45f4478137f9af45bcf1a4147ada1c158f4699478c5e29ab509f96fb1901fb9",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/state.json.yX1xTY8dbPK0~",
+                                           "sha256":  "cb9be205cb2b7d2852dfce962cc6a0ee2a0e41ceacfd9ce6aa155992a51d7208",
+                                           "type":  "TEXT"
+                                       },
+                                       {
+                                           "path":  "/var/lib/snapd/system-key.72XdQBcFBxqj~",
+                                           "sha256":  "cc848b70d441c49bb9d20c986de6d41b08d6c783471a7f908e25de6dcb647630",
+                                           "type":  "TEXT"
+                                       }
+                                   ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "185.125.188.54",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "185.125.188.58",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "185.125.190.26",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    },
+                                    {
+                                        "destination_ip":  "91.189.91.42",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "command_executions":  [
+                                            "/usr/lib/snapd/snap-failure snapd",
+                                            "systemctl stop snapd.socket",
+                                            "/snap/snapd/15177/usr/lib/snapd/snapd",
+                                            "/usr/sbin/apparmor_parser --preprocess",
+                                            "systemctl --version",
+                                            "systemd-detect-virt",
+                                            "systemd-detect-virt --container",
+                                            "mount -t squashfs /tmp/sanity-squashfs-061248953 /tmp/sanity-mountpoint-788691396",
+                                            "umount -l /tmp/sanity-mountpoint-788691396",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-seccomp version-info",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-seccomp compile /var/lib/snapd/seccomp/bpf/snap.lxd.activate.src /var/lib/snapd/seccomp/bpf/snap.lxd.activate.bin",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-seccomp compile /var/lib/snapd/seccomp/bpf/snap.lxd.benchmark.src /var/lib/snapd/seccomp/bpf/snap.lxd.benchmark.bin",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-seccomp compile /var/lib/snapd/seccomp/bpf/snap.lxd.buginfo.src /var/lib/snapd/seccomp/bpf/snap.lxd.buginfo.bin",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-seccomp compile /var/lib/snapd/seccomp/bpf/snap.lxd.check-kernel.src /var/lib/snapd/seccomp/bpf/snap.lxd.check-kernel.bin",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-seccomp compile /var/lib/snapd/seccomp/bpf/snap.lxd.daemon.src /var/lib/snapd/seccomp/bpf/snap.lxd.daemon.bin",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-seccomp compile /var/lib/snapd/seccomp/bpf/snap.lxd.hook.configure.src /var/lib/snapd/seccomp/bpf/snap.lxd.hook.configure.bin",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-seccomp compile /var/lib/snapd/seccomp/bpf/snap.lxd.hook.install.src /var/lib/snapd/seccomp/bpf/snap.lxd.hook.install.bin",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-seccomp compile /var/lib/snapd/seccomp/bpf/snap.lxd.hook.remove.src /var/lib/snapd/seccomp/bpf/snap.lxd.hook.remove.bin",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-seccomp compile /var/lib/snapd/seccomp/bpf/snap.lxd.lxc-to-lxd.src /var/lib/snapd/seccomp/bpf/snap.lxd.lxc-to-lxd.bin",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-seccomp compile /var/lib/snapd/seccomp/bpf/snap.lxd.lxc.src /var/lib/snapd/seccomp/bpf/snap.lxd.lxc.bin",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-seccomp compile /var/lib/snapd/seccomp/bpf/snap.lxd.lxd.src /var/lib/snapd/seccomp/bpf/snap.lxd.lxd.bin",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-seccomp compile /var/lib/snapd/seccomp/bpf/snap.lxd.migrate.src /var/lib/snapd/seccomp/bpf/snap.lxd.migrate.bin",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-seccomp compile /var/lib/snapd/seccomp/bpf/snap.powershell.powershell.src /var/lib/snapd/seccomp/bpf/snap.powershell.powershell.bin",
+                                            "/snap/snapd/15177/usr/lib/snapd/snap-update-ns lxd",
+                                            "apparmor_parser --replace --write-cache -O no-expr-simplify --cache-loc=/var/cache/apparmor /var/lib/snapd/apparmor/profiles/snap-confine.snapd.15534",
+                                            "apparmor_parser --replace --write-cache -O no-expr-simplify --cache-loc=/var/cache/apparmor -j1 --skip-read-cache /var/lib/snapd/apparmor/profiles/snap.lxd.activate /var/lib/snapd/apparmor/profiles/snap.lxd.benchmark /var/lib/snapd/apparmor/profiles/snap.lxd.buginfo /var/lib/snapd/apparmor/profiles/snap.lxd.check-kernel /var/lib/snapd/apparmor/profiles/snap.lxd.daemon /var/lib/snapd/apparmor/profiles/snap.lxd.hook.configure /var/lib/snapd/apparmor/profiles/snap.lxd.hook.install /var/lib/snapd/apparmor/profiles/snap.lxd.hook.remove /var/lib/snapd/apparmor/profiles/snap.lxd.lxc /var/lib/snapd/apparmor/profiles/snap.lxd.lxc-to-lxd /var/lib/snapd/apparmor/profiles/snap.lxd.lxd /var/lib/snapd/apparmor/profiles/snap.lxd.migrate",
+                                            "apparmor_parser --replace --write-cache -O no-expr-simplify --cache-loc=/var/cache/apparmor -j1 /var/lib/snapd/apparmor/profiles/snap-update-ns.lxd /var/lib/snapd/apparmor/profiles/snap-update-ns.powershell /var/lib/snapd/apparmor/profiles/snap.powershell.powershell",
+                                            "udevadm info -e",
+                                            "systemctl disable snap-snapd-14978.mount",
+                                            "systemctl daemon-reload",
+                                            "/snap/snapd/current/lib/x86_64-linux-gnu/ld-2.23.so --library-path /snap/snapd/current/usr/local/lib:/snap/snapd/current/lib/x86_64-linux-gnu:/snap/snapd/current/usr/lib/x86_64-linux-gnu /snap/snapd/current/usr/bin/xdelta3 config",
+                                            "umount -d -l /snap/core20/1328",
+                                            "systemctl stop snap-core20-1328.mount",
+                                            "systemctl show --property=ActiveState snap-core20-1328.mount",
+                                            "systemctl disable snap-core20-1328.mount",
+                                            "/lib/udev/bcache-export-cached /dev/loop0",
+                                            "/lib/udev/probe-bcache -o udev /dev/loop0",
+                                            "/lib/systemd/systemd-timedated",
+                                            "/usr/lib/systemd/system-environment-generators/snapd-env-generator",
+                                            "/lib/udev/probe-bcache -o udev /dev/loop9",
+                                            "dumpe2fs -h /dev/sda2",
+                                            "/lib/udev/bcache-export-cached /dev/loop9"
+                                        ],
+                 "tags":  [
+                              "DETECT_DEBUG_ENVIRONMENT"
+                          ],
+                 "verdicts":  [
+                                  "CLEAN"
+                              ],
+                 "files_deleted":  [
+                                       "/etc/systemd/system/snap-core20-1328.mount",
+                                       "/etc/systemd/system/snap-snapd-14978.mount",
+                                       "/etc/udev/rules.d/70-snap.core18.rules",
+                                       "/etc/udev/rules.d/70-snap.core20.rules",
+                                       "/etc/udev/rules.d/70-snap.lxd.rules",
+                                       "/etc/udev/rules.d/70-snap.powershell.rules",
+                                       "/root/snap/core20/1328",
+                                       "/run/mount/utab.D9OBEt",
+                                       "/run/snapd-snap.socket",
+                                       "/run/snapd.socket",
+                                       "/snap/core20/1328",
+                                       "/snap/snapd/14978",
+                                       "/tmp/sanity-mountpoint-788691396",
+                                       "/tmp/sanity-squashfs-061248953",
+                                       "/var/cache/snapd/commands.db.VHkxsHC6sqQV~",
+                                       "/var/cache/snapd/names.fH4RjbCMHGjk~",
+                                       "/var/lib/snapd/apparmor/profiles/snap-confine.snapd.14978",
+                                       "/var/lib/snapd/maintenance.json",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.activate.bin",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.benchmark.bin",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.buginfo.bin",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.check-kernel.bin",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.daemon.bin",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.hook.configure.bin",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.hook.install.bin",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.hook.remove.bin",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.lxc-to-lxd.bin",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.lxc.bin",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.lxd.bin",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.migrate.bin",
+                                       "/var/lib/snapd/seccomp/bpf/snap.powershell.powershell.bin",
+                                       "/var/lib/snapd/snaps/core20_1328.snap",
+                                       "/var/lib/snapd/snaps/snapd_14978.snap",
+                                       "/var/lib/snapd/system-key",
+                                       "/var/snap/core20/1328",
+                                       "\u003cinvalid fd (7)\u003e/snap-confine.snapd.14978"
+                                   ],
+                 "ja3_digests":  [
+                                     "473cd7cb9faa642487833865d516e578"
+                                 ],
+                 "modules_loaded":  [
+                                        "/lib/x86_64-linux-gnu/libc.so.6",
+                                        "linux-vdso.so.1",
+                                        "/lib64/ld-linux-x86-64.so.2"
+                                    ],
+                 "files_written":  [
+                                       "/dev/tty",
+                                       "/dev/ptmx",
+                                       "/dev/pts/0",
+                                       "/run/mount/utab.D9OBEt",
+                                       "/sys/fs/cgroup/freezer/snap.lxd/freezer.state",
+                                       "/sys/kernel/security/apparmor/.replace",
+                                       "/tmp/sanity-squashfs-061248953",
+                                       "/var/cache/apparmor/26b63962.0/snap.lxd.activate-IE99Kv",
+                                       "/var/cache/apparmor/26b63962.0/snap.lxd.benchmark-Pb13xz",
+                                       "/var/cache/apparmor/26b63962.0/snap.lxd.buginfo-r3SaNF",
+                                       "/var/cache/apparmor/26b63962.0/snap.lxd.check-kernel-MNszsK",
+                                       "/var/cache/apparmor/26b63962.0/snap.lxd.daemon-cVnvsM",
+                                       "/var/cache/apparmor/26b63962.0/snap.lxd.hook.configure-NYq6HS",
+                                       "/var/cache/apparmor/26b63962.0/snap.lxd.hook.install-gSsf17",
+                                       "/var/cache/apparmor/26b63962.0/snap.lxd.hook.remove-thDbkc",
+                                       "/var/cache/apparmor/26b63962.0/snap.lxd.lxc-MkrNdg",
+                                       "/var/cache/apparmor/26b63962.0/snap.lxd.lxc-to-lxd-TLmEjj",
+                                       "/var/cache/apparmor/26b63962.0/snap.lxd.lxd-P8Wcwm",
+                                       "/var/cache/apparmor/26b63962.0/snap.lxd.migrate-5LzVDr",
+                                       "/var/cache/snapd/commands.db.VHkxsHC6sqQV~",
+                                       "/var/cache/snapd/sections.Q4wphm8GjkRX~",
+                                       "/var/lib/snapd/apparmor/profiles/snap.lxd.activate.xwt0nMDls0gg~",
+                                       "/var/lib/snapd/apparmor/profiles/snap.lxd.benchmark.knwkw3B6grNQ~",
+                                       "/var/lib/snapd/apparmor/profiles/snap.lxd.buginfo.HlKBY5g5gm84~",
+                                       "/var/lib/snapd/apparmor/profiles/snap.lxd.check-kernel.wYkt92FmHjry~",
+                                       "/var/lib/snapd/apparmor/profiles/snap.lxd.daemon.LsVnKMjHxYCv~",
+                                       "/var/lib/snapd/apparmor/profiles/snap.lxd.hook.configure.StDg8SBCVmSV~",
+                                       "/var/lib/snapd/apparmor/profiles/snap.lxd.hook.install.T8NtxqtmdtSb~",
+                                       "/var/lib/snapd/apparmor/profiles/snap.lxd.hook.remove.lnwtFNHhJFbH~",
+                                       "/var/lib/snapd/apparmor/profiles/snap.lxd.lxc-to-lxd.VyTpqhKxnvWM~",
+                                       "/var/lib/snapd/apparmor/profiles/snap.lxd.lxc.lpYvLgXx026k~",
+                                       "/var/lib/snapd/apparmor/profiles/snap.lxd.lxd.40sHgj9n4NHk~",
+                                       "/var/lib/snapd/apparmor/profiles/snap.lxd.migrate.8k09CWHRWsBL~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.activate.bin.Qh3y3ygFYXyS~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.activate.src.RVsSxjXrvrcn~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.benchmark.bin.ypwX13PQRyQl~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.benchmark.src.pyl12CQrtpBx~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.buginfo.bin.LQWqm9QbrYS7~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.buginfo.src.jM1Qpky3j2xs~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.check-kernel.bin.9lWXwkFN4n2Q~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.check-kernel.src.11l2rmKh7MmQ~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.daemon.bin.HVV3vgDmy2LK~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.daemon.src.Chg79pkg4mD8~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.hook.configure.bin.6dGTqHsgPSl4~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.hook.configure.src.cKChwRKxDG11~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.hook.install.bin.W8NcbdbSP18Q~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.hook.install.src.gtBGTPJcMM2w~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.hook.remove.bin.J49CNrt894gm~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.hook.remove.src.XWVB96rN5Grm~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.lxc-to-lxd.bin.xqbmjtJGL2x7~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.lxc-to-lxd.src.bp42PC6kRP03~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.lxc.bin.P2clWM1c9HtL~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.lxc.src.yrV0xkRXjR24~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.lxd.bin.HqBqMny7xtnP~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.lxd.src.q9dGk2xNjVN5~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.migrate.bin.Wpl3sdg3j6v7~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.lxd.migrate.src.g8LsGb1fQyr9~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.powershell.powershell.bin.2FY2W4WtpLnG~",
+                                       "/var/lib/snapd/seccomp/bpf/snap.powershell.powershell.src.bm6FDbDV09TL~",
+                                       "/var/lib/snapd/snaps/powershell_205.snap.xdelta3-200-to-205.partial",
+                                       "/var/lib/snapd/state.json.1K730dBrTVGW~",
+                                       "/var/lib/snapd/state.json.2hN6hh8HS7yC~",
+                                       "/var/lib/snapd/state.json.2jhdyjN1y8LC~",
+                                       "/var/lib/snapd/state.json.2l27w4xBvYhS~",
+                                       "/var/lib/snapd/state.json.4t7BbtWkG1Hk~",
+                                       "/var/lib/snapd/state.json.5Kv5FdLPY13W~",
+                                       "/var/lib/snapd/state.json.6ddr3s4msrGy~",
+                                       "/var/lib/snapd/state.json.6lY0CYqdmk42~",
+                                       "/var/lib/snapd/state.json.BbM7dX2VGq3n~",
+                                       "/var/lib/snapd/state.json.C7FV5DG4tRk9~",
+                                       "/var/lib/snapd/state.json.Jw5G4pkKkpq8~",
+                                       "/var/lib/snapd/state.json.L0Lm3gkC4lcY~",
+                                       "/var/lib/snapd/state.json.LH0YcPnYDmsX~",
+                                       "/var/lib/snapd/state.json.LVv4KX45wD2Y~",
+                                       "/var/lib/snapd/state.json.LqnfxbyCrqyY~",
+                                       "/var/lib/snapd/state.json.PRWnRHSwxMrM~",
+                                       "/var/lib/snapd/state.json.VVpQpyqKcrgJ~",
+                                       "/var/lib/snapd/state.json.VxNkcKdmcWNr~",
+                                       "/var/lib/snapd/state.json.W3t8qrjLJ0cx~",
+                                       "/var/lib/snapd/state.json.YSm6hyqwSNqN~",
+                                       "/var/lib/snapd/state.json.Yc6FqxTMQs8m~",
+                                       "/var/lib/snapd/state.json.cRBv85FnKy83~",
+                                       "/var/lib/snapd/state.json.dtxgTctDCTj9~",
+                                       "/var/lib/snapd/state.json.ftSst6cbYHTv~",
+                                       "/var/lib/snapd/state.json.k96TgnxjyYMr~",
+                                       "/var/lib/snapd/state.json.l9lf30kXP7yM~",
+                                       "/var/lib/snapd/state.json.mpQH4hcKMC9n~",
+                                       "/var/lib/snapd/state.json.pPDJwxdqSr1C~",
+                                       "/var/lib/snapd/state.json.pTpFXs6S2J7h~",
+                                       "/var/lib/snapd/state.json.qfkNQ3MfTJ3C~",
+                                       "/var/lib/snapd/state.json.r1X45mCqNJh9~",
+                                       "/var/lib/snapd/state.json.vK0vB7G1Fjt3~",
+                                       "/var/lib/snapd/state.json.vtqp53BTrSnv~",
+                                       "/var/lib/snapd/state.json.vxlXrXQ1XpxQ~",
+                                       "/var/lib/snapd/state.json.wkpTjhVxH9hX~",
+                                       "/var/lib/snapd/state.json.yX1xTY8dbPK0~",
+                                       "/var/lib/snapd/system-key.72XdQBcFBxqj~"
+                                   ],
+                 "attack_techniques":  {
+                                           "T1016":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get local IPv4 addresses",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "5"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get socket information",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "16"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using RC4 PRGA",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "7"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1105":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "download and write a file",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "15"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "query environment variable",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "21"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Reads system information from the proc file system"
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Reads CPU information from /sys indicative of miner or evasive malware"
+                                                         }
+                                                     ],
+                                           "T1543.002":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Executes the \"systemctl\" command used for controlling the systemd system and service manager"
+                                                             }
+                                                         ],
+                                           "T1518.001":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Uses the \"uname\" system call to query kernel version information (possible evasion)"
+                                                             }
+                                                         ],
+                                           "T1083":  [
+                                                         {
+                                                             "severity":  "LOW",
+                                                             "description":  "Sample reads /proc/mounts (often used for finding a writable filesystem)"
+                                                         }
+                                                     ],
+                                           "T1573":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Uses HTTPS"
+                                                         }
+                                                     ],
+                                           "T1095":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Performs DNS lookups"
+                                                         }
+                                                     ],
+                                           "T1071":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Performs DNS lookups"
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Uses HTTPS"
+                                                         }
+                                                     ]
+                                       }
+             }
+}
