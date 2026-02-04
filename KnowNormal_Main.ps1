@@ -1,4 +1,4 @@
-#Requirements
+﻿#Requirements
 #Install-Module -Name powershell-yaml -Scope CurrentUser -Force
 #Install-Module -Scope CurrentUser Microsoft.PowerShell.SecretManagement, Microsoft.Powershell.SecretStore -Force
 #Register-SecretVault -Name LocalSecrets -ModuleName Microsoft.PowerShell.SecretStore -DefaultVault
@@ -28,20 +28,20 @@ Import-Module -Name ".\asciiArt\sashaPotato.psm1"
 Import-Module -Name ".\baseline\BaseLineStrings_with_Intezer.psm1"
 Import-Module -Name ".\baseline\compareAllProcessDiffs.psm1"
 Import-Module -Name ".\baseline\compareSingleProcessDiffs.psm1"
-Import-Module -Name ".\baseline\compareSingleProcessDiffsSingleHash.psm1"
+Import-Module -Name ".\baseline\REDACTED_KEY.psm1"
 Import-Module -Name ".\baseline\maliciousDifferential.psm1"
 Import-Module -Name ".\baseline\NsrlDownloadExistsInBoth.psm1"
 Import-Module -Name ".\baseline\NsrlEnrichment.psm1"
 Import-Module -Name ".\baseline\NsrlTools.psm1"
 Import-Module -Name ".\baseline\OrganizeBaselines.psm1"
 Import-Module -Name ".\baseline\StringsSearchLocalBaseline.psm1"
-Import-Module -Name ".\baseline\targetedMalwareDifferentialAnalysis.psm1"
+Import-Module -Name ".\baseline\REDACTED_KEY.psm1"
 Import-Module -Name ".\baseline\UploadDiffsToVT.psm1"
 Import-Module -Name ".\baseline\VTBaseline.psm1"
 Import-Module -Name ".\certificateHunting\certGapHuntVT.psm1"
 Import-Module -Name ".\certificateHunting\certGapHuntLocalBaseline.psm1"
 Import-Module -Name ".\certificateHunting\revokedCertHunt.psm1"
-Import-Module -Name ".\codeScanning\findGithubReposInOfflineBaseline.psm1"
+Import-Module -Name ".\codeScanning\REDACTED_KEY.psm1"
 Import-Module -Name ".\NewProcsModules\BlockedCountryPull.psm1"
 Import-Module -Name ".\NewProcsModules\CheckAgainstVT.psm1"
 Import-Module -Name ".\NewProcsModules\CheckApiVoid.psm1"
@@ -70,8 +70,8 @@ Import-Module -Name ".\purpleTeaming\GetVTZippedSamplesFromList.psm1"
 Import-Module -Name ".\purpleTeaming\IndicatorsforRuleDevelopment.psm1"
 Import-Module -Name ".\purpleTeaming\massMalwareDetonation.psm1"
 Import-Module -Name ".\purpleTeaming\picusCleanup.psm1"
-Import-Module -Name ".\purpleTeaming\PrepListofVTSamplesBasedOnAPTsAndMalwareFamilies.psm1"
-Import-Module -Name ".\purpleTeaming\pullAndTestSigmaYaraRulesFromDiffAnalysis.psm1"
+Import-Module -Name ".\purpleTeaming\REDACTED_KEY.psm1"
+Import-Module -Name ".\purpleTeaming\REDACTED_KEY.psm1"
 Import-Module -Name ".\reports\checkVTUsage.psm1"
 Import-Module -Name ".\reports\createApiMatrix.psm1"
 Import-Module -Name ".\reports\createMalwareReport.psm1"
@@ -201,7 +201,7 @@ $functionChoice = Read-Host "Please listen closely as our options may have chang
         Get-HighFidelitySigmaYaraRules
     }
     elseif ($functionChoice -eq 13){
-        Get-ListofVTSamplesBasedOnAPTsAndMalwareFamilies
+        Get-REDACTED_KEY
     }
     elseif ($functionChoice -eq 14){
         Get-VTZippedSamplesFromList
@@ -286,7 +286,7 @@ $functionChoice = Read-Host "Please listen closely as our options may have chang
     elseif ($functionChoice -eq 40){
         $procToDiff = Read-Host -Prompt "Enter process with extension (i.e. lsass.exe)"
         $targetHash = Read-Host -Prompt "Enter SHA256 to focus results"
-        Get-CompareSingleProcessDiffsSingleHash -ProcessName $procToDiff -TargetHash $targetHash
+        Get-REDACTED_KEY -ProcessName $procToDiff -TargetHash $targetHash
     }
     elseif ($functionChoice -eq 41){
         Get-CompareAllProcessDiffs
@@ -318,3 +318,4 @@ $functionChoice = Read-Host "Please listen closely as our options may have chang
     else {
       Write-Host "You did not choose a valid option"
     }
+

@@ -15,7 +15,7 @@
 function Get-VTUsage {
     [CmdletBinding()]
     param (
-        [string]$SecretName = 'VT_API_Key_1'
+        [string]$SecretName = 'VT_API_Key_2'
     )
 
     # 1. Retrieve the API Key from the SecretStore

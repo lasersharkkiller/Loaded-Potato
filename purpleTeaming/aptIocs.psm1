@@ -3,10 +3,10 @@
     ThreatActorIOCs
 .SYNOPSIS
     Bulk Threat Intelligence Harvester (VirusTotal + Cybersixgill).
-    v12.11 - UPDATE:
-     - Added 'UAT-8099' (China-linked IIS Threat).
-     - Added 'BadIIS' (Primary SEO Malware).
-     - Added 'GotoHTTP', 'Sharp4RemoveLog', 'CnCrypt Protect', 'OpenArk64'.
+    v12.15 - UPDATE:
+     - Added 'Lotus Blossom' (APT responsible for Notepad++ Breach).
+     - Added 'Chrysalis' (New Backdoor used in the breach).
+     - Added 'Sagerunex' & 'Elise' (Lotus Blossom signature tools).
 #>
 
 function Get-ThreatActorIOCs {
@@ -14,7 +14,6 @@ function Get-ThreatActorIOCs {
     param (
         [string]$StartDate = ((Get-Date).AddYears(-6).ToString("yyyy-MM-dd")),
         [string]$SpecificActor = $null,
-        # UPDATED: Changed default from 260 to 275
         [int]$MaxSamples = 275
     )
 
@@ -30,6 +29,14 @@ function Get-ThreatActorIOCs {
                 Name = "Velvet Ant"; Country = "China"; Type = "APT"; 
                 Aliases = @("Velvet Ant"); 
                 LinkedTools = @("VelvetSting", "VelvetTap", "PlugX", "Impacket") 
+            },
+            # ADDED: Lotus Blossom (Spring Dragon / Billbug)
+            @{ 
+                Name = "Lotus Blossom"; 
+                Country = "China"; 
+                Type = "APT"; 
+                Aliases = @("Lotus Blossom", "Spring Dragon", "Billbug", "Thrip", "Dragonfish"); 
+                LinkedTools = @("Chrysalis", "Sagerunex", "Elise", "Hannotog", "Emissary") 
             },
             @{ 
                 Name = "Flax Typhoon"; Country = "China"; Type = "APT"; 
@@ -56,7 +63,6 @@ function Get-ThreatActorIOCs {
             @{ Name = "Mustang Panda"; Country = "China"; Type = "APT"; Aliases = @("Mustang Panda", "Bronze President"); LinkedTools = @("PlugX", "Cobalt Strike", "PDFSider") },
             @{ Name = "Earth Lamia"; Country = "China"; Type = "APT"; Aliases = @("Earth Lamia", "FamousSparrow", "UNC4841") },
             @{ Name = "Jackpot Panda"; Country = "China"; Type = "APT"; Aliases = @("Jackpot Panda", "RedDelta") },
-            # ADDED: UAT-8099
             @{ Name = "UAT-8099"; Country = "China"; Type = "APT"; Aliases = @("UAT-8099", "BadIIS Group"); LinkedTools = @("BadIIS", "GotoHTTP", "Sharp4RemoveLog", "CnCrypt Protect") },
 
             # === IRAN ===
@@ -93,8 +99,16 @@ function Get-ThreatActorIOCs {
             # === VIETNAM / S. AMERICA ===
             @{ Name = "APT32"; Country = "Vietnam"; Type = "APT"; Aliases = @("APT32", "OceanLotus"); LinkedTools = @("Cobalt Strike", "Kerrdown") },
             @{ Name = "Blind Eagle"; Country = "SouthAmerica"; Type = "APT"; Aliases = @("Blind Eagle", "APT-C-36") },
+            @{ 
+                Name = "Huna"; 
+                Country = "Vietnam"; 
+                Type = "APT"; 
+                Aliases = @("Huna", "Huna Phishing", "PXA Stealer Group"); 
+                LinkedTools = @("PureRAT", "PureLogs", "PXA Stealer", "PureHVNC") 
+            },
 
             # === E-CRIME ===
+            @{ Name = "TA584"; Country = "eCrime"; Type = "APT"; Aliases = @("TA584", "Storm-0900", "UNC4122"); LinkedTools = @("Tsundere Bot", "XWorm", "SharpHide", "ClickFix") },
             @{ Name = "ShinyHunters"; Country = "eCrime"; Type = "APT"; Aliases = @("ShinyHunters", "ShinyCorp", "UNC6040"); LinkedTools = @("ShinySp1d3r", "Impacket", "AsyncRAT", "ConnectWise", "Bland AI") },
             @{ Name = "LAPSUS$"; Country = "eCrime"; Type = "APT"; Aliases = @("LAPSUS$", "DEV-0537", "Lapsus Group"); LinkedTools = @("Mimikatz", "ADExplorer") },
             @{ Name = "DragonForce"; Country = "eCrime"; Type = "APT"; Aliases = @("DragonForce", "DragonForce Ransomware") },
@@ -167,8 +181,13 @@ function Get-ThreatActorIOCs {
             @{ Name = "StormKitty";       Type = "Malware"; Aliases = @("StormKitty") },
             @{ Name = "Predator";         Type = "Malware"; Aliases = @("Predator The Thief") },
             @{ Name = "Azorult";          Type = "Malware"; Aliases = @("Azorult") },
+            @{ Name = "Stealerv37";       Type = "Malware"; Aliases = @("Stealerv37", "Stealer v37") },
+            @{ Name = "PXA Stealer";      Type = "Malware"; Aliases = @("PXA Stealer", "PXA") },
+            @{ Name = "PureLogs";         Type = "Malware"; Aliases = @("PureLogs", "PureLog Stealer") },
 
             # --- C. LOADERS & DROPPERS ---
+            @{ Name = "Tsundere Bot";     Type = "Malware"; Aliases = @("Tsundere Bot", "Tsundere", "Trojan:JS/Tsundere") },
+            @{ Name = "ClickFix";         Type = "Malware"; Aliases = @("ClickFix", "ClearFake", "Trojan.ClickFix") },
             @{ Name = "Latrodectus";      Type = "Malware"; Aliases = @("Latrodectus", "BlackWidow", "IceNova") },
             @{ Name = "Pikabot";          Type = "Malware"; Aliases = @("Pikabot") },
             @{ Name = "SocGholish";       Type = "Malware"; Aliases = @("SocGholish", "FakeUpdates") },
@@ -210,6 +229,12 @@ function Get-ThreatActorIOCs {
             @{ Name = "Nezha";            Type = "Malware"; Aliases = @("Nezha", "Nezha RAT", "Nezha Monitoring") },
             @{ Name = "Noodle RAT";       Type = "Malware"; Aliases = @("Noodle RAT", "Nood RAT", "Backdoor.Noodle") },
             @{ Name = "EtherRAT";         Type = "Malware"; Aliases = @("EtherRAT") },
+            @{ Name = "Pulsar RAT";       Type = "Malware"; Aliases = @("Pulsar RAT", "Pulsar", "Trojan:Win32/Pulsar") },
+            @{ Name = "PureRAT";          Type = "Malware"; Aliases = @("PureRAT", "ResolverRAT", "PureHVNC", "Trojan:MSIL/PureRAT") },
+            # ADDED: Sagerunex & Elise (Lotus Blossom Tools)
+            @{ Name = "Sagerunex";        Type = "Malware"; Aliases = @("Sagerunex", "Billbug Backdoor") },
+            @{ Name = "Elise";            Type = "Malware"; Aliases = @("Elise", "Elise Backdoor") },
+            @{ Name = "Chrysalis";        Type = "Malware"; Aliases = @("Chrysalis", "Chrysalis Backdoor") },
 
             # --- E. LINUX & CLOUD ---
             @{ Name = "Mirai";            Type = "Malware"; Aliases = @("Mirai", "Mirai Botnet", "Satori", "Masuta", "Okiru", "PureMasuta", "Miori", "Wicked", "Mori") },
@@ -249,7 +274,7 @@ function Get-ThreatActorIOCs {
             @{ Name = "VShell";           Type = "Malware"; Aliases = @("VShell") },
             @{ Name = "COMPOOD";          Type = "Malware"; Aliases = @("COMPOOD") },
             @{ Name = "ANGRYREBEL";       Type = "Malware"; Aliases = @("ANGRYREBEL") },
-            # ADDED: UAT-8099 Specific Tools
+            # UAT-8099 Specific Tools
             @{ Name = "BadIIS";           Type = "Malware"; Aliases = @("BadIIS", "Win.Trojan.BadIIS", "WEBJACK") },
             @{ Name = "GotoHTTP";         Type = "Malware"; Aliases = @("GotoHTTP", "Trojan.GotoHTTP") },
             @{ Name = "Sharp4RemoveLog";  Type = "Malware"; Aliases = @("Sharp4RemoveLog", "Log Wiper") },
@@ -257,6 +282,7 @@ function Get-ThreatActorIOCs {
             @{ Name = "OpenArk64";        Type = "Malware"; Aliases = @("OpenArk64", "OpenArk") },
 
             # --- G. OFFENSIVE SECURITY / DUAL-USE TOOLS ---
+            @{ Name = "SharpHide";        Type = "Malware"; Aliases = @("SharpHide", "SharpHide Tool") },
             @{ Name = "Cobalt Strike";    Type = "Malware"; Aliases = @("Cobalt Strike", "Beacon", "BEACON") },
             @{ Name = "Sliver";           Type = "Malware"; Aliases = @("Sliver", "Sliver C2", "Implant.Sliver", "Golang.Sliver") },
             @{ Name = "Brute Ratel";      Type = "Malware"; Aliases = @("Brute Ratel", "BRC4") },
@@ -282,7 +308,7 @@ function Get-ThreatActorIOCs {
         )
 
         Write-Host "==========================================" -ForegroundColor Cyan
-        Write-Host "    GLOBAL THREAT INTEL HARVESTER v12.11"
+        Write-Host "    GLOBAL THREAT INTEL HARVESTER v12.15"
         Write-Host "    Total Targets: $($MasterConfig.Count) | Max Samples: $MaxSamples"
         Write-Host "==========================================" -ForegroundColor Cyan
         
@@ -357,7 +383,6 @@ function Get-ThreatActorIOCs {
                     $QueriesToRun += [PSCustomObject]@{ Query = "threat_actor:`"$Alias`""; Type = "Strict"; Term = $Alias }
                 }
             } else {
-                # UPDATED (v11.4): Added 'family' and 'threat_label' for expanded coverage
                 $CombinedAlias = ($Aliases | ForEach-Object { "engines:`"$_`" OR name:`"$_`" OR tags:`"$_`" OR caption:`"$_`" OR family:`"$_`" OR threat_label:`"$_`" " }) -join " OR "
                 $QueriesToRun += [PSCustomObject]@{ Query = "($CombinedAlias)"; Type = "Bulk"; Term = "MalwareFamily" }
             }
@@ -368,7 +393,6 @@ function Get-ThreatActorIOCs {
                 try {
                     $CurrentQuery = "$($Q.Query) AND fs:$StartDate+"
                     $Encoded = [Uri]::EscapeDataString($CurrentQuery)
-                    # Limit to MaxSamples, Newest First
                     $Uri = "https://www.virustotal.com/api/v3/intelligence/search?query=$Encoded&limit=$MaxSamples&order=first_submission_date-"
                     
                     $Response = Invoke-RestMethod -Uri $Uri -Headers $VTHeaders -Method Get -ErrorAction Stop
@@ -421,7 +445,6 @@ function Get-ThreatActorIOCs {
 
             # [B] CYBERSIXGILL HARVEST
             Write-Host " -> [C6G] Searching..." -NoNewline
-            # UPDATED: Independent limit for C6G as requested (MaxSamples for VT + MaxSamples for C6G)
             $SixCount = 0
             
             if ($Type -eq "Malware") {
@@ -498,7 +521,7 @@ function Get-ThreatActorIOCs {
                     Write-Host "    Resolving $Count unique hashes via VirusTotal API..." -ForegroundColor Gray
                     
                     foreach ($Hash in $ToQuery) {
-                        # 1. Double-check Cache (In case previous loop iteration found it)
+                        # 1. Double-check Cache
                         if ($HashCache.ContainsKey($Hash)) { continue }
 
                         try {
@@ -508,7 +531,7 @@ function Get-ThreatActorIOCs {
                             if ($VTRes.data.id) {
                                 $NewSHA256 = $VTRes.data.id
                                 
-                                # 2. UPDATE CACHE IMMEDIATELY (Prevent Double-Billing)
+                                # 2. UPDATE CACHE IMMEDIATELY
                                 if ($VTRes.data.attributes.md5)  { $HashCache[$VTRes.data.attributes.md5]  = $NewSHA256 }
                                 if ($VTRes.data.attributes.sha1) { $HashCache[$VTRes.data.attributes.sha1] = $NewSHA256 }
                                 $HashCache[$Hash] = $NewSHA256

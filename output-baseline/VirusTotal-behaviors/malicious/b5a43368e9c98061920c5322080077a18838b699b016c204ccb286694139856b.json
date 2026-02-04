@@ -1,0 +1,907 @@
+{
+    "data":  {
+                 "signature_matches":  [
+                                           {
+                                               "id":  "2",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using murmur3",
+                                               "description":  "data-manipulation/hashing/murmur",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: shr"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using murmur3\n    namespace: data-manipulation/hashing/murmur\n    authors:\n      - william.ballenthin@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic features\n    mbc:\n      - Data::Non-Cryptographic Hash::MurmurHash [C0030.001]\n    references:\n      - https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp\n    examples:\n      - c66172b12971a329f8d5ff01665f204b:0x404A18\n  features:\n    - or:\n      - and:\n        - number: 0x85ebca6b = 32-bit finalization mix constant 1\n        - number: 0xc2b2ae35 = 32-bit finalization mix constant 2\n      - and:\n        - number: 0xff51afd7ed558ccd = 64-bit finalization mix constant 1\n        - number: 0xc4ceb9fe1a85ec53 = 64-bit finalization mix constant 2\n      - and:\n        - number: 0xcc9e2d51 = c1 32-bit hash\n        - number: 0x1b873593 = c2 32-bit hash\n      - and:\n        - number: 0x239b961b = 32-bit c1 for 128-bit hash\n        - number: 0xab0e9789 = 32-bit c2 for 128-bit hash\n        - number: 0x38b34ae5 = 32-bit c3 for 128-bit hash\n        - number: 0xa1e38b93 = 32-bit c4 for 128-bit hash\n      - and:\n        - number: 0x87c37b91114253d5 = 64-bit c1 for 128-bit hash\n        - number: 0x4cf5ad432745937f = 64-bit c2 for 128-bit hash\n      - basic block:\n        - and:\n          - description: \u0027hash \u003e\u003e 16; hash \u003e\u003e 13; hash \u003e\u003e 16\u0027\n          - count(mnemonic(shr)): 3\n          - instruction:\n            - mnemonic: shr\n            - number: 16\n          - instruction:\n            - mnemonic: shr\n            - number: 13\n          - optional:\n            - count(characteristic(nzxor)): 3 or more\n      - and:\n        # Group this two blocks under an `and` as on their own they are not\n        # unique enough and would cause false positives\n        - instruction:\n          - description: k ROL r1\n          - mnemonic: rol\n          - number: 15 = r1\n        - instruction:\n          - description: hash ROL r2\n          - mnemonic: rol\n          - number: 13 = r2\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "3",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write file on Windows",
+                                               "description":  "host-interaction/file-system/write",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: fwrite",
+                                                                  "FILE_WRITE_DATA"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write file on Windows\n    namespace: host-interaction/file-system/write\n    authors:\n      - william.ballenthin@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - File System::Writes File [C0052]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x1400025C4\n  features:\n    - or:\n      - and:\n        - os: windows\n        - optional:\n          - basic block:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n          - call:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n        - or:\n          - api: kernel32.WriteFile\n          - api: kernel32.WriteFileEx\n          - api: NtWriteFile\n          - api: ZwWriteFile\n          - api: _fwrite\n          - api: fwrite\n      - api: System.IO.File::WriteAllBytes\n      - api: System.IO.File::WriteAllBytesAsync\n      - api: System.IO.File::WriteAllLines\n      - api: System.IO.File::WriteAllLinesAsync\n      - api: System.IO.File::WriteAllText\n      - api: System.IO.File::WriteAllTextAsync\n      - api: System.IO.File::AppendAllLines\n      - api: System.IO.File::AppendAllLinesAsync\n      - api: System.IO.File::AppendAllText\n      - api: System.IO.File::AppendAllTextAsync\n      - api: System.IO.File::AppendText\n      - api: System.IO.FileInfo::AppendText\n"
+                                           },
+                                           {
+                                               "id":  "4",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "allocate or change RWX memory",
+                                               "description":  "host-interaction/process/inject",
+                                               "authors":  [
+                                                               "@mr-tz",
+                                                               "mehunhoff@google.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: VirtualProtect",
+                                                                  "PAGE_EXECUTE_READWRITE",
+                                                                  "change memory protection"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: allocate or change RWX memory\n    namespace: host-interaction/process/inject\n    authors:\n      - \"@mr-tz\"\n      - mehunhoff@google.com\n    scopes:\n      static: basic block\n      dynamic: call\n    mbc:\n      - Memory::Allocate Memory [C0007]\n    examples:\n      - Practical Malware Analysis Lab 03-03.exe_:0x4010EA\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x140001ABA\n  features:\n    - or:\n      - basic block:\n        - and:\n          - or:\n            - match: allocate memory\n            - match: change memory protection\n          - or:\n            - number: 0x40 = PAGE_EXECUTE_READWRITE\n            # lea     r9d, [rcx+40h]  ; flProtect\n            # call    cs:VirtualAlloc\n            - instruction:\n              - mnemonic: lea\n              - offset: 0x40 = PAGE_EXECUTE_READWRITE\n      - call:\n        - and:\n          - or:\n            - match: allocate memory\n            - match: change memory protection\n          - number: 0x40 = PAGE_EXECUTE_READWRITE\n"
+                                           },
+                                           {
+                                               "id":  "5",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "access PEB ldr_data",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "gs access",
+                                                                  "PEB access"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: access PEB ldr_data\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    references:\n      - https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm\n      - https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8\n    examples:\n      - 3FDFB2D522E7DEECAAAF2F87420F7E75:0x4117B7\n  features:\n    - or:\n      - and:\n        - arch: i386\n        - description: x32\n\n        - match: PEB access\n\n        # x86 Windows uses fs:0 to access the TIB which contains SEH information at offset 0\n        # checking for fs:0 and a (possibly unrelated) number or offset often results in false positives\n\n        - offset: 0x0C = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x0C = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x14 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x1C = PEB.LDR_DATA.InInitializationOrderModuleList\n\n      - and:\n        - arch: amd64\n        - description: x64\n\n        - match: PEB access\n\n        - offset: 0x18 = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x10 = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x20 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x30 = PEB.LDR_DATA.InInitializationOrderModuleList\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "6",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using RC4 PRGA",
+                                               "description":  "data-manipulation/encryption/rc4",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "loop",
+                                                                  "contain loop"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using RC4 PRGA\n    namespace: data-manipulation/encryption/rc4\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic, basicblock features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Cryptography::Encrypt Data::RC4 [C0027.009]\n      - Cryptography::Generate Pseudo-random Sequence::RC4 PRGA [C0021.004]\n    examples:\n      - 34404A3FB9804977C6AB86CB991FB130:0x403DB0\n      - 34404A3FB9804977C6AB86CB991FB130:0x403E50\n      - 9324D1A8AE37A36AE560C37448C9705A:0x4049F0\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x4064C6\n  features:\n    - and:\n      # TODO: maybe add characteristic for nzxor reg size\n      - count(characteristic(nzxor)): 1\n      - or:\n        - match: calculate modulo 256 via x86 assembly\n        # compiler may do this via zero-extended mov from 8-bit register\n        - count(mnemonic(movzx)): 4 or more\n      # should not call (many) functions\n      - count(characteristic(calls from)): (0, 4)\n      # should not be too simple or too complex (50 is picked by intuition)\n      - count(basic blocks): (4, 50)\n      - match: contain loop\n      - optional:\n        - or:\n          - number: 0xFF\n          - number: 0x100\n"
+                                           },
+                                           {
+                                               "id":  "9",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using Base64",
+                                               "description":  "data-manipulation/encoding/base64",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "loop",
+                                                                  "modulo 64",
+                                                                  "mnemonic: shr"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using Base64\n    namespace: data-manipulation/encoding/base64\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::Base64 [C0026.001]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5:0x1314889C\n      - 074072B261FC27B65C72671F13510C05:0x100049B2\n      - 5DB2D2BE20D59AA0BE6709A6850F1775:0x18001CC30\n      - 08AC667C65D36D6542917655571E61C8:0x406EAA\n  features:\n    - or:\n      - and:\n        - mnemonic: shl\n        - mnemonic: shr\n        - number: 0x3F = modulo 64\n        - or:\n          - number: 0x3D = \u0027=\u0027\n          - number: 0x3D3D = \u0027==\u0027\n        - match: contain loop\n        - optional:\n          - number: 2\n          - number: 3\n          - number: 4\n          - number: 6\n          - number: 0xF\n          - string: \"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\"\n      - api: System.Convert::ToBase64String\n      - api: System.Convert::ToBase64CharArray\n      - api: System.Convert::TryToBase64Chars\n"
+                                           },
+                                           {
+                                               "id":  "10",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encode data using XOR",
+                                               "description":  "data-manipulation/encoding/xor",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "nzxor",
+                                                                  "tight loop"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encode data using XOR\n    namespace: data-manipulation/encoding/xor\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires characteristic, Not features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encoding-Standard Algorithm [E1027.m02]\n      - Data::Encode Data::XOR [C0026.002]\n    examples:\n      - 2D3EDC218A90F03089CC01715A9F047F:0x403D7E\n  features:\n    - and:\n      - characteristic: tight loop\n      - characteristic: nzxor\n      - not:\n        - description: filter for potential false positives\n        - or:\n          - or:\n            - description: unsigned bitwise negation operation (~i)\n            - number: 0xFFFFFFFF = bitwise negation for unsigned 32 bits\n            - number: 0xFFFFFFFFFFFFFFFF = bitwise negation for unsigned 64 bits\n          - or:\n            - description: signed bitwise negation operation (~i)\n            - number: 0x0FFFFFFF = bitwise negation for signed 32 bits\n            - number: 0x0FFFFFFFFFFFFFFF = bitwise negation for signed 64 bits\n          - or:\n            - description: Magic constants used in the implementation of strings functions.\n            # such as `strlen` and `strcat` in the Windows standard library:\n            # (((i - 0x81010101) ^ ~i) \u0026 0x81010100)\n            ## 32 bits\n            - number: 0x7EFEFEFF = optimized string constant for 32 bits\n            - number: 0x81010101 = -0x81010101 = 0x7EFEFEFF\n            - number: 0x81010100 = 0x81010100 = ~0x7EFEFEFF\n            ## 64 bits\n            - number: 0x7EFEFEFEFEFEFEFF = optimized string constant for 64 bits\n            - number: 0x8101010101010101 = -0x8101010101010101 = 0x7EFEFEFEFEFEFEFF\n            - number: 0x8101010101010100 = 0x8101010101010100 = ~0x7EFEFEFEFEFEFEFF\n"
+                                           },
+                                           {
+                                               "id":  "11",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using AES via x86 extensions",
+                                               "description":  "data-manipulation/encryption/aes",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "mnemonic: aesenc"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using AES via x86 extensions\n    namespace: data-manipulation/encryption/aes\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic features\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    mbc:\n      - Defense Evasion::Obfuscated Files or Information::Encryption-Standard Algorithm [E1027.m05]\n      - Cryptography::Encrypt Data::AES [C0027.001]\n  features:\n    - or:\n      - mnemonic: aesenc = Perform One Round of an AES Encryption Flow\n      - mnemonic: vaesenc\n      - mnemonic: aesenclast = Perform Last Round of an AES Encryption Flow\n      - mnemonic: vaesenclast\n      - mnemonic: aesimc = Perform the AES InvMixColumn Transformation\n      - mnemonic: vaesimc\n      - mnemonic: aeskeygenassist = AES Round Key Generation Assist\n      - mnemonic: vaeskeygenassist\n"
+                                           },
+                                           {
+                                               "id":  "12",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "encrypt data using Salsa20 or ChaCha",
+                                               "description":  "data-manipulation/encryption/salsa20",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "\"3 dn\"",
+                                                                  "\"yb-2\"",
+                                                                  "\"apxe\""
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: encrypt data using Salsa20 or ChaCha\n    namespace: data-manipulation/encryption/salsa20\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    att\u0026ck:\n      - Defense Evasion::Obfuscated Files or Information [T1027]\n    references:\n      - http://cr.yp.to/snuffle/ecrypt.c\n  features:\n    # The constant words spell \"expand 32-byte k\" in ASCII (i.e. the 4 words are \"expa\", \"nd 3\", \"2-by\", and \"te k\")\n    - or:\n      - description: part of key setup\n      - string: \"expand 32-byte k\"\n        description: sigma\n      - string: \"expand 16-byte k\"\n        description: tau\n      # if sigma and tau are in contiguous memory, may result in concatenated string\n      - string: \"expand 32-byte kexpand 16-byte k\"\n      - bytes: 65 78 70 61 6E 64 20 33 32 2D 62 79 74 65 20 6B = \"expand 32-byte k\"\n      - bytes: 65 78 70 61 6E 64 20 31 36 2D 62 79 74 65 20 6B = \"expand 16-byte k\"\n      - and:\n        - string: \"expa\"\n        - string: \"nd 3\"\n        - string: \"2-by\"\n        - string: \"te k\"\n      - and:\n        - number: 0x61707865 = \"apxe\"\n        - number: 0x3320646E = \"3 dn\"\n        - number: 0x79622D32 = \"yb-2\"\n        - number: 0x6B206574 = \"k et\"\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "http://cr.yp.to/snuffle/ecrypt.c"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "14",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get kernel32 base address",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "access PEB ldr_data",
+                                                                  "PEB access",
+                                                                  "gs access"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get kernel32 base address\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    references:\n      - https://idafchev.github.io/exploit/2017/09/26/writing_windows_shellcode.html\n      - https://www.geoffchappell.com/studies/windows/win32/ntdll/structs/ldr_data_table_entry.htm\n    examples:\n      - 67f8302a2fd28d15f62d6d20d748bfe350334e5353cbdef112bd1f8231b5599d:0x406936\n  features:\n    - and:\n      # PEB -\u003e PEB.Ldr -\u003e PEB_LDR_DATA.InLoadOrderModuleList.Flink\n      - match: access PEB ldr_data\n      # -\u003e current module -\u003e ntdll\n      - count(offset(0)): 2\n      # -\u003e kernel32 -\u003e LDR_DATA_TABLE_ENTRY.DllBase\n      - or:\n        - and:\n          - arch: i386\n          - offset: 0x18 = LDR_DATA_TABLE_ENTRY.DllBase\n        - and:\n          - arch: amd64\n          - offset: 0x30 = LDR_DATA_TABLE_ENTRY.DllBase\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://idafchev.github.io/exploit/2017/09/26/writing_windows_shellcode.html"
+                                                            },
+                                                            {
+                                                                "ref":  "https://www.geoffchappell.com/studies/windows/win32/ntdll/structs/ldr_data_table_entry.htm"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "15",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "create thread",
+                                               "description":  "host-interaction/thread/create",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "joakim@intezer.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: CreateThread"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: create thread\n    namespace: host-interaction/thread/create\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n      - joakim@intezer.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: span of calls\n    mbc:\n      - Process::Create Thread [C0038]\n    examples:\n      - 946A99F36A46D335DEC080D9A4371940:0x10001DA0\n      - B5F85C26D7AA5A1FB4AF5821B6B5AB9B:0x408020\n  features:\n    - or:\n      - and:\n        - os: windows\n        - or:\n          - api: kernel32.CreateThread\n          - api: _beginthread\n          - api: _beginthreadex\n          - api: PsCreateSystemThread\n          - api: SHCreateThread\n          - api: SHCreateThreadWithHandle\n          - api: kernel32.CreateRemoteThread\n          - api: kernel32.CreateRemoteThreadEx\n          - api: RtlCreateUserThread\n          - api: ntdll.NtCreateThread\n          - api: ntdll.NtCreateThreadEx\n          - api: ntdll.ZwCreateThread\n          - api: ntdll.ZwCreateThreadEx\n      - and:\n        - or:\n          - os: linux\n          - os: android\n        - api: pthread_create\n      - and:\n        - api: System.Threading.Thread::Start\n        - optional:\n          - api: System.Threading.Thread::ctor\n"
+                                           },
+                                           {
+                                               "id":  "16",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse PE header",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "IMAGE_DOS_SIGNATURE (MZ)",
+                                                                  "mnemonic: cmp",
+                                                                  "IMAGE_NT_SIGNATURE (PE)"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse PE header\n    namespace: load-code/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic, operand[1].offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x403DD0\n  features:\n    - and:\n      - os: windows\n      - and:\n        - mnemonic: cmp\n        - or:\n          - number: 0x4550 = IMAGE_NT_SIGNATURE (PE)\n          - and:\n            - number: 0x50\n            - number: 0x45\n        - or:\n          - number: 0x5A4D = IMAGE_DOS_SIGNATURE (MZ)\n          - and:\n            - number: 0x4D\n            - number: 0x5A\n        - optional:\n          - and:\n            - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n            - or:\n              - and:\n                - arch: i386\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n              - and:\n                - arch: amd64\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x30 = IMAGE_NT_HEADERS64.OptionalHeader.ImageBase\n          - basic block:\n            - and:\n              - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n              - 3 or more:\n                - operand[1].offset: 0x4 = IMAGE_NT_HEADERS.FileHeader.Machine\n                - operand[1].offset: 0x6 = IMAGE_NT_HEADERS.FileHeader.NumberOfSections\n                - operand[1].offset: 0x14 = IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader\n                - operand[1].offset: 0x16 = IMAGE_NT_HEADERS.FileHeader.Characteristics\n                - operand[1].offset: 0x28 = IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint  # for 32 and 64 bit\n                - or:\n                  - and:\n                    - arch: i386\n                    - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                  - and:\n                    - arch: amd64\n                    - operand[1].offset: 0x30 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n"
+                                           },
+                                           {
+                                               "id":  "17",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "compiled with Go",
+                                               "description":  "compiler/go",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "substring: main.main",
+                                                                  "substring: runtime.gcWork",
+                                                                  "substring: runtime.main"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: compiled with Go\n    namespace: compiler/go\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    examples:\n      - 49a34cfbeed733c24392c9217ef46bb6\n  features:\n    - or:\n      - string: /^Go build ID:/\n      - substring: \"go.buildid\"\n      - string: /^Go buildinf:/\n      - string: /\\bgo1\\.\\d/\n      - substring: \"runtime.main\"\n      - substring: \"main.main\"\n      - substring: \"runtime.gcWork\"\n"
+                                           },
+                                           {
+                                               "id":  "18",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get thread local storage value",
+                                               "description":  "host-interaction/process",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "api: TlsGetValue"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: get thread local storage value\n    namespace: host-interaction/process\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n  features:\n    - and:\n      - api: kernel32.TlsGetValue\n"
+                                           },
+                                           {
+                                               "id":  "19",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "contain a thread local storage (.tls) section",
+                                               "description":  "executable/pe/section/tls",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "section: .tls"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: contain a thread local storage (.tls) section\n    namespace: executable/pe/section/tls\n    authors:\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: file\n      dynamic: file\n    examples:\n      - Practical Malware Analysis Lab 16-02.exe_\n  features:\n    - section: .tls\n"
+                                           },
+                                           {
+                                               "id":  "20",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "hash data using fnv",
+                                               "description":  "data-manipulation/hashing/fnv : can be any Fowler-Noll-Vo (FNV) hash variant, including FNV-1, FNV-1a, FNV-0",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "@_re_fox",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "match_data":  [
+                                                                  "nzxor",
+                                                                  "mnemonic: imul",
+                                                                  "FNV prime"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: hash data using fnv\n    namespace: data-manipulation/hashing/fnv\n    authors:\n      - moritz.raabe@mandiant.com\n      - \"@_re_fox\"\n      - michael.hunhoff@mandiant.com\n    description: can be any Fowler-Noll-Vo (FNV) hash variant, including FNV-1, FNV-1a, FNV-0\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, mnemonic features\n    mbc:\n      - Data::Non-Cryptographic Hash::FNV [C0030.005]\n    references:\n      - https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function\n      - http://isthe.com/chongo/tech/comp/fnv/\n      - https://create.stephan-brumme.com/fnv-hash/\n    examples:\n      - ad4229879180e267f431ac6666b6a0a2:0x14007B4D4\n      - 09BF850BE5DA44A1C3629A1F62813A83:0x10006010\n  features:\n    - and:\n      - optional:\n        - characteristic: loop\n        - number: 0xcbf29ce484222325 = FNV_offset_basis, unused by FNV-0\n        - number: 0x811c9dc5 = FNV_offset_basis, unused by FNV-0\n        - and:\n          - number: 0xcbf29ce4 = FNV_offset_basis 64 bits, 32-bit value\n          - number: 0x84222325 = FNV_offset_basis 64 bits, 32-bit value\n      - or:\n        - number: 0x100000001b3 = FNV prime\n        - number: 0x01000193 = FNV prime\n        - and:\n          - number: 0x100 = FNV prime 64 bits, split in DWORD\n          - number: 0x1b3 = FNV prime 64 bits, split in DWORD\n      - basic block:\n        # FNV-1 hash does multiply then XOR\n        # FNV-1a hash does XOR then multiply\n        - and:\n          - characteristic: nzxor\n          - or:\n            - mnemonic: imul\n            - mnemonic: mul\n            - api: _allmul\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function"
+                                                            },
+                                                            {
+                                                                "ref":  "http://isthe.com/chongo/tech/comp/fnv/"
+                                                            },
+                                                            {
+                                                                "ref":  "https://create.stephan-brumme.com/fnv-hash/"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "22",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "enumerate PE sections",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "@Ana06",
+                                                               "@mr-tz"
+                                                           ],
+                                               "match_data":  [
+                                                                  "sizeof(IMAGE_SECTION_HEADER)",
+                                                                  "mnemonic: movzx"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: enumerate PE sections\n    namespace: load-code/pe\n    authors:\n      - \"@Ana06\"\n      - \"@mr-tz\"\n    scopes:\n      static: function\n      dynamic: unsupported  # requires offset, operand[1].offset, characteristic, mnemonic, basicblock features\n    mbc:\n      - Discovery::Code Discovery::Enumerate PE Sections [B0046.001]\n    references:\n      - https://0x00sec.org/t/reflective-dll-injection/3080\n      - https://www.ired.team/offensive-security/code-injection-process-injection/reflective-dll-injection\n    examples:\n      - E4C33AC3638EEF68311F8AC0D72483C7:0x401510\n  features:\n    - and:\n      - os: windows\n      # there should be some complexity to functions like this\n      - count(basic blocks): 3 or more\n      - optional:\n        - offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n      - instruction:\n        - or:\n          - mnemonic: mov\n          - mnemonic: movzx\n        - operand[1].offset: 0x6 = IMAGE_NT_HEADERS.FileHeader.NumberOfSections\n      - basic block:\n        - or:\n          - and:\n            - description: IMAGE_FIRST_SECTION(nt_header)\n            - instruction:\n              - or:\n                - mnemonic: add\n                - mnemonic: mov\n                - mnemonic: movzx\n              - operand[1].offset: 0x14 = IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader\n            - operand[1].offset: 0x18 = FileHeader.SizeOfOptionalHeader\n          - and:\n            - description: (DWORD)dll_raw + dos_header-\u003ee_lfanew + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_SECTION_HEADER) * i\n            - number: 0x28 = sizeof(IMAGE_SECTION_HEADER)\n            - or:\n              - and:\n                - arch: i386\n                - operand[1].offset: 0xF8 = sizeof(IMAGE_NT_HEADERS32)\n              - and:\n                - arch: amd64\n                - operand[1].offset: 0x108 = sizeof(IMAGE_NT_HEADERS64)\n      - 2 or more:\n        - operand[1].offset: 0xC = IMAGE_SECTION_HEADER.VirtualAddress\n        - operand[1].offset: 0x14 = IMAGE_SECTION_HEADER.PointerToRawData\n        - operand[1].offset: 0x10 = IMAGE_SECTION_HEADER.SizeOfRawData\n        # there\u0027s also offset 0x8 = IMAGE_SECTION_HEADER.Misc.PhysicalAddress, but it\u0027s likely too common\n      - not:\n        # non-zeroing XOR was observed in FPs\n        - characteristic: nzxor\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://0x00sec.org/t/reflective-dll-injection/3080"
+                                                            },
+                                                            {
+                                                                "ref":  "https://www.ired.team/offensive-security/code-injection-process-injection/reflective-dll-injection"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "23",
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "resolve function by parsing PE exports",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "sara-rn"
+                                                           ],
+                                               "match_data":  [
+                                                                  "loop",
+                                                                  "mnemonic: movzx"
+                                                              ],
+                                               "rule_src":  "rule:\n  meta:\n    name: resolve function by parsing PE exports\n    namespace: load-code/pe\n    authors:\n      - sara-rn\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, offset, mnemonic features\n    examples:\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x406BA1\n  features:\n    - and:\n      - os: windows\n      - or:\n        - characteristic: loop\n        - mnemonic: movzx\n      - and:\n        - offset: 0x3C = IMAGE_DOS_HEADER.PE.e_lfanew\n        - or:\n          - and:\n            - arch: i386\n            - offset: 0x78 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n          - and:\n            - arch: amd64\n            - offset: 0x88 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n        - 3 or more:\n          - offset: 0x14 = IMAGE_EXPORT_DIRECTORY.NumberOfFunctions\n          - offset: 0x24 = IMAGE_EXPORT_DIRECTORY.AddressOfNameOrdinals\n          - offset: 0x20 = IMAGE_EXPORT_DIRECTORY.AddressOfNames\n          - offset: 0x18 = IMAGE_EXPORT_DIRECTORY.NumberOfNames\n          - offset: 0x1C = IMAGE_EXPORT_DIRECTORY.AddressOfFunctions\n      - optional:\n        - or:\n          - api: LoadLibrary\n          - api: strcmp\n"
+                                           }
+                                       ],
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "access PEB ldr_data",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "5"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using RC4 PRGA",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "6"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using Base64",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "9"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encode data using XOR",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "10"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using AES via x86 extensions",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "11"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1027",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "encrypt data using Salsa20 or ChaCha",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "12"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get kernel32 base address",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "14"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "parse PE header",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "16"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "dns_lookups":  [
+                                     {
+                                         "hostname":  "arc.msn.com"
+                                     },
+                                     {
+                                         "hostname":  "img-s-msn-com.akamaized.net"
+                                     },
+                                     {
+                                         "hostname":  "browser.events.data.msn.com"
+                                     },
+                                     {
+                                         "hostname":  "optimizationguide-pa.googleapis.com"
+                                     },
+                                     {
+                                         "hostname":  "www.google.com"
+                                     },
+                                     {
+                                         "hostname":  "accounts.google.com"
+                                     },
+                                     {
+                                         "hostname":  "sb.scorecardresearch.com"
+                                     },
+                                     {
+                                         "hostname":  "ntp.msn.com"
+                                     },
+                                     {
+                                         "hostname":  "r5---sn-nv47lnsy.gvt1.com"
+                                     },
+                                     {
+                                         "hostname":  "assets.msn.com"
+                                     },
+                                     {
+                                         "hostname":  "copilot.microsoft.com"
+                                     },
+                                     {
+                                         "hostname":  "srtb.msn.com"
+                                     },
+                                     {
+                                         "hostname":  "px.ads.linkedin.com"
+                                     },
+                                     {
+                                         "hostname":  "c.msn.com"
+                                     },
+                                     {
+                                         "hostname":  "redirector.gvt1.com"
+                                     },
+                                     {
+                                         "hostname":  "api.msn.com"
+                                     },
+                                     {
+                                         "hostname":  "safebrowsingohttpgateway.googleapis.com"
+                                     },
+                                     {
+                                         "hostname":  "clients2.google.com"
+                                     },
+                                     {
+                                         "hostname":  "events-sandbox.data.msn.com"
+                                     },
+                                     {
+                                         "hostname":  "clientservices.googleapis.com"
+                                     },
+                                     {
+                                         "hostname":  "m.adnxs.com"
+                                     }
+                                 ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "2884",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        },
+                                        {
+                                            "process_id":  "2644",
+                                            "name":  "%windir%\\System32\\svchost.exe -k WerSvcGroup",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2716",
+                                                                 "name":  "%windir%\\system32\\WerFault.exe -u -p 2612 -s 116"
+                                                             },
+                                                             {
+                                                                 "process_id":  "2708",
+                                                                 "name":  "%windir%\\system32\\WerFault.exe -u -p 2524 -s 132"
+                                                             },
+                                                             {
+                                                                 "process_id":  "2700",
+                                                                 "name":  "%windir%\\system32\\WerFault.exe -u -p 2596 -s 108"
+                                                             },
+                                                             {
+                                                                 "process_id":  "2724",
+                                                                 "name":  "%windir%\\system32\\WerFault.exe -u -p 2604 -s 108"
+                                                             },
+                                                             {
+                                                                 "process_id":  "2692",
+                                                                 "name":  "%windir%\\system32\\WerFault.exe -u -p 2612 -s 80"
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2524",
+                                            "name":  "%SANDBOX_DLL_LOADER_AMD64% %TEMP%\\KWDNC5ILUNWZY70C.dll %WORKDIR% 483",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "2612",
+                                                                 "name":  "rundll32.exe %TEMP%\\KWDNC5ILUNWZY70C.dll,_cgo_dummy_export"
+                                                             },
+                                                             {
+                                                                 "process_id":  "2596",
+                                                                 "name":  "rundll32.exe %TEMP%\\KWDNC5ILUNWZY70C.dll,GetInstallDetailsPayload"
+                                                             },
+                                                             {
+                                                                 "process_id":  "2604",
+                                                                 "name":  "rundll32.exe %TEMP%\\KWDNC5ILUNWZY70C.dll,SignalInitializeCrashReporting"
+                                                             }
+                                                         ]
+                                        },
+                                        {
+                                            "process_id":  "2924",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        }
+                                    ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "135.181.14.64"
+                                    }
+                                ],
+                 "verdicts":  [
+                                  "UNKNOWN_VERDICT"
+                              ],
+                 "files_dropped":  [
+                                       {
+                                           "sha256":  "0bde54b20845124113383b6eb81e43a0f05e4eb0c44bee3c1dfac4cc5fec2836"
+                                       },
+                                       {
+                                           "sha256":  "f7b24f2eb3d5eb0550527490395d2f61c3d2fe74bb9cb345197dad81b58b5fed"
+                                       },
+                                       {
+                                           "sha256":  "c85800bf45942fcc7fd6b1df929c25f9cc2a977a6678966bd03d4b6b69889afd"
+                                       },
+                                       {
+                                           "sha256":  "af5e338c9fcb2ba061a6fb5ead7b04f91105c173872f4565e2f7ca940f386304"
+                                       },
+                                       {
+                                           "sha256":  "7027f5866b384f817648d150dff0346e71e0b5a92ae506c40859220650a9ed32"
+                                       },
+                                       {
+                                           "sha256":  "c52d39f709bf561dc91020d001b8a2a107ad7f1990b44d8c2339140b759c6508"
+                                       },
+                                       {
+                                           "sha256":  "4977d4a053542ff66967faed6b06585dd70e68e20bfeb533b66fe3287f9655d9"
+                                       },
+                                       {
+                                           "sha256":  "6ab121bee89d657d634b35128407f63a7811a26526d95aed1bd177fb92ff6701"
+                                       },
+                                       {
+                                           "sha256":  "32a249749f12adb6a220bf9adc272c7e5d9ad5497a38b0086d961e3aba17fbc6"
+                                       },
+                                       {
+                                           "sha256":  "4db9b2721e625c18b9e05c04b31af5d9694712f1caaf6219abe34bb08e5db1c7"
+                                       },
+                                       {
+                                           "sha256":  "1200f61e6fdddae4e9a539c1320e4be51593948fcdd65ced09dea42abae3d66d"
+                                       },
+                                       {
+                                           "sha256":  "a62ffab910e31531758eee48b2cc71a8857bec3021dead50b668cba3c8667053"
+                                       },
+                                       {
+                                           "sha256":  "7c311ab751d840d750c11553c083785813e079c1d464fe568a98c9e3ef3db96c"
+                                       },
+                                       {
+                                           "sha256":  "706312a4a2aef3317223f141eb2b82685345b7eed444f16bb4df3a272716da1f"
+                                       },
+                                       {
+                                           "sha256":  "51cbc777e2000209fc82053f59ed4c2350ac8f5403fc1327e4b8c72033f1c5d1"
+                                       },
+                                       {
+                                           "sha256":  "cdb4ee2aea69cc6a83331bbe96dc2caa9a299d21329efb0336fc02a82e1839a8"
+                                       },
+                                       {
+                                           "sha256":  "c6e8800450602de0f39fe9f6854472383813fb454b08abae7e25a9167ce004c3"
+                                       },
+                                       {
+                                           "sha256":  "32290d69a90e6baac428b10382c99221b12773bb9a184f3b93dfb48a4f6d7a40"
+                                       },
+                                       {
+                                           "sha256":  "a052c32b4fcac61152eb0adb2c260fb6a8256ad104aa0013db93e9798d41a070"
+                                       },
+                                       {
+                                           "sha256":  "cd891c45f7586fb4a2514205a11f260e4a6d4482fa03d901909dd9f57be0536d"
+                                       },
+                                       {
+                                           "sha256":  "016ca659ba080e194fbfc0929602b16506ed60aa6019faa51410c4fd93b583e8"
+                                       },
+                                       {
+                                           "sha256":  "c007da2e5fd780008f28336940b427c3bfd509c72a40bfb7759592149ff3606e"
+                                       },
+                                       {
+                                           "sha256":  "49e1f70638ac799fa79c49c65b26eff488fee043f2bf676be90a15a7d318c284"
+                                       },
+                                       {
+                                           "sha256":  "d1467b8d037114403e8f4efc52e88c4a7feb96126be4cff883feff1084ef7e68"
+                                       },
+                                       {
+                                           "sha256":  "a2b2ec359a9dd9dccce02859ce1e738bd30faa4a05f1dc522893ffdf722bbc15"
+                                       },
+                                       {
+                                           "sha256":  "a114e2783d0e9b12155017323ba70838f0f82a71c7ee8dc1f115ae36991241f8"
+                                       },
+                                       {
+                                           "sha256":  "599491f8c52b945c16c441adf45bfd45afae046da07757d97c56af4de75ed3b5"
+                                       },
+                                       {
+                                           "sha256":  "6659bc3705311d7641a73995dcfea80c7734f2f4ebbc3787b3892a240348324f"
+                                       },
+                                       {
+                                           "sha256":  "bb8b1d70b1c8594d8f965e95f926f1e78850b606080dd065aa0fb945fc3a0493"
+                                       },
+                                       {
+                                           "sha256":  "81e3a4d43a73699e1b7781723f56b8717175c536685c5450122b30789464ad82"
+                                       },
+                                       {
+                                           "sha256":  "ec002ed92359f67818b49455dfc579e140368e6a004080af022fd4f57f6b03f2"
+                                       },
+                                       {
+                                           "sha256":  "8106d98c4f8da16db698444409558e29cc96735e188bfa303c333a5d99231c1d"
+                                       },
+                                       {
+                                           "sha256":  "136367dae4a26c69c1cc9c89690f9ecc14b836d3f809bd4195636f7514d0394a"
+                                       },
+                                       {
+                                           "sha256":  "693b34f3e656e37f2176639ace73f2aab45b1de0fb05602ae51f3cf219369ca9"
+                                       },
+                                       {
+                                           "sha256":  "3615498fbef408a96bf30e01c318dac2d5451b054998119080e7faac5995f590"
+                                       },
+                                       {
+                                           "sha256":  "12d0bf7adb54a1e2345a56c041f62328f52209d207db32afba90d0fa4e23cb69"
+                                       },
+                                       {
+                                           "sha256":  "92f1246c21dd5fd7266ebfd65798c61e403d01a816cc3cf780db5c8aa2e3d9c9"
+                                       },
+                                       {
+                                           "sha256":  "ecc8d7540d26e3c2c43589c761e94638fc5096af874d7df216e833b9599c673a"
+                                       },
+                                       {
+                                           "sha256":  "f52714812d68c577a445169d11e84df6751c2d6886bc429643072bb5d61c6c27"
+                                       },
+                                       {
+                                           "sha256":  "c67898b67f9c9209eafda6532b62d5789863cfb855998dd6a70e7775316cec20"
+                                       }
+                                   ],
+                 "mbc":  [
+                             {
+                                 "id":  "C0030.001",
+                                 "objective":  "Data",
+                                 "behavior":  "Non-Cryptographic Hash",
+                                 "method":  "MurmurHash",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "2"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0052",
+                                 "objective":  "File System",
+                                 "behavior":  "Writes File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "3"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0007",
+                                 "objective":  "Memory",
+                                 "behavior":  "Allocate Memory",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "4"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0027.009",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encrypt Data",
+                                 "method":  "RC4",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "6"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0021.004",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Generate Pseudo-random Sequence",
+                                 "method":  "RC4 PRGA",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "6"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m02",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encoding-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "9"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0026.001",
+                                 "objective":  "Data",
+                                 "behavior":  "Encode Data",
+                                 "method":  "Base64",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "9"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m02",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encoding-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "10"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0026.002",
+                                 "objective":  "Data",
+                                 "behavior":  "Encode Data",
+                                 "method":  "XOR",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "10"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1027.m05",
+                                 "objective":  "Defense Evasion",
+                                 "behavior":  "Obfuscated Files or Information",
+                                 "method":  "Encryption-Standard Algorithm",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "11"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0027.001",
+                                 "objective":  "Cryptography",
+                                 "behavior":  "Encrypt Data",
+                                 "method":  "AES",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "11"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0038",
+                                 "objective":  "Process",
+                                 "behavior":  "Create Thread",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "15"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0030.005",
+                                 "objective":  "Data",
+                                 "behavior":  "Non-Cryptographic Hash",
+                                 "method":  "FNV",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "20"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "B0046.001",
+                                 "objective":  "Discovery",
+                                 "behavior":  "Code Discovery",
+                                 "method":  "Enumerate PE Sections",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "22"
+                                              }
+                                          ]
+                             }
+                         ],
+                 "attack_techniques":  {
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "access PEB ldr_data",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "5"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get kernel32 base address",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "14"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "parse PE header",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "16"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1027":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using RC4 PRGA",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "6"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using Base64",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "9"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encode data using XOR",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "10"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using AES via x86 extensions",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "11"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "encrypt data using Salsa20 or ChaCha",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "12"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ]
+                                       }
+             }
+}

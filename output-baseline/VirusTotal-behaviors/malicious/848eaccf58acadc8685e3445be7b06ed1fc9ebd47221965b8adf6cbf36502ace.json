@@ -1,0 +1,2025 @@
+{
+    "data":  {
+                 "memory_pattern_domains":  [
+                                                "crl.sectigo.com",
+                                                "sectigo.com",
+                                                "ocsp.sectigo.com",
+                                                "crt.sectigo.com"
+                                            ],
+                 "memory_pattern_urls":  [
+                                             "http://crl.sectigo.com/SectigoPublicCodeSigningCAEVR36.crl0",
+                                             "http://crl.sectigo.com/SectigoRSATimeStampingCA.crl0t",
+                                             "https://sectigo.com/CPS0",
+                                             "http://ocsp.sectigo.com0",
+                                             "http://crt.sectigo.com/SectigoRSATimeStampingCA.crt0#",
+                                             "http://crt.sectigo.com/SectigoPublicCodeSigningCAEVR36.crt0#"
+                                         ],
+                 "signature_matches":  [
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "resolve function by parsing PE exports",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "sara-rn"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: resolve function by parsing PE exports\n    namespace: load-code/pe\n    authors:\n      - sara-rn\n    scopes:\n      static: function\n      dynamic: unsupported  # requires characteristic, offset, mnemonic features\n    examples:\n      - 73CE04892E5F39EC82B00C02FC04C70F:0x406BA1\n  features:\n    - and:\n      - os: windows\n      - or:\n        - characteristic: loop\n        - mnemonic: movzx\n      - and:\n        - offset: 0x3C = IMAGE_DOS_HEADER.PE.e_lfanew\n        - or:\n          - and:\n            - arch: i386\n            - offset: 0x78 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n          - and:\n            - arch: amd64\n            - offset: 0x88 = offset to IMAGE_DATA_DIRECTORY[IMAGE_DIRECTORY_ENTRY_EXPORT]\n        - 3 or more:\n          - offset: 0x14 = IMAGE_EXPORT_DIRECTORY.NumberOfFunctions\n          - offset: 0x24 = IMAGE_EXPORT_DIRECTORY.AddressOfNameOrdinals\n          - offset: 0x20 = IMAGE_EXPORT_DIRECTORY.AddressOfNames\n          - offset: 0x18 = IMAGE_EXPORT_DIRECTORY.NumberOfNames\n          - offset: 0x1C = IMAGE_EXPORT_DIRECTORY.AddressOfFunctions\n      - optional:\n        - or:\n          - api: LoadLibrary\n          - api: strcmp\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "parse PE header",
+                                               "description":  "load-code/pe",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: parse PE header\n    namespace: load-code/pe\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: function\n      dynamic: unsupported  # requires mnemonic, operand[1].offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x403DD0\n  features:\n    - and:\n      - os: windows\n      - and:\n        - mnemonic: cmp\n        - or:\n          - number: 0x4550 = IMAGE_NT_SIGNATURE (PE)\n          - and:\n            - number: 0x50\n            - number: 0x45\n        - or:\n          - number: 0x5A4D = IMAGE_DOS_SIGNATURE (MZ)\n          - and:\n            - number: 0x4D\n            - number: 0x5A\n        - optional:\n          - and:\n            - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n            - or:\n              - and:\n                - arch: i386\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n              - and:\n                - arch: amd64\n                - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n                - operand[1].offset: 0x30 = IMAGE_NT_HEADERS64.OptionalHeader.ImageBase\n          - basic block:\n            - and:\n              - operand[1].offset: 0x3C = IMAGE_DOS_HEADER.e_lfanew\n              - 3 or more:\n                - operand[1].offset: 0x4 = IMAGE_NT_HEADERS.FileHeader.Machine\n                - operand[1].offset: 0x6 = IMAGE_NT_HEADERS.FileHeader.NumberOfSections\n                - operand[1].offset: 0x14 = IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader\n                - operand[1].offset: 0x16 = IMAGE_NT_HEADERS.FileHeader.Characteristics\n                - operand[1].offset: 0x28 = IMAGE_NT_HEADERS.OptionalHeader.AddressOfEntryPoint  # for 32 and 64 bit\n                - or:\n                  - and:\n                    - arch: i386\n                    - operand[1].offset: 0x34 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage\n                  - and:\n                    - arch: amd64\n                    - operand[1].offset: 0x30 = IMAGE_NT_HEADERS.OptionalHeader.ImageBase\n                    - operand[1].offset: 0x50 = IMAGE_NT_HEADERS64.OptionalHeader.SizeOfImage\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "access PEB ldr_data",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: access PEB ldr_data\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n    scopes:\n      static: basic block\n      dynamic: unsupported  # requires offset features\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    references:\n      - https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm\n      - https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8\n    examples:\n      - 3FDFB2D522E7DEECAAAF2F87420F7E75:0x4117B7\n  features:\n    - or:\n      - and:\n        - arch: i386\n        - description: x32\n\n        - match: PEB access\n\n        # x86 Windows uses fs:0 to access the TIB which contains SEH information at offset 0\n        # checking for fs:0 and a (possibly unrelated) number or offset often results in false positives\n\n        - offset: 0x0C = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x0C = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x14 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x1C = PEB.LDR_DATA.InInitializationOrderModuleList\n\n      - and:\n        - arch: amd64\n        - description: x64\n\n        - match: PEB access\n\n        - offset: 0x18 = PEB.LDR_DATA\n\n        - or:\n          - description: resolve a module list\n          - offset: 0x10 = PEB.LDR_DATA.InLoadOrderModuleList\n          - offset: 0x20 = PEB.LDR_DATA.InMemoryOrderModuleList\n          - offset: 0x30 = PEB.LDR_DATA.InInitializationOrderModuleList\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://www.geoffchappell.com/studies/windows/km/ntoskrnl/inc/api/ntpsapi_x/peb_ldr_data.htm"
+                                                            },
+                                                            {
+                                                                "ref":  "https://github.com/d35ha/CallObfuscator/blob/5834aff9ff4511f1408ae4ce80b79737af4ae77b/ShellCode/shell_x64.asm#L8"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "query environment variable",
+                                               "description":  "host-interaction/environment-variable",
+                                               "authors":  [
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "@_re_fox"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: query environment variable\n    namespace: host-interaction/environment-variable\n    authors:\n      - michael.hunhoff@mandiant.com\n      - \"@_re_fox\"\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::System Information Discovery [T1082]\n    mbc:\n      - Discovery::System Information Discovery [E1082]\n    examples:\n      - Practical Malware Analysis Lab 14-02.exe_:0x401880\n      - 0761142efbda6c4b1e801223de723578:0x65483490\n  features:\n    - or:\n      - api: kernel32.GetEnvironmentVariable\n      - api: kernel32.GetEnvironmentStrings\n      - api: kernel32.ExpandEnvironmentStrings\n      - api: msvcr90.getenv\n      - api: msvcrt.getenv\n      - api: System.Environment::GetEnvironmentVariable\n      - api: System.Environment::GetEnvironmentVariables\n      - api: System.Environment::ExpandEnvironmentVariables\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "enumerate files on Windows",
+                                               "description":  "host-interaction/file-system/files/list",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: enumerate files on Windows\n    namespace: host-interaction/file-system/files/list\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    att\u0026ck:\n      - Discovery::File and Directory Discovery [T1083]\n    mbc:\n      - Discovery::File and Directory Discovery [E1083]\n    references:\n      - https://github.com/hfiref0x/TDL/blob/cc4b46ae1c939b14a22a734a727b163f873a41b5/Source/Furutaka/sup.c#L315\n    examples:\n      - Practical Malware Analysis Lab 01-01.exe_:0x4011E0\n      - Practical Malware Analysis Lab 20-02.exe_:0x401000\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x14000203C\n  features:\n    - or:\n      - and:\n        - or:\n          - api: kernel32.FindFirstFile\n          - api: kernel32.FindFirstFileEx\n          - api: kernel32.FindFirstFileTransacted\n          - api: kernel32.FindFirstFileName\n          - api: kernel32.FindFirstFileNameTransacted\n        - or:\n          - api: kernel32.FindNextFile\n          - api: kernel32.FindNextFileName\n        - optional:\n          - api: kernel32.FindClose\n          - match: contain loop\n      - and:\n        - or:\n          - basic block:\n            - and:\n              - number: 1 = DIRECTORY_QUERY\n              - api: ntdll.NtOpenDirectoryObject\n          - call:\n            - and:\n              - number: 1 = DIRECTORY_QUERY\n              - api: ntdll.NtOpenDirectoryObject\n        - api: ntdll.NtQueryDirectoryObject\n        - optional:\n          - api: RtlAllocateHeap\n          - match: contain loop\n          - characteristic: indirect call\n",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "https://github.com/hfiref0x/TDL/blob/cc4b46ae1c939b14a22a734a727b163f873a41b5/Source/Furutaka/sup.c#L315"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "terminate process",
+                                               "description":  "host-interaction/process/terminate",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: terminate process\n    namespace: host-interaction/process/terminate\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - Process::Terminate Process [C0018]\n    examples:\n      - C91887D861D9BD4A5872249B641BC9F9:0x401A77\n      - 9B7CCAA2AE6A5B96E3110EBCBC4311F6:0x10010307\n  features:\n    - or:\n      - api: System.Diagnostics.Process::Kill\n      - api: System.Diagnostics.Process::WaitForExit\n      - api: System.Diagnostics.Process::WaitForExitAsync\n      - api: System.Environment::Exit\n      - api: System.Windows.Forms.Application::Exit\n      - api: exit\n      - api: Exit\n      - and:\n        - os: linux\n        - api: exit_group\n      - and:\n        - optional:\n          - match: open process\n        - or:\n          - api: kernel32.TerminateProcess\n          - api: ntdll.NtTerminateProcess\n          - api: kernel32.ExitProcess\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "link function at runtime on Windows",
+                                               "description":  "linking/runtime-linking",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: link function at runtime on Windows\n    namespace: linking/runtime-linking\n    authors:\n      - moritz.raabe@mandiant.com\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: instruction\n      dynamic: call\n    att\u0026ck:\n      - Execution::Shared Modules [T1129]\n    examples:\n      - 9324D1A8AE37A36AE560C37448C9705A:0x404130\n      - Practical Malware Analysis Lab 01-04.exe_:0x401350\n  features:\n    - and:\n      - os: windows\n      - or:\n        - api: kernel32.GetProcAddress\n        - api: ntdll.LdrGetProcedureAddress\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "write file on Windows",
+                                               "description":  "host-interaction/file-system/write",
+                                               "authors":  [
+                                                               "william.ballenthin@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: write file on Windows\n    namespace: host-interaction/file-system/write\n    authors:\n      - william.ballenthin@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    mbc:\n      - File System::Writes File [C0052]\n    examples:\n      - Practical Malware Analysis Lab 01-04.exe_:0x4011FC\n      # ntdll\n      - 563653399B82CD443F120ECEFF836EA3678D4CF11D9B351BB737573C2D856299:0x1400025C4\n  features:\n    - or:\n      - and:\n        - os: windows\n        - optional:\n          - basic block:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n          - call:\n            - or:\n              - number: 0x40000000 = GENERIC_WRITE\n              - number: 0x2 = FILE_WRITE_DATA\n              - match: create or open file\n        - or:\n          - api: kernel32.WriteFile\n          - api: kernel32.WriteFileEx\n          - api: NtWriteFile\n          - api: ZwWriteFile\n          - api: _fwrite\n          - api: fwrite\n      - api: System.IO.File::WriteAllBytes\n      - api: System.IO.File::WriteAllBytesAsync\n      - api: System.IO.File::WriteAllLines\n      - api: System.IO.File::WriteAllLinesAsync\n      - api: System.IO.File::WriteAllText\n      - api: System.IO.File::WriteAllTextAsync\n      - api: System.IO.File::AppendAllLines\n      - api: System.IO.File::AppendAllLinesAsync\n      - api: System.IO.File::AppendAllText\n      - api: System.IO.File::AppendAllTextAsync\n      - api: System.IO.File::AppendText\n      - api: System.IO.FileInfo::AppendText\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "read file on Windows",
+                                               "description":  "host-interaction/file-system/read",
+                                               "authors":  [
+                                                               "moritz.raabe@mandiant.com",
+                                                               "anushka.virgaonkar@mandiant.com"
+                                                           ],
+                                               "rule_src":  "rule:\n  meta:\n    name: read file on Windows\n    namespace: host-interaction/file-system/read\n    authors:\n      - moritz.raabe@mandiant.com\n      - anushka.virgaonkar@mandiant.com\n    scopes:\n      static: function\n      dynamic: span of calls\n    mbc:\n      - File System::Read File [C0051]\n    examples:\n      - BFB9B5391A13D0AFD787E87AB90F14F5:0x1314567B\n  features:\n    - or:\n      - and:\n        - os: windows\n        - optional:\n          - and:\n            - number: 0x80000000 = GENERIC_READ\n            - match: create or open file\n        - or:\n          - api: kernel32.ReadFile\n          - api: ReadFileEx\n          - api: NtReadFile\n          - api: ZwReadFile\n          - api: LZRead\n          - api: _read\n          - api: fread\n      - api: System.IO.File::ReadAllBytes\n      - api: System.IO.File::ReadAllBytesAsync\n      - api: System.IO.File::ReadAllLines\n      - api: System.IO.File::ReadAllLinesAsync\n      - api: System.IO.File::ReadAllText\n      - api: System.IO.File::ReadAllTextAsync\n      - api: System.IO.File::ReadLines\n"
+                                           },
+                                           {
+                                               "format":  "SIG_FORMAT_CAPA",
+                                               "name":  "get geographical location",
+                                               "description":  "collection",
+                                               "authors":  [
+                                                               "moritz.raabe",
+                                                               "michael.hunhoff@mandiant.com"
+                                                           ],
+                                               "rule_src":  "# generated using capa explorer for IDA Pro\nrule:\n  meta:\n    name: get geographical location\n    namespace: collection\n    authors:\n      - moritz.raabe\n      - michael.hunhoff@mandiant.com\n    scopes:\n      static: function\n      dynamic: call\n    att\u0026ck:\n      - Discovery::System Location Discovery [T1614]\n    examples:\n      - 9879D201DC5ACA863F357184CD1F170E:0x10001A99\n  features:\n    - or:\n      - api: GetLocaleInfo\n      - api: GetLocaleInfoEx\n      - api: kernel32.GetUserGeoID\n      - api: kernel32.GetGeoInfo\n      # strings part of requests or parsed from response\n      # \"geo\" and \"zip\" are too short\n      # \"region\" results in FPs mostly related to memory\n      - string: /geolocation/i\n      - string: /geo-location/i\n      - string: /^city/i\n      - string: /region_code/i\n      - string: /region_name/i\n      - string: /^country/i\n      - string: /country_code/i\n      - string: /countrycode/i\n      - string: /country_name/i\n      - string: /continent_code/i\n      - string: /continent_name/i\n      - string: /^latitude/i\n      - string: /^longitude/i\n"
+                                           },
+                                           {
+                                               "id":  "stealth_network",
+                                               "name":  "stealth_network",
+                                               "description":  "Network activity detected but not expressed in monitor API logs",
+                                               "match_data":  [
+                                                                  "{\"ip\": \"13.95.31.18\"}",
+                                                                  "{\"ip\": \"40.68.123.157\"}",
+                                                                  "{\"ip\": \"34.104.35.123\"}",
+                                                                  "{\"ip\": \"74.125.132.94\"}",
+                                                                  "{\"ip\": \"192.229.211.108\"}",
+                                                                  "{\"ip\": \"72.21.81.240\"}",
+                                                                  "{\"ip\": \"204.79.197.203\"}",
+                                                                  "{\"ip\": \"52.167.17.97\"}",
+                                                                  "{\"ip\": \"23.9.131.101\"}",
+                                                                  "{\"ip\": \"23.218.218.158\"}",
+                                                                  "{\"domain\": \"settings-win.data.microsoft.com\"}",
+                                                                  "{\"domain\": \"settings-prod-cin-2.centralindia.cloudapp.azure.com\"}",
+                                                                  "{\"domain\": \"slscr.update.microsoft.com\"}",
+                                                                  "{\"domain\": \"glb.sls.prod.dcat.dsp.trafficmanager.net\"}",
+                                                                  "{\"domain\": \"s-part-0013.t-0009.fb-t-msedge.net\"}",
+                                                                  "{\"domain\": \"settings-prod-eus2-2.eastus2.cloudapp.azure.com\"}",
+                                                                  "{\"domain\": \"_ldap._tcp.dc._msdcs.WORKGROUP.hostonly\"}",
+                                                                  "{\"domain\": \"www.msftconnecttest.com\"}",
+                                                                  "{\"domain\": \"wpad.hostonly\"}",
+                                                                  "{\"domain\": \"cdn.onenote.net\"}",
+                                                                  "{\"domain\": \"ctldl.windowsupdate.com\"}",
+                                                                  "{\"domain\": \"ocsp.digicert.com\"}",
+                                                                  "{\"domain\": \"edgedl.me.gvt1.com\"}",
+                                                                  "{\"domain\": \"fe3cr.delivery.mp.microsoft.com\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "antidebug_setunhandledexceptionfilter",
+                                               "name":  "antidebug_setunhandledexceptionfilter",
+                                               "description":  "SetUnhandledExceptionFilter detected (possible anti-debug)",
+                                               "match_data":  [
+                                                                  "{\"type\": \"call\", \"pid\": 3020, \"cid\": 1}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "stealth_timeout",
+                                               "name":  "stealth_timeout",
+                                               "description":  "Possible date expiration check, exits too soon after checking local time",
+                                               "match_data":  [
+                                                                  "{\"process\": \"rundll32.exe, PID 3020\"}",
+                                                                  "{\"type\": \"call\", \"pid\": 3020, \"cid\": 71}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "network_http",
+                                               "name":  "network_http",
+                                               "description":  "Performs some HTTP requests",
+                                               "match_data":  [
+                                                                  "{\"url\": \"http://www.msftconnecttest.com/connecttest.txt\"}",
+                                                                  "{\"url\": \"http://ocsp.digicert.com/MFEwTzBNMEswSTAJBgUrDgMCGgUABBQ50otx%2Fh0Ztl%2Bz8SiPI7wEWVxDlQQUTiJUIBiV5uNu5g%2F6%2BrkS7QYXjzkCEA77flR%2B3w%2FxBpruV2lte6A%3D\"}",
+                                                                  "{\"url\": \"http://edgedl.me.gvt1.com/edgedl/update2/chromium-updater/qualification_win32.crx\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_LOW"
+                                           },
+                                           {
+                                               "id":  "procmem_yara",
+                                               "name":  "procmem_yara",
+                                               "description":  "Yara detections observed in process dumps, payloads or dropped files",
+                                               "match_data":  [
+                                                                  "{\"Hit\": \"PID 3020 triggered the Yara rule \u0027shellcode_get_eip\u0027 with data \u0027[\u0027{ E8 00 00 00 00 59 }\u0027]\u0027\"}"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_MEDIUM"
+                                           },
+                                           {
+                                               "id":  "825",
+                                               "description":  "Found graphical window changes (likely an installer)",
+                                               "match_data":  [
+                                                                  "More than 3 window changes detected"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "871",
+                                               "description":  "Sample execution stops while process was sleeping (likely an evasion)",
+                                               "match_data":  [
+                                                                  "Thread delayed"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "430",
+                                               "description":  "PE / OLE file has an invalid certificate",
+                                               "match_data":  [
+                                                                  "invalid certificate"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "415",
+                                               "description":  "PE file has an executable .text section and no other executable section",
+                                               "match_data":  [
+                                                                  "Section: .text IMAGE_SCN_CNT_CODE, IMAGE_SCN_MEM_EXECUTE, IMAGE_SCN_MEM_READ"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "509",
+                                               "description":  "Reads software policies",
+                                               "match_data":  [
+                                                                  "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO",
+                                               "refs":  [
+                                                            {
+                                                                "ref":  "#registry_keys_opened",
+                                                                "value":  "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers"
+                                                            }
+                                                        ]
+                                           },
+                                           {
+                                               "id":  "767",
+                                               "description":  "Found GUI installer (many successful clicks)",
+                                               "match_data":  [
+                                                                  "OK"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "411",
+                                               "description":  "PE file contains a mix of data directories often seen in goodware",
+                                               "match_data":  [
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_IMPORT",
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_RESOURCE",
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_BASERELOC",
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_DEBUG",
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG",
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_IAT"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "715",
+                                               "description":  "Classification label",
+                                               "match_data":  [
+                                                                  "clean3.winDLL@12/0@0/0"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "381",
+                                               "description":  "Disables application error messsages (SetErrorMode)",
+                                               "match_data":  [
+                                                                  "NOOPENFILEERRORBOX"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "626",
+                                               "description":  "Sample tries to load a library which is not present or installed on the analysis machine, adding the library might reveal more behavior",
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "219",
+                                               "description":  "Runs a DLL by calling functions",
+                                               "match_data":  [
+                                                                  "C:\\Windows\\System32\\rundll32.exe rundll32.exe C:\\Users\\user\\Desktop\\init.dll,FlutterGpuTextureRendererPluginCApiGetAdapterLuid"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "229",
+                                               "description":  "Spawns processes",
+                                               "match_data":  [
+                                                                  "C:\\Windows\\System32\\loaddll64.exe loaddll64.exe \"C:\\Users\\user\\Desktop\\init.dll\"",
+                                                                  "C:\\Windows\\System32\\conhost.exe C:\\Windows\\system32\\conhost.exe 0xffffffff -ForceV1",
+                                                                  "C:\\Windows\\System32\\cmd.exe cmd.exe /C rundll32.exe \"C:\\Users\\user\\Desktop\\init.dll\",#1",
+                                                                  "C:\\Windows\\System32\\rundll32.exe rundll32.exe C:\\Users\\user\\Desktop\\init.dll,FlutterGpuTextureRendererPluginCApiGetAdapterLuid",
+                                                                  "C:\\Windows\\System32\\rundll32.exe rundll32.exe  \"C:\\Users\\user\\Desktop\\init.dll\",#1",
+                                                                  "C:\\Windows\\System32\\rundll32.exe rundll32.exe C:\\Users\\user\\Desktop\\init.dll,FlutterGpuTextureRendererPluginCApiRegisterWithRegistrar",
+                                                                  "C:\\Windows\\System32\\rundll32.exe rundll32.exe C:\\Users\\user\\Desktop\\init.dll,FlutterGpuTextureRendererPluginCApiSetTexture"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "317",
+                                               "description":  "PE file contains an invalid checksum",
+                                               "match_data":  [
+                                                                  "real checksum: 0x56a83 should be: 0x56160"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "419",
+                                               "description":  "PE file has a high image base, often used for DLLs",
+                                               "match_data":  [
+                                                                  "Image base 0x180000000 \u003e 0x60000000"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "406",
+                                               "description":  "Contains modern PE file flags such as dynamic base (ASLR) or NX",
+                                               "match_data":  [
+                                                                  "HIGH_ENTROPY_VA, DYNAMIC_BASE, NX_COMPAT"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "187",
+                                               "description":  "Tries to load missing DLLs",
+                                               "match_data":  [
+                                                                  "apphelp.dll",
+                                                                  "flutter_windows.dll"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "95",
+                                               "description":  "Creates mutexes",
+                                               "match_data":  [
+                                                                  "\\Sessions\\1\\BaseNamedObjects\\Local\\SM0:5016:120:WilError_01"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "149",
+                                               "description":  "Program does not show much activity (idle)",
+                                               "match_data":  [
+                                                                  "no activity detected"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "1318",
+                                               "description":  "Creates a process in suspended mode (likely to inject code)",
+                                               "match_data":  [
+                                                                  "C:\\Windows\\System32\\rundll32.exe rundll32.exe  \"C:\\Users\\user\\Desktop\\init.dll\",#1"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "416",
+                                               "description":  "PE file contains a valid data directory to section mapping",
+                                               "match_data":  [
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_IMPORT is in: .rdata",
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_RESOURCE is in: .rsrc",
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_BASERELOC is in: .reloc",
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG is in: .rdata",
+                                                                  "Data directory: IMAGE_DIRECTORY_ENTRY_IAT is in: .rdata"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "-1201512004",
+                                               "description":  "Sigma detected: Unsigned DLL Loaded by RunDLL32/RegSvr32",
+                                               "match_data":  [
+                                                                  "Data: Company: -, Description: -, FileVersion: -, Hashes: SHA1=2100E96043B56B97601F55D51D9C66EA6BA859D1,MD5=340ADFA8562B834DC0D11880028FD6C9,SHA256=848EACCF58ACADC8685E3445BE7B06ED1FC9EBD47221965B8ADF"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "76",
+                                               "description":  "Checks if the current process is being debugged",
+                                               "match_data":  [
+                                                                  "DebugPort"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "412",
+                                               "description":  "PE file contains a debug data directory",
+                                               "match_data":  [
+                                                                  "data directory type: IMAGE_DIRECTORY_ENTRY_DEBUG"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           },
+                                           {
+                                               "id":  "238",
+                                               "description":  "URLs found in memory or binary data",
+                                               "match_data":  [
+                                                                  "http://crl.sectigo.com/SectigoPublicCodeSigningCAEVR36.crl0",
+                                                                  "http://crl.sectigo.com/SectigoRSATimeStampingCA.crl0t",
+                                                                  "http://crt.sectigo.com/SectigoPublicCodeSigningCAEVR36.crt0#",
+                                                                  "http://crt.sectigo.com/SectigoRSATimeStampingCA.crt0#",
+                                                                  "http://ocsp.sectigo.com0",
+                                                                  "https://sectigo.com/CPS0"
+                                                              ],
+                                               "severity":  "IMPACT_SEVERITY_INFO"
+                                           }
+                                       ],
+                 "files_opened":  [
+                                      "C:\\Users\\\u003cUSER\u003e\\Desktop\\readme.dll.manifest",
+                                      "C:\\Users\\\u003cUSER\u003e\\Desktop\\readme.dll",
+                                      "C:\\Users\\\u003cUSER\u003e\\Desktop\\readme.dll.123.Manifest",
+                                      "C:\\Users\\\u003cUSER\u003e\\Desktop\\readme.dll.124.Manifest",
+                                      "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath\\",
+                                      "C:\\Users\\user\\Desktop\\init.dll",
+                                      "C:\\Users\\user\\Desktop\\init.dll.123.Manifest",
+                                      "C:\\Users\\user\\Desktop\\init.dll.124.Manifest",
+                                      "C:\\Windows\\AppPatch\\sysmain.sdb",
+                                      "C:\\Windows\\Globalization\\Sorting\\sortdefault.nls",
+                                      "C:\\Windows\\SYSTEM32\\apphelp.dll",
+                                      "C:\\Windows\\SYSTEM32\\ntdll.dll",
+                                      "C:\\Windows\\SYSTEM32\\ntmarta.dll",
+                                      "C:\\Windows\\SYSTEM32\\ole32.dll",
+                                      "C:\\Windows\\SYSTEM32\\wintypes.dll",
+                                      "C:\\Windows\\System32\\CoreMessaging.dll",
+                                      "C:\\Windows\\System32\\CoreUIComponents.dll",
+                                      "C:\\Windows\\System32\\KERNEL32.DLL",
+                                      "C:\\Windows\\System32\\KERNELBASE.dll",
+                                      "C:\\Windows\\System32\\TextInputFramework.dll",
+                                      "C:\\Windows\\System32\\en-US\\KERNELBASE.dll.mui",
+                                      "C:\\Windows\\System32\\en-US\\user32.dll.mui",
+                                      "C:\\Windows\\WinSxS\\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.17134.1304_none_d3fbe61b7c93d9f0",
+                                      "C:\\Windows\\WinSxS\\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.17134.1304_none_d3fbe61b7c93d9f0\\comctl32.DLL",
+                                      "C:\\Windows\\system32\\",
+                                      "C:\\Windows\\system32\\IMM32.DLL",
+                                      "C:\\Windows\\system32\\conhost.exe",
+                                      "C:\\Windows\\system32\\dwmapi.dll",
+                                      "C:\\Windows\\system32\\en-US\\conhost.exe.mui",
+                                      "C:\\Windows\\system32\\en-US\\rundll32.exe.mui",
+                                      "C:\\Windows\\system32\\loaddll64.exe",
+                                      "C:\\Windows\\system32\\rpcss.dll",
+                                      "C:\\Windows\\system32\\uxtheme.dll",
+                                      "C:\\Windows\\system32\\uxtheme.dll.Config"
+                                  ],
+                 "verdicts":  [
+                                  "UNKNOWN_VERDICT",
+                                  "CLEAN"
+                              ],
+                 "verdict_confidence":  97,
+                 "mitre_attack_techniques":  [
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "parse PE header",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "parse PE header"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "access PEB ldr_data",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "access PEB ldr_data"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "query environment variable",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "query environment variable"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1083",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "enumerate files on Windows",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "enumerate files on Windows"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1129",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "link function at runtime on Windows",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "link function at runtime on Windows"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1614",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "get geographical location",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "get geographical location"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1071",
+                                                     "signature_description":  "Adversaries may communicate using application layer protocols to avoid detection/network filtering by blending in with existing traffic."
+                                                 },
+                                                 {
+                                                     "id":  "T1574.002",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Tries to load missing DLLs",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "187"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1497",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Checks if the current process is being debugged",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "76"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1218.011",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Runs a DLL by calling functions",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "219"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1518.001",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Checks if the current process is being debugged",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "76"
+                                                                  }
+                                                              ]
+                                                 },
+                                                 {
+                                                     "id":  "T1082",
+                                                     "severity":  "IMPACT_SEVERITY_INFO",
+                                                     "signature_description":  "Reads software policies",
+                                                     "refs":  [
+                                                                  {
+                                                                      "ref":  "#signature_matches",
+                                                                      "value":  "509"
+                                                                  }
+                                                              ]
+                                                 }
+                                             ],
+                 "mbc":  [
+                             {
+                                 "id":  "E1082",
+                                 "objective":  "Discovery",
+                                 "behavior":  "System Information Discovery",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "query environment variable"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "E1083",
+                                 "objective":  "Discovery",
+                                 "behavior":  "File and Directory Discovery",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "enumerate files on Windows"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0018",
+                                 "objective":  "Process",
+                                 "behavior":  "Terminate Process",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "terminate process"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0052",
+                                 "objective":  "File System",
+                                 "behavior":  "Writes File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "write file on Windows"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "C0051",
+                                 "objective":  "File System",
+                                 "behavior":  "Read File",
+                                 "refs":  [
+                                              {
+                                                  "ref":  "#signature_matches",
+                                                  "value":  "read file on Windows"
+                                              }
+                                          ]
+                             },
+                             {
+                                 "id":  "OC0006"
+                             },
+                             {
+                                 "id":  "C0002"
+                             }
+                         ],
+                 "tags":  [
+                              "IDLE",
+                              "DETECT_DEBUG_ENVIRONMENT"
+                          ],
+                 "memory_dumps":  [
+                                      {
+                                          "file_name":  "3020.dmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "78839808",
+                                          "base_address":  "2147352576"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037780504.0000016129960000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "1516821151744",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000000.00000002.1036082648.0000002773DFF000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\loaddll64.exe",
+                                          "size":  "4096",
+                                          "base_address":  "169447780352",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "1380"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045264972.000000C87739B000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "20480",
+                                          "base_address":  "860993728512",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024691901.0000023901CF0000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "2443866734592",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024662743.0000004BC957F000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "325500530688",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037694121.00000047D9F7F000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "308599582720",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000003.1037609640.0000016129794000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "49152",
+                                          "base_address":  "1516819267584",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1028793213.0000003D202FE000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "262533013504",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000003.1045190524.00000226B455F000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "98304",
+                                          "base_address":  "2365257543680",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1028961122.0000020069338000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "12288",
+                                          "base_address":  "2200788238336",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024850080.0000023905260000.00000004.00000800.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2443922767872",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1028775350.0000003D1FFFB000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "20480",
+                                          "base_address":  "262529855488",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1029049293.000002006C290000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "2200837881856",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045329033.00000226B448B000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "16384",
+                                          "base_address":  "2365256675328",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1028926831.0000020069300000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "2200788008960",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045329033.00000226B4484000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "24576",
+                                          "base_address":  "2365256646656",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037789897.0000016129B10000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "1516822921216",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037728943.0000016129794000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "49152",
+                                          "base_address":  "1516819267584",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024810009.0000023902000000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "2443869945856",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000003.1045233177.00000226B4552000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "53248",
+                                          "base_address":  "2365257490432",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045315145.00000226B4430000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2365256302592",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024784002.0000023901FE3000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "12288",
+                                          "base_address":  "2443869827072",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024651839.0000004BC94FE000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "325500002304",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037830821.000001612C973000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "12288",
+                                          "base_address":  "1516871561216",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037796991.0000016129B44000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "24576",
+                                          "base_address":  "1516823134208",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045321922.00000226B4450000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "2365256433664",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.1013102418.0000023901DF7000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "16384",
+                                          "base_address":  "2443867811840",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000003.1020768212.00000161297B7000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "1516819410944",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000003.1013088631.0000020069353000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "28672",
+                                          "base_address":  "2200788348928",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.1024495998.0000023901E16000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "2443867938816",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1029029757.000002006AD20000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2200815403008",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045362861.00000226B44D0000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "2365256957952",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045391012.00000226B453C000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "40960",
+                                          "base_address":  "2365257400320",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000003.1045233177.00000226B4549000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "32768",
+                                          "base_address":  "2365257453568",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1028781174.0000003D2027E000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "262532489216",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045391012.00000226B4530000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "45056",
+                                          "base_address":  "2365257351168",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037796991.0000016129B4B000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "16384",
+                                          "base_address":  "1516823162880",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045286709.000000C8776FE000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "860997279744",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000003.1028752558.0000020069352000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "57344",
+                                          "base_address":  "2200788344832",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045306815.00000226B42F0000.00000004.00000020.00040000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2365254991872",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024842210.00000239038F0000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2443896094720",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1028926831.000002006930B000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "16384",
+                                          "base_address":  "2200788054016",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024640118.0000004BC947B000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "20480",
+                                          "base_address":  "325499465728",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024715337.0000023901DD7000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "65536",
+                                          "base_address":  "2443867680768",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045362861.00000226B44D3000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "12288",
+                                          "base_address":  "2365256970240",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.1024454795.0000023901DE7000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2443867746304",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000003.1028738075.000002006934A000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "28672",
+                                          "base_address":  "2200788312064",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000003.1037639236.0000016129794000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "49152",
+                                          "base_address":  "1516819267584",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.1024505938.0000023901DEB000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "28672",
+                                          "base_address":  "2443867762688",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045412601.00000226B4564000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "77824",
+                                          "base_address":  "2365257564160",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000003.1028752558.000002006934A000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "28672",
+                                          "base_address":  "2200788312064",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1028961122.0000020069330000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "28672",
+                                          "base_address":  "2200788205568",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000003.1045204871.00000226B4546000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2365257441280",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045382474.00000226B44E0000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2365257023488",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000003.1028738075.0000020069352000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "57344",
+                                          "base_address":  "2200788344832",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1028884866.00000200692B0000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2200787681280",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000003.1037588572.00000161297A9000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "61440",
+                                          "base_address":  "1516819353600",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000003.1037639236.000001612978B000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "32768",
+                                          "base_address":  "1516819230720",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037711501.0000016129777000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "69632",
+                                          "base_address":  "1516819148800",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000003.1028711585.0000020069360000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "94208",
+                                          "base_address":  "2200788402176",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037750148.00000161297A9000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "57344",
+                                          "base_address":  "1516819353600",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024715337.0000023901DD0000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "20480",
+                                          "base_address":  "2443867652096",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024784002.0000023901FE0000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "2443869814784",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000003.1037630109.00000161297B7000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "1516819410944",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037677473.00000047D9E7E000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "308598530048",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024737602.0000023901DEE000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "16384",
+                                          "base_address":  "2443867774976",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1028851180.0000020069170000.00000004.00000020.00040000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2200786370560",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045412601.00000226B454D000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "16384",
+                                          "base_address":  "2365257469952",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000003.1037609640.0000016129788000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "1516819218432",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000000.00000002.1036094266.000001BD6B0F0000.00000004.00000020.00040000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\loaddll64.exe",
+                                          "size":  "4096",
+                                          "base_address":  "1913056591872",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "1380"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1029006288.000002006934E000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "12288",
+                                          "base_address":  "2200788328448",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000003.1037588572.00000161297A0000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "32768",
+                                          "base_address":  "1516819316736",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037796991.0000016129B40000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "1516823117824",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.1024505938.0000023901DF3000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "45056",
+                                          "base_address":  "2443867795456",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037685140.00000047D9EFE000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "308599054336",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1028926831.0000020069304000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "24576",
+                                          "base_address":  "2200788025344",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037728943.000001612978F000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "16384",
+                                          "base_address":  "1516819247104",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000000.00000002.1036104049.000001BD6B230000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\loaddll64.exe",
+                                          "size":  "4096",
+                                          "base_address":  "1913057902592",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "1380"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000003.1028760970.00000226B4552000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2365257490432",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000003.1013080474.000002006935A000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "86016",
+                                          "base_address":  "2200788377600",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1028913988.00000200692D0000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "2200787812352",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1028824447.0000003D2037E000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "262533537792",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045298420.000000C87777F000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "860997808128",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000003.1028743880.00000226B4553000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "2365257494528",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037771227.0000016129940000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "1516821020672",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.1024433502.0000023901DFE000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "106496",
+                                          "base_address":  "2443867840512",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024810009.0000023902004000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "24576",
+                                          "base_address":  "2443869962240",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000003.1045204871.00000226B4552000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "53248",
+                                          "base_address":  "2365257490432",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037711501.0000016129770000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "20480",
+                                          "base_address":  "1516819120128",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045329033.00000226B4480000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "2365256630272",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024699698.0000023901D10000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2443866865664",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.1013118046.0000023901DF3000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2443867795456",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000000.00000002.1036074243.0000002773CFD000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\loaddll64.exe",
+                                          "size":  "12288",
+                                          "base_address":  "169446723584",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "1380"
+                                      },
+                                      {
+                                          "file_name":  "00000000.00000002.1036114523.000001BD6B26E000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\loaddll64.exe",
+                                          "size":  "20480",
+                                          "base_address":  "1913058156544",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "1380"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037822976.000001612B2F0000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "1516847955968",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024683181.0000023901BB0000.00000004.00000020.00040000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2443865423872",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1029042443.000002006AE90000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2200816910336",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045460015.00000226B7990000.00000004.00000800.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2365312270336",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000003.1045204871.00000226B4549000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "32768",
+                                          "base_address":  "2365257453568",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.1024454795.0000023901DEB000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "28672",
+                                          "base_address":  "2443867762688",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037667335.00000047D9B8B000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "20480",
+                                          "base_address":  "308595437568",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037830821.000001612C970000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "1516871548928",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.1013102418.0000023901DF4000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "2443867799552",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.1013118046.0000023901DF0000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "2443867783168",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000003.1028760970.00000226B454F000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "2365257478144",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024737602.0000023901DF3000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "45056",
+                                          "base_address":  "2443867795456",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024810009.000002390200B000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "16384",
+                                          "base_address":  "2443869990912",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045276694.000000C87767E000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "860996755456",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024706649.0000023901D80000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2443867324416",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000003.1020768212.000001612979C000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "77824",
+                                          "base_address":  "1516819300352",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000003.1037609640.000001612978B000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "32768",
+                                          "base_address":  "1516819230720",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1028961122.000002006933C000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "45056",
+                                          "base_address":  "2200788254720",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024671094.0000004BC95FF000.00000004.00000010.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "325501054976",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000003.1020753127.0000016129795000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "106496",
+                                          "base_address":  "1516819271680",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1029091088.000002006C6A0000.00000004.00000800.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2200842141696",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000000.00000002.1036114523.000001BD6B274000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\loaddll64.exe",
+                                          "size":  "8192",
+                                          "base_address":  "1913058181120",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "1380"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1029006288.0000020069364000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "77824",
+                                          "base_address":  "2200788418560",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.1024454795.0000023901DF3000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "45056",
+                                          "base_address":  "2443867795456",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000000.00000002.1036114523.000001BD6B260000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\loaddll64.exe",
+                                          "size":  "53248",
+                                          "base_address":  "1913058099200",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "1380"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045449409.00000226B5F10000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "2365284483072",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037848017.000001612CDC0000.00000004.00000800.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "1516876070912",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1029049293.000002006C293000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "12288",
+                                          "base_address":  "2200837894144",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037750148.00000161297A6000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "8192",
+                                          "base_address":  "1516819341312",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000003.00000002.1029006288.0000020069352000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "57344",
+                                          "base_address":  "2200788344832",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4132"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000003.1028732826.00000226B455A000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "86016",
+                                          "base_address":  "2365257523200",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000002.1037701935.0000016129700000.00000004.00000020.00040000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "4096",
+                                          "base_address":  "1516818661376",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000002.1024737602.0000023901E03000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "77824",
+                                          "base_address":  "2443867860992",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000006.00000003.1020739040.00000161297AF000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "36864",
+                                          "base_address":  "1516819378176",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "816"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000002.1045412601.00000226B4552000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "53248",
+                                          "base_address":  "2365257490432",
+                                          "stage":  "MEM_STAGE_EXIT",
+                                          "process_id":  "2596"
+                                      },
+                                      {
+                                          "file_name":  "00000004.00000003.1013093983.0000023901DFB000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "86016",
+                                          "base_address":  "2443867828224",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "4904"
+                                      },
+                                      {
+                                          "file_name":  "00000007.00000003.1028743880.00000226B4556000.00000004.00000020.00020000.00000000.sdmp",
+                                          "process":  "C:\\Windows\\System32\\rundll32.exe",
+                                          "size":  "16384",
+                                          "base_address":  "2365257506816",
+                                          "stage":  "MEM_STAGE_FREE",
+                                          "process_id":  "2596"
+                                      }
+                                  ],
+                 "processes_tree":  [
+                                        {
+                                            "process_id":  "1148",
+                                            "name":  "%windir%\\System32\\svchost.exe -k WerSvcGroup"
+                                        },
+                                        {
+                                            "process_id":  "568",
+                                            "name":  "%SANDBOX_DLL_LOADER_AMD64% %SAMPLEPATH% %WORKDIR% 483"
+                                        },
+                                        {
+                                            "process_id":  "1492",
+                                            "name":  "rundll32.exe %SAMPLEPATH%,FlutterGpuTextureRendererPluginCApiSetTexture"
+                                        },
+                                        {
+                                            "process_id":  "1848",
+                                            "name":  "rundll32.exe %SAMPLEPATH%,FlutterGpuTextureRendererPluginCApiGetAdapterLuid"
+                                        },
+                                        {
+                                            "process_id":  "1864",
+                                            "name":  "rundll32.exe %SAMPLEPATH%,FlutterGpuTextureRendererPluginCApiRegisterWithRegistrar"
+                                        },
+                                        {
+                                            "process_id":  "2188",
+                                            "name":  "wmiadap.exe /F /T /R"
+                                        },
+                                        {
+                                            "process_id":  "2232",
+                                            "name":  "%windir%\\system32\\wbem\\wmiprvse.exe"
+                                        },
+                                        {
+                                            "process_id":  "3020",
+                                            "name":  "\"C:\\Windows\\sysnative\\rundll32.exe\" \"C:\\Users\\\u003cUSER\u003e\\Desktop\\readme.dll\",#1"
+                                        },
+                                        {
+                                            "process_id":  "1380",
+                                            "name":  "C:\\Windows\\System32\\loaddll64.exe loaddll64.exe \"C:\\Users\\user\\Desktop\\init.dll\"",
+                                            "children":  [
+                                                             {
+                                                                 "process_id":  "5016",
+                                                                 "name":  "C:\\Windows\\System32\\conhost.exe C:\\Windows\\system32\\conhost.exe 0xffffffff -ForceV1",
+                                                                 "files_opened":  [
+                                                                                      "C:\\Windows\\Globalization\\Sorting\\sortdefault.nls",
+                                                                                      "C:\\Windows\\SYSTEM32\\ole32.dll",
+                                                                                      "C:\\Windows\\System32\\en-US\\user32.dll.mui",
+                                                                                      "C:\\Windows\\WinSxS\\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.17134.1304_none_d3fbe61b7c93d9f0",
+                                                                                      "C:\\Windows\\WinSxS\\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.17134.1304_none_d3fbe61b7c93d9f0\\comctl32.DLL",
+                                                                                      "C:\\Windows\\system32\\IMM32.DLL",
+                                                                                      "C:\\Windows\\system32\\conhost.exe",
+                                                                                      "C:\\Windows\\system32\\dwmapi.dll",
+                                                                                      "C:\\Windows\\system32\\en-US\\conhost.exe.mui",
+                                                                                      "C:\\Windows\\system32\\uxtheme.dll",
+                                                                                      "C:\\Windows\\system32\\uxtheme.dll.Config"
+                                                                                  ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "1940",
+                                                                 "name":  "C:\\Windows\\System32\\cmd.exe cmd.exe /C rundll32.exe \"C:\\Users\\user\\Desktop\\init.dll\",#1",
+                                                                 "children":  [
+                                                                                  {
+                                                                                      "process_id":  "4904",
+                                                                                      "name":  "C:\\Windows\\System32\\rundll32.exe rundll32.exe  \"C:\\Users\\user\\Desktop\\init.dll\",#1"
+                                                                                  }
+                                                                              ],
+                                                                 "files_opened":  [
+                                                                                      "C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath\\",
+                                                                                      "C:\\Windows\\system32\\"
+                                                                                  ],
+                                                                 "files_written":  [
+                                                                                       "\\Device\\ConDrv\\\\Connect"
+                                                                                   ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "4132",
+                                                                 "name":  "C:\\Windows\\System32\\rundll32.exe rundll32.exe C:\\Users\\user\\Desktop\\init.dll,FlutterGpuTextureRendererPluginCApiGetAdapterLuid",
+                                                                 "files_opened":  [
+                                                                                      "C:\\Users\\user\\Desktop\\init.dll.123.Manifest",
+                                                                                      "C:\\Users\\user\\Desktop\\init.dll.124.Manifest",
+                                                                                      "C:\\Windows\\SYSTEM32\\ntmarta.dll",
+                                                                                      "C:\\Windows\\SYSTEM32\\wintypes.dll",
+                                                                                      "C:\\Windows\\System32\\CoreMessaging.dll",
+                                                                                      "C:\\Windows\\System32\\CoreUIComponents.dll",
+                                                                                      "C:\\Windows\\System32\\TextInputFramework.dll",
+                                                                                      "C:\\Windows\\System32\\en-US\\KERNELBASE.dll.mui",
+                                                                                      "C:\\Windows\\system32\\en-US\\rundll32.exe.mui",
+                                                                                      "C:\\Windows\\system32\\rpcss.dll"
+                                                                                  ]
+                                                             },
+                                                             {
+                                                                 "process_id":  "816",
+                                                                 "name":  "C:\\Windows\\System32\\rundll32.exe rundll32.exe C:\\Users\\user\\Desktop\\init.dll,FlutterGpuTextureRendererPluginCApiRegisterWithRegistrar"
+                                                             },
+                                                             {
+                                                                 "process_id":  "2596",
+                                                                 "name":  "C:\\Windows\\System32\\rundll32.exe rundll32.exe C:\\Users\\user\\Desktop\\init.dll,FlutterGpuTextureRendererPluginCApiSetTexture"
+                                                             }
+                                                         ],
+                                            "files_opened":  [
+                                                                 "C:\\Users\\user\\Desktop\\init.dll",
+                                                                 "C:\\Windows\\AppPatch\\sysmain.sdb",
+                                                                 "C:\\Windows\\SYSTEM32\\apphelp.dll",
+                                                                 "C:\\Windows\\SYSTEM32\\ntdll.dll",
+                                                                 "C:\\Windows\\System32\\KERNEL32.DLL",
+                                                                 "C:\\Windows\\System32\\KERNELBASE.dll",
+                                                                 "C:\\Windows\\system32\\loaddll64.exe"
+                                                             ],
+                                            "files_written":  [
+                                                                  "\\Device\\ConDrv\\\\Connect"
+                                                              ]
+                                        }
+                                    ],
+                 "processes_created":  [
+                                           "\"C:\\Windows\\sysnative\\rundll32.exe\" \"C:\\Users\\\u003cUSER\u003e\\Desktop\\readme.dll\",#1",
+                                           "C:\\Windows\\System32\\loaddll64.exe loaddll64.exe \"C:\\Users\\user\\Desktop\\init.dll\"",
+                                           "C:\\Windows\\System32\\conhost.exe C:\\Windows\\system32\\conhost.exe 0xffffffff -ForceV1",
+                                           "C:\\Windows\\System32\\cmd.exe cmd.exe /C rundll32.exe \"C:\\Users\\user\\Desktop\\init.dll\",#1",
+                                           "C:\\Windows\\System32\\rundll32.exe rundll32.exe  \"C:\\Users\\user\\Desktop\\init.dll\",#1",
+                                           "C:\\Windows\\System32\\rundll32.exe rundll32.exe C:\\Users\\user\\Desktop\\init.dll,FlutterGpuTextureRendererPluginCApiGetAdapterLuid",
+                                           "C:\\Windows\\System32\\rundll32.exe rundll32.exe C:\\Users\\user\\Desktop\\init.dll,FlutterGpuTextureRendererPluginCApiRegisterWithRegistrar",
+                                           "C:\\Windows\\System32\\rundll32.exe rundll32.exe C:\\Users\\user\\Desktop\\init.dll,FlutterGpuTextureRendererPluginCApiSetTexture"
+                                       ],
+                 "ip_traffic":  [
+                                    {
+                                        "destination_ip":  "74.125.132.94",
+                                        "destination_port":  443,
+                                        "transport_layer_protocol":  "TCP"
+                                    }
+                                ],
+                 "processes_terminated":  [
+                                              "%windir%\\System32\\svchost.exe -k WerSvcGroup",
+                                              "wmiadap.exe /F /T /R",
+                                              "C:\\Windows\\System32\\cmd.exe",
+                                              "C:\\Windows\\System32\\rundll32.exe"
+                                          ],
+                 "files_dropped":  [
+                                       {
+                                           "sha256":  "1a970a269b7ba9bf54ffe59f2ebbe2865402d1827cf589ea44b025bc82b4e8af"
+                                       }
+                                   ],
+                 "registry_keys_opened":  [
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\GRE_Initialize\\DisableMetaFiles",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\GRE_Initialize",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\GRE_Initialize\\DisableUmpdBufferSizeCheck",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\LanguageOverlay\\OverlayPackages\\en-US",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\WindowsStore",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\OEM",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\Safer\\CodeIdentifiers",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\OOBE",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Layers",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\Display",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\MUI\\Settings",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\SideBySide",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\rundll32.exe",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\AppModel\\Lookaside\\Packages",
+                                              "HKEY_LOCAL_MACHINE\\System\\Setup",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\LanguagePack\\DataStore_V1.0",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\LanguagePack\\SurrogateFallback\\Segoe UI",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Input",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\CTF\\",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Ole",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\cmd.exe",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows NT\\CurrentVersion",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\CTF\\Compatibility\\rundll32.exe",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Wow64\\x86\\xtajit",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\LanguagePack\\SurrogateFallback",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Rpc",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows NT\\Rpc",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Segment Heap",
+                                              "HKEY_CURRENT_USER\\Software\\Microsoft\\CTF\\DirectSwitchHotkeys",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\OLE\\Tracing",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\OLE",
+                                              "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\OLEAUT",
+                                              "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Policies\\Microsoft\\Cryptography\\Configuration",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options",
+                                              "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Ole\\FeatureDevelopmentProperties"
+                                          ],
+                 "files_written":  [
+                                       "\\Device\\ConDrv\\\\Connect"
+                                   ],
+                 "attack_techniques":  {
+                                           "T1129":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "parse PE header",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "parse PE header"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "access PEB ldr_data",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "access PEB ldr_data"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "link function at runtime on Windows",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "link function at runtime on Windows"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1082":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "query environment variable",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "query environment variable"
+                                                                          }
+                                                                      ]
+                                                         },
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Reads software policies",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "509"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1083":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "enumerate files on Windows",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "enumerate files on Windows"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1614":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "get geographical location",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "get geographical location"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1071":  [
+                                                         {
+                                                             "severity":  "UNKNOWN",
+                                                             "description":  "Adversaries may communicate using application layer protocols to avoid detection/network filtering by blending in with existing traffic."
+                                                         }
+                                                     ],
+                                           "T1574.002":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Tries to load missing DLLs",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "187"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1497":  [
+                                                         {
+                                                             "severity":  "INFO",
+                                                             "description":  "Checks if the current process is being debugged",
+                                                             "refs":  [
+                                                                          {
+                                                                              "ref":  "#signature_matches",
+                                                                              "value":  "76"
+                                                                          }
+                                                                      ]
+                                                         }
+                                                     ],
+                                           "T1218.011":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Runs a DLL by calling functions",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "219"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ],
+                                           "T1518.001":  [
+                                                             {
+                                                                 "severity":  "INFO",
+                                                                 "description":  "Checks if the current process is being debugged",
+                                                                 "refs":  [
+                                                                              {
+                                                                                  "ref":  "#signature_matches",
+                                                                                  "value":  "76"
+                                                                              }
+                                                                          ]
+                                                             }
+                                                         ]
+                                       }
+             }
+}

@@ -1,0 +1,122 @@
+﻿<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Vietnam - Huna</title>
+    <link href='https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css' rel='stylesheet'>
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', system-ui, sans-serif; padding: 20px; }
+        .breadcrumb { background: #e9ecef; padding: 10px 15px; border-radius: 5px; margin-bottom: 20px; }
+        .score-high { color: #dc3545; font-weight: bold; }
+        .score-med  { color: #fd7e14; font-weight: bold; }
+        .score-low  { color: #198754; }
+        .source-badge { font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }
+        .source-tool  { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+        .filter-bar { background: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        #error-overlay { display:none; padding: 20px; background: #fee2e2; border: 1px solid #ef4444; color: #991b1b; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <nav aria-label='breadcrumb'>
+        <ol class='breadcrumb'>
+            <li class='breadcrumb-item'><a href='../../../../../../../../../output/Global_Threat_Dashboard.html'>Dashboard</a></li>
+            <li class='breadcrumb-item active'>Vietnam / Huna</li>
+        </ol>
+    </nav>
+    <div class='d-flex justify-content-between align-items-center mb-3'>
+        <h2>Vietnam - Huna <span class='badge bg-secondary'>Detailed Analysis</span></h2>
+        <span class='text-muted small'>Latest Activity: Unknown</span>
+    </div>
+    <div class='row filter-bar align-items-center'>
+        <div class='col-md-4'><input type='text' id='searchInput' class='form-control' placeholder='Search item names...' onkeyup='applyFilters()'></div>
+        <div class='col-md-3'>
+            <select id='rarityFilter' class='form-select' onchange='applyFilters()'>
+                <option value='100' selected>Unique Only (100%)</option>
+                <option value='90'>High Rarity (>90%)</option>
+                <option value='0'>All Rarities</option>
+            </select>
+        </div>
+        <div class='col-md-3'>
+            <select id='timeFilter' class='form-select' onchange='applyFilters()'>
+                <option value='0' selected>Any Time</option>
+                <option value='30'>Last 30 Days</option>
+                <option value='90'>Last 90 Days</option>
+                <option value='365'>Last Year</option>
+            </select>
+        </div>
+        <div class='col-md-2 text-end text-muted' id='countDisplay'>Showing all</div>
+    </div>
+    <div id='error-overlay'></div>
+    <ul class='nav nav-tabs' id='reportTabs' role='tablist'></ul>
+    <div class='tab-content pt-3' id='reportContent'></div>
+    <div id='loading' class='text-center text-muted mt-5'><div class='spinner-border text-primary'></div><p>Loading...</p></div>
+    <textarea id='data_store' style='display:none;'>eyJTaWdtYSBSdWxlcyI6W10sIllhcmEgUnVsZXMiOltdLCJJRFMgUnVsZXMiOltdLCJXaW5kb3dzIEFQSSI6W10sIk1lbW9yeSBQYXR0ZXJuIFVSTHMiOltdLCJNZW1vcnkgUGF0dGVybiBEb21haW5zIjpbXSwiTUlUUkUgQVRUXHUwMDI2Q0siOltdLCJWVCBUYWdzIjpbXSwiTXV0ZXhlcyI6W10sIlJlZ2lzdHJ5IjpbXSwiUHJvY2Vzc2VzIjpbXSwiQ2VydGlmaWNhdGVzIjpbXSwiRUxGIFN5bWJvbHMiOltdfQ==</textarea>
+    <script>
+        function fail(msg) { document.getElementById('error-overlay').innerText = msg; document.getElementById('error-overlay').style.display = 'block'; }
+        window.applyFilters = function() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const rarity = parseFloat(document.getElementById('rarityFilter').value);
+            const timeLimit = parseInt(document.getElementById('timeFilter').value);
+            const activePane = document.querySelector('.tab-pane.active');
+            if (!activePane) return;
+            const rows = activePane.querySelectorAll('tbody tr');
+            let visible = 0; const now = new Date();
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name').toLowerCase();
+                const score = parseFloat(row.getAttribute('data-score'));
+                const dateStr = row.getAttribute('data-date');
+                let matchesTime = true;
+                if (timeLimit > 0) {
+                    if (!dateStr || dateStr === 'Unknown' || dateStr === '') { matchesTime = false; }
+                    else {
+                        const diffDays = Math.ceil(Math.abs(now - new Date(dateStr)) / (1000 * 60 * 60 * 24));
+                        if (diffDays > timeLimit) matchesTime = false;
+                    }
+                }
+                if (name.includes(search) && score >= rarity && matchesTime) { row.style.display = ''; visible++; } else { row.style.display = 'none'; }
+            });
+            document.getElementById('countDisplay').innerText = 'Showing ' + visible + ' items';
+        };
+        (function() {
+            try {
+                const rawB64 = document.getElementById('data_store').value;
+                if (!rawB64) throw new Error('Data empty.');
+                const binaryString = window.atob(rawB64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
+                const decoder = new TextDecoder('utf-8');
+                const data = JSON.parse(decoder.decode(bytes));
+                const tabs = document.getElementById('reportTabs');
+                const content = document.getElementById('reportContent');
+                document.getElementById('loading').style.display = 'none';
+                let isFirst = true; let hasData = false;
+                Object.keys(data).forEach((cat, idx) => {
+                    const items = Array.isArray(data[cat]) ? data[cat] : [data[cat]];
+                    if (!items || items.length === 0 || (items.length === 1 && !items[0].Item_Name)) return;
+                    hasData = true;
+                    tabs.insertAdjacentHTML('beforeend', '<li class=\'nav-item\'><button class=\'nav-link ' + (isFirst ? 'active' : '') + '\' data-bs-toggle=\'tab\' data-bs-target=\'#pane-' + idx + '\' type=\'button\' onclick=\'setTimeout(applyFilters, 50)\'>' + cat + ' <span class=\'badge bg-secondary ms-1\'>' + items.length + '</span></button></li>');
+                    let html = '<div class=\'tab-pane fade ' + (isFirst ? 'show active' : '') + '\' id=\'pane-' + idx + '\'><div class=\'table-responsive\'><table class=\'table table-hover table-striped small\'><thead><tr><th>Item Name</th><th>Last Seen</th><th>Source</th><th>Count</th><th>Rarity</th></tr></thead><tbody>';
+                    items.sort((a,b) => (new Date(b.Last_Seen||0) - new Date(a.Last_Seen||0)));
+                    items.forEach(row => {
+                        let name = (row.Item_Name || row.Rule_Title || 'Unknown').replace(/</g, '&lt;');
+                        let score = parseFloat(row.Baseline_Rarity_Score) || 0;
+                        let cls = score >= 100 ? 'score-high' : (score >= 90 ? 'score-med' : 'score-low');
+                        let srcCls = (row._Source||'').startsWith('Tool:') ? 'source-badge source-tool' : 'source-badge';
+                        html += '<tr data-name=\'' + name.toLowerCase() + '\' data-score=\'' + score + '\' data-date=\'' + (row.Last_Seen||'') + '\'>' +
+                            '<td class=\'text-break\' style=\'max-width:500px;\'>' + name + '</td>' +
+                            '<td style=\'white-space:nowrap;\'>' + (row.Last_Seen||'Unknown') + '</td>' +
+                            '<td style=\'width:150px;\'><span class=\'' + srcCls + '\'>' + (row._Source||'Direct') + '</span></td>' +
+                            '<td>' + (row.Malicious_Count||0) + '</td>' +
+                            '<td class=\'' + cls + '\'>' + score + '%</td></tr>';
+                    });
+                    content.insertAdjacentHTML('beforeend', html + '</tbody></table></div></div>');
+                    isFirst = false;
+                });
+                if (!hasData) content.innerHTML = '<div class=\'alert alert-info\'>No analysis data found.</div>';
+                setTimeout(applyFilters, 100);
+            } catch (e) { fail(e.message); }
+        })();
+    </script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js'></script>
+</body>
+</html>

@@ -1,324 +1,208 @@
-function Get-VTZippedSamplesFromList{
+function Get-VTSamplesFromList {
 <#
 SYNOPSIS
-  Ask VirusTotal to build a password-protected ZIP for given SHA256s, download it,
-  and emit quick stats, a file-type breakdown, and a DLL entry-points CSV.
-
-REQUIREMENTS
-  - VT API key with Intelligence/Premium permissions for /intelligence/zip_files.
-  - PowerShell 5.1+ or 7+.
-  - Input: TXT (one SHA256 per line) or CSV with column 'IOC' containing SHA256s.
-
-OUTPUTS (next to -OutZip):
-  - <OutZip>.stats.json
-  - <OutZip>.filetypes.csv
-  - <OutZip>.dll_entrypoints.csv
+  VirusTotal Downloader v13.3 (Flexible Input Edition).
+  - INPUT RESTORED: Accepts Files (CSV/TXT), Comma-Separated Strings, or Interactive Input.
+  - SMART CSV: Auto-detects 'IOC', 'IOCValue', 'Hash', etc.
+  - INSPECTS downloads to filter out API Garbage (HTML/JSON).
+  - Generates 'file_map.csv' for the Detonator.
 #>
 
 param(
-  [Parameter(Mandatory=$true)]
-  [string]$InputPath,
+  [Parameter(Mandatory=$false, ValueFromPipeline=$true)]
+  [object]$Targets,  # Can be a Path, a String "h1,h2", or an Array @("h1","h2")
 
-  [string]$OutZip = ".\VT_Samples_PassProtected.zip",
+  [string]$OutDir = ".\VT_Samples",
 
-  [string]$ZipPassword = "infected",
-
-  [int]$PollSeconds = 4,
-
-  [int]$PollTimeoutSeconds = 600
+  [int]$Threads = 5
 )
 
-# ---------- Helpers ----------
-function Get-VTApiKey {
-  try { return (Get-Secret -Name 'VT_API_Key_1' -AsPlainText) } catch { }
-  if ($env:VT_API_KEY) { return $env:VT_API_KEY }
-  return (Read-Host "Enter your VirusTotal API key (visible input)")
+# ---------- 1. FLEXIBLE INPUT HANDLER (Restored Logic) ----------
+$hashes = @()
+
+# A. Interactive Mode (No params provided)
+if ([string]::IsNullOrWhiteSpace($Targets)) {
+    $InputStr = Read-Host "[?] Enter Targets (File Path OR Comma-Separated Hashes)"
+    if ([string]::IsNullOrWhiteSpace($InputStr)) { Write-Error "No targets provided."; return }
+    $Targets = $InputStr
 }
 
-function Load-Hashes {
-  param([string]$Path)
-  if (-not (Test-Path $Path)) { throw "Input not found: $Path" }
-  $ext = [IO.Path]::GetExtension($Path).ToLowerInvariant()
-  if ($ext -eq ".csv") {
-    $csv = Import-Csv -Path $Path
-    if ($csv.Count -eq 0) { throw "CSV is empty." }
-    if (-not ($csv[0].PSObject.Properties.Name -contains "IOC")) {
-      throw "CSV must contain a column named 'IOC'."
-    }
-    return $csv | ForEach-Object { $_.IOC.Trim() } |
-           Where-Object { $_ -match '^[A-Fa-f0-9]{64}$' } |
-           Select-Object -Unique
-  } else {
-    return Get-Content -Path $Path -ErrorAction Stop |
-           ForEach-Object { $_.Trim() } |
-           Where-Object { $_ -match '^[A-Fa-f0-9]{64}$' } |
-           Select-Object -Unique
-  }
-}
-
-function VT-GET {
-  param([string]$Uri, [hashtable]$Headers)
-  return Invoke-RestMethod -Method Get -Uri $Uri -Headers $Headers -ErrorAction Stop
-}
-
-function VT-POST {
-  param([string]$Uri, [hashtable]$Headers, [object]$BodyObject)
-  $json = $BodyObject | ConvertTo-Json -Depth 8
-  return Invoke-RestMethod -Method Post -Uri $Uri -Headers $Headers -Body $json -ContentType "application/json" -ErrorAction Stop
-}
-
-# ---------- Setup ----------
-$VTApiKey = Get-VTApiKey
-if (-not $VTApiKey) {
-  Write-Error "No VT API key provided."
-  exit 1
-}
-$headers = @{ "x-apikey" = $VTApiKey }
-
-$hashes = Load-Hashes -Path $InputPath
-if ($hashes.Count -eq 0) {
-  Write-Error "No valid SHA256 hashes found."
-  exit 1
-}
-
-Write-Host "Loaded $($hashes.Count) unique SHA256 hashes from input." -ForegroundColor Cyan
-
-# ---------- Pre-validate hashes (avoid failures on non-existent hashes) ----------
-$validHashes   = @()
-$missingHashes = @()
-
-Write-Host "Checking which hashes exist in VirusTotal (this uses /files/{hash})..." -ForegroundColor Cyan
-
-foreach ($h in $hashes) {
-  $uri = "https://www.virustotal.com/api/v3/files/$h"
-  try {
-    $resp = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -ErrorAction Stop
-    if ($resp.data.id) {
-      $validHashes += $h
-    } else {
-      Write-Warning "[!] Unexpected VT response for $h (no data.id). Skipping."
-      $missingHashes += $h
-    }
-  }
-  catch {
-    # Try to extract HTTP status code if present
-    $statusCode = $null
-    if ($_.Exception -and $_.Exception.Response) {
-      try { $statusCode = $_.Exception.Response.StatusCode.value__ } catch { }
-    }
-
-    if ($statusCode -eq 404) {
-      Write-Warning "[!] Not found in VT: $h"
-    } elseif ($statusCode -eq 403) {
-      Write-Warning "[!] Access denied / forbidden in VT for: $h"
-    } else {
-      Write-Warning "[!] Error checking $h, skipping. Raw: $($_.Exception.Message)"
-    }
-    $missingHashes += $h
-  }
-
-  Start-Sleep -Milliseconds 400  # small delay to respect API rate limits
-}
-
-if ($validHashes.Count -eq 0) {
-  Write-Error "None of the provided hashes are valid / accessible in VT. Exiting."
-  exit 1
-}
-
-Write-Host ("Validation summary: Total:{0}  Valid:{1}  Skipped:{2}" -f $hashes.Count, $validHashes.Count, $missingHashes.Count) -ForegroundColor Green
-
-# ---------- 1) Create the ZIP job ----------
-$createUri = "https://www.virustotal.com/api/v3/intelligence/zip_files"
-
-Write-Host "Submitting $($validHashes.Count) valid hashes to VT to build a password-protected ZIP..." -ForegroundColor Cyan
-
+# B. File or Raw String?
+$IsFile = $false
 try {
-  $createResp = VT-POST -Uri $createUri -Headers $headers -BodyObject @{
-    data = @{
-      password = $ZipPassword
-      hashes   = $validHashes
+    if ($Targets -is [string] -and (Test-Path $Targets -ErrorAction SilentlyContinue)) { 
+        $IsFile = $true 
     }
-  }
-} catch {
-  Write-Error "Create ZIP request failed (requires Intelligence/Premium). Raw error: $($_.Exception.Message)"
-  exit 1
-}
+} catch {}
 
-$zipId = $createResp.data.id
-if (-not $zipId) {
-  Write-Error "No ZIP id returned by VT."
-  exit 1
-}
+if ($IsFile) {
+    # --- FILE MODE ---
+    $FilePath = (Resolve-Path $Targets).Path
+    Write-Host "Reading input from file: $FilePath" -ForegroundColor Cyan
+    $ext = [IO.Path]::GetExtension($FilePath).ToLowerInvariant()
 
-Write-Host "ZIP job id: $zipId (status: $($createResp.data.attributes.status))"
-
-# ---------- 2) Poll until finished ----------
-$infoUri  = "https://www.virustotal.com/api/v3/intelligence/zip_files/$zipId"
-$deadline = (Get-Date).AddSeconds($PollTimeoutSeconds)
-$lastInfo = $null
-
-do {
-  Start-Sleep -Seconds $PollSeconds
-  try {
-    $lastInfo = VT-GET -Uri $infoUri -Headers $headers
-  } catch {
-    Write-Warning "Polling failed once: $($_.Exception.Message)"
-    continue
-  }
-
-  $status   = $lastInfo.data.attributes.status
-  $progress = $lastInfo.data.attributes.progress
-  $okCount  = [int]$lastInfo.data.attributes.files_ok
-  $errCount = [int]$lastInfo.data.attributes.files_error
-
-  Write-Host ("Status: {0}  Progress: {1}%  OK:{2}  Err:{3}" -f $status, $progress, $okCount, $errCount)
-
-  if ($status -eq "finished") { break }
-  if ((Get-Date) -gt $deadline) {
-    Write-Error "Timeout waiting for ZIP to finish."
-    exit 1
-  }
-} while ($true)
-
-# ---------- 3) Determine which files actually made it ----------
-$okListFromJob     = @()
-$failedListFromJob = @()
-$usedJobFileList   = $false
-
-try {
-  # Some tenants return per-file entries like: data.attributes.files: [{id: <sha256>, status: "ok"|"error"}]
-  $filesArray = $lastInfo.data.attributes.files
-  if ($filesArray) {
-    foreach ($f in $filesArray) {
-      if ($f.status -eq "ok")        { $okListFromJob     += $f.id }
-      elseif ($f.status -eq "error") { $failedListFromJob += $f.id }
+    if ($ext -eq ".csv") {
+        $CsvData = Import-Csv $FilePath
+        if ($CsvData.Count -gt 0) {
+            # Smart Column Detection
+            $Props = $CsvData[0].PSObject.Properties.Name
+            $Col = ($Props | Where-Object { $_ -match '^(IOC|IOCValue|Hash|SHA256|FileHash)$' } | Select-Object -First 1)
+            
+            if ($Col) {
+                Write-Host " -> Detected hash column: '$Col'" -ForegroundColor DarkGray
+                $hashes = $CsvData | ForEach-Object { $_.$Col.Trim() }
+            } else {
+                Write-Error "CSV must contain a column named 'IOC', 'IOCValue', 'Hash', or 'SHA256'."
+                return
+            }
+        }
+    } else {
+        # TXT Mode
+        $hashes = Get-Content $FilePath | ForEach-Object { $_.Trim() }
     }
-    $usedJobFileList = $true
-    Write-Host "Using per-file statuses returned by VT job." -ForegroundColor Green
-  }
-} catch {
-  Write-Warning "Could not parse per-file list from job response: $($_.Exception.Message)"
-}
-
-$okSha256s     = @()
-$failedSha256s = @()
-
-if ($usedJobFileList) {
-  $okSha256s     = $okListFromJob     | Select-Object -Unique
-  $failedSha256s = $failedListFromJob | Select-Object -Unique
 } else {
-  # Fallback: we only know how many succeeded; assume first N validHashes are OK
-  Write-Warning "Per-file list not available; falling back to first OK count from valid hashes."
-  $okSha256s     = $validHashes | Select-Object -First $okCount
-  $failedSha256s = $validHashes | Select-Object -Skip  $okCount
+    # --- DIRECT LIST MODE (The "Comma Logic") ---
+    Write-Host "Reading input from provided list/string..." -ForegroundColor Cyan
+    if ($Targets -is [array]) {
+        $hashes = $Targets
+    } elseif ($Targets -is [string]) {
+        $hashes = $Targets -split ","
+    }
 }
 
-# ---------- 4) For OK files, pull metadata and build type stats + DLL entry points ----------
-$typeCounts = @{}            # type_description => count
-$dllRows    = New-Object System.Collections.Generic.List[object]
+# C. Normalize & Validate
+$hashes = $hashes | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^[A-Fa-f0-9]{64}$' } | Select-Object -Unique
 
-function Bump-TypeCount {
-  param([string]$desc)
-  if ([string]::IsNullOrWhiteSpace($desc)) { $desc = "Unknown" }
-  if ($typeCounts.ContainsKey($desc)) { $typeCounts[$desc]++ } else { $typeCounts[$desc] = 1 }
+if ($hashes.Count -eq 0) { Write-Error "No valid SHA256 hashes found in input."; return }
+
+# ---------- 2. SETUP & KEYS ----------
+if ($env:VT_API_KEY) { $VTApiKey = $env:VT_API_KEY } 
+else { 
+    try { $VTApiKey = (Get-Secret -Name 'VT_API_Key_1' -AsPlainText).Trim() } catch { }
 }
+if (-not $VTApiKey) { $VTApiKey = Read-Host "Enter your VirusTotal API key (visible input)" }
 
-foreach ($sha in $okSha256s) {
-  try {
-    $meta = VT-GET -Uri ("https://www.virustotal.com/api/v3/files/{0}" -f $sha) -Headers $headers
-    $attr = $meta.data.attributes
+if (-not (Test-Path $OutDir)) { New-Item -ItemType Directory -Force -Path $OutDir | Out-Null }
+$OutDir = (Resolve-Path $OutDir).Path
+$ReviewDir = Join-Path $OutDir "_Review"
+New-Item -ItemType Directory -Force -Path $ReviewDir | Out-Null
 
-    $typeDesc = $attr.type_description
-    Bump-TypeCount -desc $typeDesc
+Write-Host "Target: $OutDir" -ForegroundColor Cyan
+Write-Host "Loaded $($hashes.Count) valid hashes. Starting Smart Download..." -ForegroundColor Yellow
 
-    # Check if DLL and capture entry point (if available)
-    $isDll = $false
-    if ($typeDesc -match 'dll' -or $typeDesc -match 'DLL') { $isDll = $true }
+# ---------- 3. WORKER LOGIC (Same Robust Engine) ----------
+$WorkerScript = {
+    param($HashList, $ApiKey, $DestinationDir, $ReviewDir)
 
-    $entry = $null
-    if ($attr.pe_info) {
-      if ($attr.pe_info.entry_point)       { $entry = $attr.pe_info.entry_point }
-      elseif ($attr.pe_info.entrypoint)    { $entry = $attr.pe_info.entrypoint }  # alternate field name
+    Add-Type -AssemblyName System.Net.Http
+    $Client = New-Object System.Net.Http.HttpClient
+    $Client.DefaultRequestHeaders.Add("x-apikey", $ApiKey)
+    $Client.Timeout = [TimeSpan]::FromMinutes(2)
 
-      # Heuristic: check IMAGE_FILE_DLL flag (0x2000) in characteristics if present
-      if (-not $isDll -and $attr.pe_info.characteristics) {
+    $Results = @()
+
+    foreach ($Hash in $HashList) {
+        $Url = "https://www.virustotal.com/api/v3/files/$Hash/download"
+        $FilePath = Join-Path $DestinationDir $Hash
+        $Status = "Failed"
+        $FinalType = "Unknown"
+
         try {
-          $chars = [int]$attr.pe_info.characteristics
-          if ($chars -band 0x2000) { $isDll = $true }
-        } catch { }
-      }
+            $Response = $Client.GetAsync($Url).Result
+            
+            if ($Response.IsSuccessStatusCode) {
+                # Save
+                $FileStream = [System.IO.File]::Create($FilePath)
+                $HttpStream = $Response.Content.ReadAsStreamAsync().Result
+                $HttpStream.CopyTo($FileStream)
+                $FileStream.Close()
+                $HttpStream.Close()
+                
+                # Inspect Content
+                $ContentHeader = Get-Content $FilePath -TotalCount 10 -ErrorAction SilentlyContinue
+                $HeaderString = $ContentHeader -join "`n"
+                
+                # Garbage Filter (API Errors)
+                if ($HeaderString -match '"error":\s*\{' -or 
+                    $HeaderString -match '<title>Error 404' -or 
+                    $HeaderString -match 'QuotaExceeded' -or 
+                    $HeaderString -match 'NotFoundError' -or 
+                    $HeaderString -match 'AccessDenied') {
+                    
+                    $MovePath = Join-Path $ReviewDir "$Hash.txt"
+                    Move-Item -Path $FilePath -Destination $MovePath -Force
+                    $Status = "Quarantined (API Error)"
+                } 
+                else {
+                    $Status = "OK"
+                    # Sniff Type
+                    $Bytes = Get-Content $FilePath -Encoding Byte -TotalCount 4 -ErrorAction SilentlyContinue
+                    $Hex = ($Bytes | ForEach-Object { $_.ToString("X2") }) -join " "
+                    
+                    if ($Hex -match "^4D 5A") { $FinalType = "exe" }
+                    elseif ($Hex -match "^7F 45 4C 46") { $FinalType = "elf" }
+                    elseif ($Hex -match "^50 4B") { $FinalType = "zip" }
+                    elseif ($Hex -match "^25 50 44 46") { $FinalType = "pdf" }
+                    elseif ($Hex -match "^3C 21" -or $HeaderString -match "<html|<head|<body") { $FinalType = "html" }
+                    else { 
+                        if ($HeaderString -match "function|var|dim|echo|powershell|wscript|cscript") { $FinalType = "js" } 
+                        else { $FinalType = "bin" }
+                    }
+                }
+            } 
+            elseif ($Response.StatusCode -eq 404) { $Status = "Missing" }
+            else { $Status = "Error: " + $Response.StatusCode }
+        } catch {
+            $Status = "NetError"
+        }
+        $Results += [PSCustomObject]@{ Hash=$Hash; Status=$Status; DetectedType=$FinalType }
+        Start-Sleep -Milliseconds 200
     }
+    $Client.Dispose()
+    return $Results
+}
 
-    if ($isDll) {
-      $dllRows.Add([PSCustomObject]@{
-        sha256          = $sha
-        meaningful_name = $attr.meaningful_name
-        entry_point     = $entry
-      })
+# ---------- 4. EXECUTION ----------
+$RunspacePool = [runspacefactory]::CreateRunspacePool(1, $Threads)
+$RunspacePool.Open()
+$Jobs = @()
+$ChunkSize = [Math]::Ceiling($hashes.Count / $Threads)
+$CurrentIndex = 0
+
+for ($i = 0; $i -lt $Threads; $i++) {
+    if ($CurrentIndex -ge $hashes.Count) { break }
+    $Subset = $hashes | Select-Object -Skip $CurrentIndex -First $ChunkSize
+    $CurrentIndex += $ChunkSize
+    
+    if ($Subset) {
+        $PsCmd = [PowerShell]::Create().AddScript($WorkerScript)
+        $PsCmd.AddArgument($Subset)
+        $PsCmd.AddArgument($VTApiKey)
+        $PsCmd.AddArgument($OutDir)
+        $PsCmd.AddArgument($ReviewDir)
+        $PsCmd.RunspacePool = $RunspacePool
+        $Jobs += [PSCustomObject]@{ Pipe = $PsCmd; Handle = $PsCmd.BeginInvoke(); Id = $i }
     }
-  } catch {
-    Write-Warning "Metadata fetch failed for $sha (still considered OK for the ZIP). $($_.Exception.Message)"
-  }
 }
 
-# ---------- 5) Download the finished ZIP ----------
-$dlUri = "https://www.virustotal.com/api/v3/intelligence/zip_files/$zipId/download"
-Write-Host "Downloading ZIP -> $OutZip" -ForegroundColor Green
+while (($Jobs | Where-Object { $_.Handle.IsCompleted -eq $false }).Count -gt 0) { Start-Sleep -Seconds 1 }
 
-try {
-  Invoke-WebRequest -Uri $dlUri -Headers $headers -OutFile $OutZip -UseBasicParsing -ErrorAction Stop
-} catch {
-  Write-Error "Failed to download ZIP: $($_.Exception.Message)"
-  exit 1
+$FinalResults = @()
+foreach ($Job in $Jobs) {
+    try { $FinalResults += $Job.Pipe.EndInvoke($Job.Handle) } catch { }
+    $Job.Pipe.Dispose()
 }
+$RunspacePool.Dispose()
 
-$zipAbs = (Resolve-Path $OutZip).Path
-Write-Host "Saved: $zipAbs" -ForegroundColor Green
+# ---------- 5. REPORTING ----------
+$TotalOK = ($FinalResults | Where-Object { $_.Status -eq "OK" }).Count
+Write-Host "`n[Download Summary]" -ForegroundColor Cyan
+Write-Host "  Valid Samples: $TotalOK" -ForegroundColor Green
+Write-Host "  Quarantined:   $(($FinalResults | Where-Object { $_.Status -match "Quarantined" }).Count)" -ForegroundColor Yellow
 
-# ---------- 6) Emit sidecar reports ----------
-$timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssZ")
+$fileMap = $FinalResults | Where-Object { $_.Status -eq "OK" } | Select-Object Hash, @{N='Extension';E={$_.DetectedType}}, @{N='TypeDescription';E={"Verified Content"}}
+$mapPath = Join-Path $OutDir "file_map.csv"
+$fileMap | Export-Csv -Path $mapPath -NoTypeInformation -Encoding UTF8
 
-$statsObject = [PSCustomObject]@{
-  zip_id                = $zipId
-  requested             = $hashes.Count      # original total in file
-  submitted_valid       = $validHashes.Count # actually sent to VT for ZIP
-  missing_before_submit = $missingHashes.Count
-  ok                    = $okSha256s.Count
-  error                 = $failedSha256s.Count
-  used_job_file_list    = $usedJobFileList
-  created_at            = $timestamp
-  out_zip               = $zipAbs
-}
-$statsPath = "$OutZip.stats.json"
-$statsObject | ConvertTo-Json -Depth 6 | Out-File -FilePath $statsPath -Encoding UTF8
-
-# File-type breakdown CSV
-$typeCsv = $typeCounts.GetEnumerator() |
-           Sort-Object -Property Name |
-           ForEach-Object {
-             [PSCustomObject]@{
-               type_description = $_.Key
-               count            = $_.Value
-             }
-           }
-$typeCsvPath = "$OutZip.filetypes.csv"
-$typeCsv | Export-Csv -Path $typeCsvPath -NoTypeInformation -Encoding UTF8
-
-# DLL entry points CSV
-$dllCsvPath = "$OutZip.dll_entrypoints.csv"
-if ($dllRows.Count -gt 0) {
-  $dllRows | Export-Csv -Path $dllCsvPath -NoTypeInformation -Encoding UTF8
-} else {
-  # Create an empty file with headers so automation doesn't break
-  @([PSCustomObject]@{ sha256 = $null; meaningful_name = $null; entry_point = $null }) |
-    Select-Object sha256, meaningful_name, entry_point |
-    Export-Csv -Path $dllCsvPath -NoTypeInformation -Encoding UTF8
-}
-
-Write-Host "Stats JSON:      $((Resolve-Path $statsPath).Path)"
-Write-Host "File types CSV:  $((Resolve-Path $typeCsvPath).Path)"
-Write-Host "DLL entries CSV: $((Resolve-Path $dllCsvPath).Path)"
-Write-Host $typeCsv
-Write-Host "Done." -ForegroundColor Cyan
-
+Write-Host "File Map generated: $mapPath" -ForegroundColor Gray
 }

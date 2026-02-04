@@ -3,8 +3,7 @@
     $attributionPattern = "equifax"
     Import-Module -Name ".\baseline\checkAttribution.psm1" -Force
 
-    $VTApi = Get-Secret -Name 'VT_API_Key_3' -AsPlainText
-    #$VTApi = Get-Secret -Name 'VT_API_Key_2' -AsPlainText
+    $VTApi = Get-Secret -Name 'VT_API_Key_2' -AsPlainText
     $intezerAPI = Get-Secret -Name 'Intezer_API_Key' -AsPlainText
     $downloadPath = "C:\Users\ipn2\Downloads\"
 

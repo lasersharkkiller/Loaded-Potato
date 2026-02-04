@@ -42,8 +42,8 @@ function Get-MaliciousDifferentialAnalysis {
     # API Key
     if (-not (Get-Module -Name "Microsoft.PowerShell.SecretManagement")) { Import-Module Microsoft.PowerShell.SecretManagement -ErrorAction SilentlyContinue }
     try {
-        $VTApi = Get-Secret -Name 'VT_API_Key_3' -AsPlainText
-        if (-not $VTApi) { throw "Secret 'VT_API_Key_3' not found." }
+        $VTApi = Get-Secret -Name 'VT_API_Key_2' -AsPlainText
+        if (-not $VTApi) { throw "Secret 'VT_API_Key_2' not found." }
     } catch { Write-Error "Authentication Failed: $_"; return }
 
     # Load Missing Hashes (Parent Scope)
